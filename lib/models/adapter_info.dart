@@ -23,6 +23,12 @@ class AdapterInfo {
   /// 简要状态描述
   final String? statusMessage;
 
+  /// 是否声明了配置 schema
+  final bool hasConfig;
+
+  /// 能力列表
+  final List<String> capabilities;
+
   AdapterInfo({
     required this.platform,
     required this.enabled,
@@ -31,16 +37,18 @@ class AdapterInfo {
     this.version,
     this.bots = const [],
     this.statusMessage,
+    this.hasConfig = false,
+    this.capabilities = const [],
   });
 
   factory AdapterInfo.fromJson(Map<String, dynamic> json) {
     final botsRaw = json['bots'] as List? ?? [];
     return AdapterInfo(
-      platform: json['platform'] as String? ?? json['name'] as String? ?? '',
+      platform: json['platform']?.toString() ?? json['name']?.toString() ?? '',
       enabled: json['enabled'] as bool? ?? false,
-      running: json['running'] as bool? ?? false,
-      className: json['class'] as String?,
-      version: json['version'] as String?,
+      running: json['loaded'] as bool? ?? json['running'] as bool? ?? false,
+      className: json['class']?.toString(),
+      version: json['version']?.toString(),
       bots: botsRaw
           .map(
             (e) => e is Map<String, dynamic> ? BotAccount.fromJson(e) : null,
@@ -48,6 +56,10 @@ class AdapterInfo {
           .whereType<BotAccount>()
           .toList(),
       statusMessage: json['status'] as String?,
+      hasConfig: json['has_config'] as bool? ?? false,
+      capabilities:
+          (json['capabilities'] as List?)?.whereType<String>().toList() ??
+              const [],
     );
   }
 

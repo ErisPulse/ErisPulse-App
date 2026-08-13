@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/enums.dart';
@@ -20,10 +21,13 @@ import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
+import '../widgets/context_menu.dart';
 import '../widgets/states.dart';
 import '../widgets/status_indicators.dart';
+import 'dashboard_page.dart';
 import 'instance_create_page.dart';
 import 'instance_detail_page.dart';
+import 'logs_page.dart';
 import 'onboarding_page.dart';
 import 'settings_page.dart';
 import 'debug_page.dart';
@@ -37,6 +41,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Timer? _timer;
+
+  /// 桌面：NavigationRail 选中索引（0=实例，1=设置，2=调试）
+  int _railIndex = 0;
 
   @override
   void initState() {
@@ -70,6 +77,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return _buildDesktop(context, l10n);
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('ErisPulse'),
@@ -93,48 +103,152 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Consumer<InstanceManager>(
-        builder: (context, mgr, _) {
-          if (mgr.count == 0) {
-            return Column(
+      body: _buildContent(context, l10n),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _navigateToCreate,
+        icon: const Icon(Icons.add),
+        label: Text(l10n.commonCreateInstance),
+      ),
+    );
+  }
+
+  /// 桌面布局：左侧 NavigationRail + 右侧内容区（宽屏自适应居中）
+  Widget _buildDesktop(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NavigationRail(
+            selectedIndex: _railIndex,
+            onDestinationSelected: _onRailSelected,
+            labelType: NavigationRailLabelType.all,
+            leading: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.bolt,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            destinations: [
+              NavigationRailDestination(
+                icon: const Icon(Icons.dns_outlined),
+                selectedIcon: const Icon(Icons.dns),
+                label: Text(l10n.railInstances),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings),
+                label: Text(l10n.commonSettings),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.bug_report_outlined),
+                selectedIcon: const Icon(Icons.bug_report),
+                label: Text(l10n.homeDebugTooltip),
+              ),
+            ],
+          ),
+          const VerticalDivider(width: 1, thickness: 1),
+          Expanded(
+            child: Column(
               children: [
-                const _RootfsBanner(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        'ErisPulse',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: l10n.commonRefresh,
+                        onPressed: _refreshStatus,
+                      ),
+                    ],
+                  ),
+                ),
                 Expanded(
-                  child: EmptyState(
-                    icon: Icons.dns_outlined,
-                    title: l10n.homeEmptyTitle,
-                    subtitle: l10n.homeEmptySubtitle,
-                    actionLabel: l10n.commonCreateInstance,
-                    onAction: () => _navigateToCreate(),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 960),
+                      child: _buildContent(context, l10n),
+                    ),
                   ),
                 ),
               ],
-            );
-          }
-          return Column(
-            children: [
-              const _RootfsBanner(),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refreshStatus,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: mgr.count,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, i) =>
-                        _InstanceTile(instance: mgr.instances[i]),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToCreate,
         icon: const Icon(Icons.add),
         label: Text(l10n.commonCreateInstance),
       ),
+    );
+  }
+
+  void _onRailSelected(int index) {
+    setState(() => _railIndex = index);
+    if (index == 1) {
+      Navigator.of(context).pushNamed(SettingsPage.routeName).then((_) {
+        if (mounted) setState(() => _railIndex = 0);
+      });
+    } else if (index == 2) {
+      Navigator.of(context).pushNamed(DebugPage.routeName).then((_) {
+        if (mounted) setState(() => _railIndex = 0);
+      });
+    }
+  }
+
+  /// 内容区：实例横幅 + 列表（桌面与移动共用）
+  Widget _buildContent(BuildContext context, AppLocalizations l10n) {
+    return Consumer<InstanceManager>(
+      builder: (context, mgr, _) {
+        if (mgr.count == 0) {
+          return Column(
+            children: [
+              const _RootfsBanner(),
+              Expanded(
+                child: EmptyState(
+                  icon: Icons.dns_outlined,
+                  title: l10n.homeEmptyTitle,
+                  subtitle: l10n.homeEmptySubtitle,
+                  actionLabel: l10n.commonCreateInstance,
+                  onAction: () => _navigateToCreate(),
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            const _RootfsBanner(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshStatus,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: mgr.count,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) =>
+                      _InstanceTile(instance: mgr.instances[i]),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -158,54 +272,66 @@ class _InstanceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ListTile(
-      leading: StatusDot(
-        status: instance.status,
-        health: instance.isRemote ? instance.health : null,
-      ),
-      title: Row(
-        children: [
-          if (instance.isRemote) ...[
-            Icon(
-              Icons.cloud_outlined,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 4),
-          ],
-          Expanded(
-            child: Text(
-              instance.name,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Text(
-            instance.isRemote
-                ? instance.remoteUrl ?? l10n.commonRemote
-                : ':${instance.port}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: 'monospace',
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        ],
-      ),
-      subtitle: Text(
-        instance.isRemote
-            ? _remoteLabel(l10n, instance.health)
-            : instance.status == InstanceStatus.error
-                ? (instance.errorMessage ?? l10n.statusError)
-                : '${_statusLabel(l10n, instance.status)} · '
-                    '${_healthLabel(l10n, instance.health)}',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => InstanceDetailPage(instanceId: instance.id),
+    final isDesktop = !Platform.isAndroid && !Platform.isIOS;
+    final tile = ContextMenuRegion(
+      onContextMenu: (pos) => _showContextMenu(context, pos),
+      child: ListTile(
+        leading: StatusDot(
+          status: instance.status,
+          health: instance.isRemote ? instance.health : null,
         ),
+        title: Row(
+          children: [
+            if (instance.isRemote) ...[
+              Icon(
+                Icons.cloud_outlined,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Expanded(
+              child: Text(
+                instance.name,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Text(
+              instance.isRemote
+                  ? instance.remoteUrl ?? l10n.commonRemote
+                  : ':${instance.port}'
+                      '${instance.runtimeVersion != null ? ' · v${instance.runtimeVersion}' : ''}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          instance.isRemote
+              ? _remoteLabel(l10n, instance.health)
+              : instance.status == InstanceStatus.error
+                  ? (instance.errorMessage ?? l10n.statusError)
+                  : '${_statusLabel(l10n, instance.status)} · '
+                      '${_healthLabel(l10n, instance.health)}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => InstanceDetailPage(instanceId: instance.id),
+          ),
+        ),
+        onLongPress: () => _showActionMenu(context),
       ),
-      onLongPress: () => _showActionMenu(context),
+    );
+    if (!isDesktop) return tile;
+    // 桌面：卡片化展示
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      clipBehavior: Clip.antiAlias,
+      child: tile,
     );
   }
 
@@ -268,6 +394,27 @@ class _InstanceTile extends StatelessWidget {
                   _stop(context);
                 },
               ),
+            if (instance.status == InstanceStatus.running ||
+                instance.status == InstanceStatus.starting)
+              ListTile(
+                leading: const Icon(Icons.autorenew),
+                title: Text(AppLocalizations.of(ctx).commonSoftRestart),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _softRestart(context);
+                },
+              ),
+            if (!instance.isRemote &&
+                (instance.status == InstanceStatus.running ||
+                    instance.status == InstanceStatus.starting))
+              ListTile(
+                leading: const Icon(Icons.restart_alt),
+                title: Text(AppLocalizations.of(ctx).commonHardRestart),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _restart(context);
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
               title: Text(AppLocalizations.of(ctx).commonDeleteInstance),
@@ -295,6 +442,135 @@ class _InstanceTile extends StatelessWidget {
     );
   }
 
+  /// 桌面右键菜单（鼠标右键，含完整操作）
+  void _showContextMenu(BuildContext context, Offset anchor) {
+    final l10n = AppLocalizations.of(context);
+    final running = instance.status == InstanceStatus.running ||
+        instance.status == InstanceStatus.starting;
+    final startable = !instance.isRemote &&
+        (instance.status == InstanceStatus.stopped ||
+            instance.status == InstanceStatus.error);
+    showContextMenu(
+      context: context,
+      anchor: anchor,
+      items: [
+        if (startable)
+          ContextMenuItem(
+            label: l10n.commonStart,
+            icon: Icons.play_arrow,
+            onTap: () => _start(context),
+          ),
+        if (!instance.isRemote && running)
+          ContextMenuItem(
+            label: l10n.commonStop,
+            icon: Icons.stop,
+            onTap: () => _stop(context),
+          ),
+        if (running)
+          ContextMenuItem(
+            label: l10n.commonSoftRestart,
+            icon: Icons.autorenew,
+            onTap: () => _softRestart(context),
+          ),
+        if (!instance.isRemote && running)
+          ContextMenuItem(
+            label: l10n.commonHardRestart,
+            icon: Icons.restart_alt,
+            onTap: () => _restart(context),
+          ),
+        ContextMenuItem(
+          label: l10n.detailOpenDashboard,
+          icon: Icons.open_in_new,
+          onTap: () => _openDashboard(context),
+        ),
+        ContextMenuItem(
+          label: l10n.commonViewLogs,
+          icon: Icons.article_outlined,
+          onTap: () => _openLogs(context),
+        ),
+        ContextMenuItem(
+          label: l10n.dashboardCopyTokenTooltip,
+          icon: Icons.copy_outlined,
+          onTap: () => _copyToken(context),
+        ),
+        ContextMenuItem(
+          label: l10n.commonRename,
+          icon: Icons.edit_outlined,
+          onTap: () => _showRenameDialog(context),
+        ),
+        ContextMenuItem(
+          label: l10n.commonDeleteInstance,
+          icon: Icons.delete_outline,
+          destructive: true,
+          onTap: () => _confirmDeleteAndStop(context),
+        ),
+      ],
+    );
+  }
+
+  void _restart(BuildContext context) {
+    context.read<RuntimeController>().restartInstance(_toData(instance));
+  }
+
+  /// 软重启：调用 Dashboard API restartSdk（保留进程）
+  Future<void> _softRestart(BuildContext context) async {
+    try {
+      await DashboardApi(instance).restartSdk();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).detailRestartingToast,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  void _openDashboard(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DashboardPage(instance: instance),
+      ),
+    );
+  }
+
+  void _openLogs(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LogsPage(instanceId: instance.id),
+      ),
+    );
+  }
+
+  Future<void> _copyToken(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: instance.token));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).detailTokenCopied),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteAndStop(BuildContext context) async {
+    final runtime = context.read<RuntimeController>();
+    final mgr = context.read<InstanceManager>();
+    final ok = await _confirmDelete(context);
+    if (ok == true) {
+      runtime.stopInstance(instance.id);
+      await mgr.removeInstance(instance.id);
+    }
+  }
+
   void _start(BuildContext context) {
     final runtime = context.read<RuntimeController>();
     final mgr = context.read<InstanceManager>();
@@ -316,6 +592,7 @@ class _InstanceTile extends StatelessWidget {
         port: inst.port,
         token: inst.token,
         workingDir: inst.workingDir,
+        runtimeVersion: inst.runtimeVersion,
       );
 
   Future<bool?> _confirmDelete(BuildContext context) {

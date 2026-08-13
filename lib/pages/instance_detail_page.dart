@@ -23,10 +23,13 @@ import '../models/module_info.dart';
 import '../models/system_info.dart';
 import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
+import '../services/log_stream.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
 import '../widgets/status_indicators.dart';
 import 'dashboard_page.dart';
+import 'detail_management_tabs.dart';
+import 'files_tab.dart';
 import 'logs_page.dart';
 
 class InstanceDetailPage extends StatefulWidget {
@@ -48,6 +51,9 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
 
   /// 本机可达地址（v4 / v6）
   List<InternetAddress> _localAddrs = [];
+
+  /// Tab 数量（概览/模块/适配器/配置/文件/日志/包）
+  static const _tabCount = 7;
 
   Instance? _lookup() =>
       context.read<InstanceManager>().findById(widget.instanceId);
@@ -156,12 +162,26 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     _toast(AppLocalizations.of(context).detailRestartingToast);
   }
 
+  /// 软重启：调用 Dashboard API restartSdk（保留进程）
+  Future<void> _softRestart() async {
+    final inst = _lookup();
+    if (inst == null) return;
+    final msg = AppLocalizations.of(context).detailRestartingToast;
+    try {
+      await DashboardApi(inst).restartSdk();
+      if (mounted) _toast(msg);
+    } catch (e) {
+      if (mounted) _toast('$e');
+    }
+  }
+
   static InstanceData _toData(Instance inst) => InstanceData(
         id: inst.id,
         name: inst.name,
         port: inst.port,
         token: inst.token,
         workingDir: inst.workingDir,
+        runtimeVersion: inst.runtimeVersion,
       );
 
   void _toast(String msg) {
@@ -199,77 +219,117 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.copy_outlined),
-            tooltip: l10n.dashboardCopyTokenTooltip,
-            onPressed: _copyToken,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.detailRefreshState,
-            onPressed: _refreshHealth,
-          ),
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'start') _start();
-              if (v == 'stop') _stop();
-              if (v == 'restart') _restart();
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(value: 'start', child: Text(l10n.commonStart)),
-              PopupMenuItem(value: 'stop', child: Text(l10n.commonStop)),
-              PopupMenuItem(value: 'restart', child: Text(l10n.commonRestart)),
-            ],
-          ),
-        ],
-      ),
-      body: Consumer<InstanceManager>(
-        builder: (context, mgr, _) {
-          final inst = mgr.findById(widget.instanceId);
-          if (inst == null) {
-            return Center(child: Text(l10n.detailNotFound));
-          }
-          return RefreshIndicator(
-            onRefresh: _refreshHealth,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _Header(instance: inst),
-                const SizedBox(height: 12),
-                _OverviewCard(
-                  loading: _loading,
-                  modules: _modules,
-                  adapters: _adapters,
-                  sys: _sys,
-                  error: _error,
+    return Consumer<InstanceManager>(
+      builder: (context, mgr, _) {
+        final inst = mgr.findById(widget.instanceId);
+        return DefaultTabController(
+          length: _tabCount,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(inst?.name ?? l10n.detailNotFound),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.copy_outlined),
+                  tooltip: l10n.dashboardCopyTokenTooltip,
+                  onPressed: _copyToken,
                 ),
-                const SizedBox(height: 12),
-                _EventCard(
-                  loading: _loading,
-                  events: _events,
-                  error: _error,
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: l10n.detailRefreshState,
+                  onPressed: _refreshHealth,
                 ),
-                const SizedBox(height: 12),
-                _ConnectCard(
-                  instance: inst,
-                  localAddrs: _localAddrs,
-                ),
-                const SizedBox(height: 16),
-                _ActionSection(
-                  instance: inst,
-                  onStart: _start,
-                  onStop: _stop,
-                  onRestart: _restart,
-                  onOpenDashboard: _openDashboard,
-                  onOpenLogs: _openLogs,
+                PopupMenuButton<String>(
+                  onSelected: (v) {
+                    if (v == 'start') _start();
+                    if (v == 'stop') _stop();
+                    if (v == 'restart') _restart();
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'start',
+                      child: Text(l10n.commonStart),
+                    ),
+                    PopupMenuItem(
+                      value: 'stop',
+                      child: Text(l10n.commonStop),
+                    ),
+                    PopupMenuItem(
+                      value: 'restart',
+                      child: Text(l10n.commonRestart),
+                    ),
+                  ],
                 ),
               ],
+              bottom: TabBar(
+                isScrollable: true,
+                tabs: [
+                  Tab(text: l10n.detailTabOverview),
+                  Tab(text: l10n.detailTabModules),
+                  Tab(text: l10n.detailTabAdapters),
+                  Tab(text: l10n.detailTabConfig),
+                  Tab(text: l10n.detailTabFiles),
+                  Tab(text: l10n.detailTabLogs),
+                  Tab(text: l10n.detailTabPackages),
+                ],
+              ),
             ),
-          );
-        },
+            body: inst == null
+                ? Center(child: Text(l10n.detailNotFound))
+                : TabBarView(
+                    children: [
+                      _buildOverview(inst, l10n),
+                      ModulesTab(instance: inst),
+                      AdaptersTab(instance: inst),
+                      ConfigTab(instance: inst),
+                      FilesTab(instance: inst),
+                      _LogsTab(instanceId: widget.instanceId),
+                      PackagesTab(instance: inst),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 概览 Tab：头部 + 系统资源 + 事件 + 连接信息 + 操作
+  Widget _buildOverview(Instance inst, AppLocalizations l10n) {
+    return RefreshIndicator(
+      onRefresh: _refreshHealth,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _Header(instance: inst),
+          const SizedBox(height: 12),
+          _OverviewCard(
+            loading: _loading,
+            modules: _modules,
+            adapters: _adapters,
+            sys: _sys,
+            error: _error,
+          ),
+          const SizedBox(height: 12),
+          _EventCard(
+            loading: _loading,
+            events: _events,
+            error: _error,
+          ),
+          const SizedBox(height: 12),
+          _ConnectCard(
+            instance: inst,
+            localAddrs: _localAddrs,
+          ),
+          const SizedBox(height: 16),
+          _ActionSection(
+            instance: inst,
+            onStart: _start,
+            onStop: _stop,
+            onRestart: _restart,
+            onSoftRestart: _softRestart,
+            onOpenDashboard: _openDashboard,
+            onOpenLogs: _openLogs,
+          ),
+        ],
       ),
     );
   }
@@ -707,6 +767,18 @@ class _ConnectCard extends StatelessWidget {
           ),
         );
       }
+      // 桌面：实例绑定的 SDK 版本（创建时设置，只读）
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        rows.add(
+          _Row(
+            label: l10n.detailRuntimeLabel,
+            child: Text(
+              instance.runtimeVersion ?? l10n.createRuntimeDefault,
+              style: mono,
+            ),
+          ),
+        );
+      }
     }
 
     return Card(
@@ -969,6 +1041,7 @@ class _ActionSection extends StatelessWidget {
     required this.onStart,
     required this.onStop,
     required this.onRestart,
+    required this.onSoftRestart,
     required this.onOpenDashboard,
     required this.onOpenLogs,
   });
@@ -977,6 +1050,7 @@ class _ActionSection extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onStop;
   final VoidCallback onRestart;
+  final VoidCallback onSoftRestart;
   final VoidCallback onOpenDashboard;
   final VoidCallback onOpenLogs;
 
@@ -1019,9 +1093,17 @@ class _ActionSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
+                    onPressed: onSoftRestart,
+                    icon: const Icon(Icons.autorenew),
+                    label: Text(l10n.commonSoftRestart),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
                     onPressed: onRestart,
                     icon: const Icon(Icons.restart_alt),
-                    label: Text(l10n.commonRestart),
+                    label: Text(l10n.commonHardRestart),
                   ),
                 ),
               ] else ...[
@@ -1037,6 +1119,117 @@ class _ActionSection extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// 日志 Tab：实时流式显示实例调试日志（与 LogsPage 同源），可清空。
+class _LogsTab extends StatefulWidget {
+  final String instanceId;
+  const _LogsTab({required this.instanceId});
+
+  @override
+  State<_LogsTab> createState() => _LogsTabState();
+}
+
+class _LogsTabState extends State<_LogsTab> {
+  final ScrollController _scroll = ScrollController();
+  LogStream? _stream;
+
+  @override
+  void initState() {
+    super.initState();
+    final inst = context.read<InstanceManager>().findById(widget.instanceId);
+    if (inst != null) {
+      _stream = LogStream(inst);
+      _stream!.start();
+      _loadHistory(inst);
+    }
+  }
+
+  /// 打开时加载历史日志（/api/logs）
+  Future<void> _loadHistory(Instance inst) async {
+    try {
+      final logs = await DashboardApi(inst).getLogs(limit: 200);
+      if (mounted && _stream != null) _stream!.seed(logs);
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _stream?.stop();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _clear() async {
+    final inst = context.read<InstanceManager>().findById(widget.instanceId);
+    if (inst != null) {
+      await DashboardApi(inst).clearLogs();
+      _stream?.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final stream = _stream;
+    if (stream == null) {
+      return Center(
+        child: Text(l10n.debugNoLogs, style: theme.textTheme.bodySmall),
+      );
+    }
+    return ListenableBuilder(
+      listenable: stream,
+      builder: (context, _) {
+        final entries = stream.entries;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scroll.hasClients) {
+            _scroll.jumpTo(_scroll.position.maxScrollExtent);
+          }
+        });
+        return Column(
+          children: [
+            Row(
+              children: [
+                const Spacer(),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                  label: Text(l10n.detailClearLogs),
+                  onPressed: _clear,
+                ),
+              ],
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: entries.isEmpty
+                  ? Center(
+                      child: Text(
+                        l10n.debugNoLogs,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: entries.length,
+                      itemBuilder: (context, i) {
+                        final e = entries[i];
+                        return Text(
+                          '${e.timestamp.toLocal().toString().substring(11, 19)} '
+                          '${e.message}',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,50 +1,112 @@
-// 桌面运行时（Windows / Linux）：直接管理 ErisPulse 实例进程。
+// 桌面运行时（Windows / Linux / macOS）：直接管理 ErisPulse 实例进程。
 //
-// 与 Android 不同，桌面无 proot / rootfs / 前台服务：
-//   - 包体捆绑完整的便携 Python（CI 打包时置于包体 python/ 目录）
-//   - 实例直接 `python -c "...sdk.run()"` 启动，工作目录为用户配置区
-//   - 实例进程由本类管理，App 退出时随进程终止
-//   - ErisPulse SDK 由用户从 PyPI 选择安装（见 desktop_sdk.dart）
+// App 构建时内置对应平台 Python（python-build-standalone），实例通过
+// 内置 Python 创建独立虚拟环境（~/.erispulse/instances/{id}/.venv）并
+// pip 安装 ErisPulse；启动时使用该 venv 的 python，VIRTUAL_ENV 指向
+// 实例 venv，保证后端包管理（uv）命中本实例环境。
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 
 import 'assets.dart';
 import 'proot_manager.dart' show InstanceData, ProcessEvent, ProcessLogEvent;
 
 /// 桌面平台环境工具
 class DesktopEnv {
-  /// 捆绑 Python 可执行文件路径。
-  ///
-  /// CI 打包时把便携 Python 放入包体 `python/` 目录：
-  ///   Windows: `<exeDir>/python/python.exe`
-  ///   Linux:   `<exeDir>/python/bin/python3`
-  static Future<String> pythonPath() async {
-    final exeDir = File(Platform.resolvedExecutable).parent.path;
-    if (Platform.isWindows) {
-      return '$exeDir\\python\\python.exe';
-    }
-    return '$exeDir/python/bin/python3';
+  /// 用户主目录（Windows: %USERPROFILE%；Unix: $HOME）
+  static Directory homeDir() {
+    final env = Platform.environment;
+    final home = Platform.isWindows ? env['USERPROFILE'] : env['HOME'];
+    return Directory(home ?? Directory.current.path);
   }
 
-  /// 用户数据根目录（实例工作目录 / 配置存放处）
+  /// ErisPulse 用户数据根目录（~/.erispulse）
+  static Future<Directory> erispulseDir() async {
+    final d = Directory('${homeDir().path}/.erispulse');
+    await d.create(recursive: true);
+    return d;
+  }
+
+  /// 实例工作目录根（~/.erispulse/instances）
   static Future<Directory> dataDir() async {
-    final support = await getApplicationSupportDirectory();
-    final dir = Directory('${support.path}/instances');
-    await dir.create(recursive: true);
-    return dir;
+    final d = Directory('${(await erispulseDir()).path}/instances');
+    await d.create(recursive: true);
+    return d;
   }
 
   /// 单个实例的工作目录（宿主绝对路径）
   static Future<Directory> instanceDir(String id) async {
-    final root = await dataDir();
-    final dir = Directory('${root.path}/$id');
-    await dir.create(recursive: true);
-    return dir;
+    final d = Directory('${(await dataDir()).path}/$id');
+    await d.create(recursive: true);
+    return d;
+  }
+
+  /// 实例日志文件（进程输出落盘）
+  static Future<File> instanceLogFile(String id) async {
+    final dir = await instanceDir(id);
+    return File('${dir.path}/logs/erispulse.log');
+  }
+
+  /// 内置 Python 释放目录（~/.erispulse/python）
+  static Future<Directory> bundledPythonDir() async {
+    final d = Directory('${(await erispulseDir()).path}/python');
+    await d.create(recursive: true);
+    return d;
+  }
+
+  /// 内置 Python 可执行文件路径。
+  ///
+  /// python-build-standalone 结构：Windows 顶层 `python.exe`，
+  /// Unix 为 `bin/python3`。
+  static Future<String> bundledPythonPath() async {
+    final base = (await bundledPythonDir()).path;
+    if (Platform.isWindows) return '$base\\python.exe';
+    return '$base/bin/python3';
+  }
+
+  /// 实例虚拟环境目录（~/.erispulse/instances/{id}/.venv）。
+  /// 不预创建，由 `python -m venv` 创建。
+  static Future<Directory> instanceVenvDir(String id) async {
+    return Directory('${(await instanceDir(id)).path}/.venv');
+  }
+
+  /// 实例 venv 的 Python 可执行文件路径。
+  ///
+  /// Windows 为 `.venv/Scripts/python.exe`，Unix 为 `.venv/bin/python`。
+  static Future<String> instanceVenvPython(String id) async {
+    final base = (await instanceVenvDir(id)).path;
+    if (Platform.isWindows) return '$base\\Scripts\\python.exe';
+    return '$base/bin/python';
+  }
+
+  /// 当前平台-架构标识（内置 Python 资产命名：windows/linux/macos × amd64/arm64）
+  static String hostPlatformArch() {
+    final os =
+        Platform.isWindows ? 'windows' : (Platform.isMacOS ? 'macos' : 'linux');
+    return '$os-${_hostArchSuffix()}';
+  }
+
+  /// 主机架构后缀（amd64 / arm64）。dart:io Platform 无 arch 属性，
+  /// 从系统查询：Windows 用 PROCESSOR_ARCHITECTURE，Unix 用 uname -m。
+  static String _hostArchSuffix() {
+    String raw;
+    if (Platform.isWindows) {
+      raw = Platform.environment['PROCESSOR_ARCHITECTURE'] ?? 'AMD64';
+    } else {
+      try {
+        final r = Process.runSync('uname', ['-m']);
+        raw = (r.exitCode == 0 ? r.stdout.toString() : '').trim();
+      } catch (_) {
+        raw = '';
+      }
+    }
+    final lower = raw.toLowerCase();
+    return (lower.contains('aarch64') || lower.contains('arm64'))
+        ? 'arm64'
+        : 'amd64';
   }
 }
 
@@ -57,6 +119,9 @@ class DesktopRuntime {
 
   /// id → 运行中进程
   final Map<String, _DesktopProc> _procs = {};
+
+  /// id → 实例日志文件（追加写入，进程输出落盘）
+  final Map<String, IOSink> _logFiles = {};
 
   /// 崩溃后自动重启
   bool autoRestart = true;
@@ -79,13 +144,14 @@ class DesktopRuntime {
   /// 启动实例
   Future<bool> startInstance(InstanceData data) async {
     if (_procs.containsKey(data.id)) return true;
-    final python = await DesktopEnv.pythonPath();
+    // 每个实例使用自己的虚拟环境（创建实例时通过 pip 安装 ErisPulse）
+    final python = await DesktopEnv.instanceVenvPython(data.id);
     if (!File(python).existsSync()) {
       onEvent(
         ProcessEvent(
           id: data.id,
           status: 'error',
-          error: '捆绑 Python 缺失，请重新安装',
+          error: '实例环境未就绪，请先创建实例（安装 ErisPulse）',
         ).toJson(),
       );
       return false;
@@ -97,11 +163,17 @@ class DesktopRuntime {
       // 实例工作目录 + 配置
       final instDir = await DesktopEnv.instanceDir(data.id);
       await _writeConfig(data, instDir);
+      await _openLogFile(data.id, instDir);
+      final venvDir = await DesktopEnv.instanceVenvDir(data.id);
 
       final proc = await Process.start(
         python,
         _runArgs(),
         workingDirectory: instDir.path,
+        environment: {
+          // 让后端 PackageManager 的 uv 命中本实例 venv，装包不会回落系统环境
+          'VIRTUAL_ENV': venvDir.path,
+        },
       );
       final tracker = _DesktopProc(data, proc);
       _procs[data.id] = tracker;
@@ -138,6 +210,7 @@ class DesktopRuntime {
       return;
     }
     _kill(tracker.process);
+    await _closeLogFile(id);
     onEvent(
       ProcessEvent(
         id: id,
@@ -168,12 +241,33 @@ class DesktopRuntime {
       _kill(t.process);
     }
     _procs.clear();
+    for (final s in _logFiles.values) {
+      unawaited(s.close());
+    }
+    _logFiles.clear();
   }
 
   List<String> _runArgs() => [
         '-c',
         'import asyncio; from ErisPulse import sdk; asyncio.run(sdk.run())',
       ];
+
+  /// 打开实例日志文件（追加写入，进程输出落盘）
+  Future<void> _openLogFile(String id, Directory instDir) async {
+    final logsDir = Directory('${instDir.path}/logs');
+    await logsDir.create(recursive: true);
+    final sink =
+        File('${logsDir.path}/erispulse.log').openWrite(mode: FileMode.append);
+    _logFiles[id] = sink;
+  }
+
+  Future<void> _closeLogFile(String id) async {
+    final sink = _logFiles.remove(id);
+    if (sink == null) return;
+    try {
+      await sink.close();
+    } catch (_) {}
+  }
 
   /// 为实例写入 config.toml（复用 SDK 配置模板）
   Future<void> _writeConfig(InstanceData data, Directory instDir) async {
@@ -185,14 +279,19 @@ class DesktopRuntime {
   }
 
   void _streamLines(Process proc, String id) {
+    void onLine(String line) {
+      onEvent(ProcessLogEvent(id, line).toJson());
+      _logFiles[id]?.writeln(line);
+    }
+
     proc.stdout
         .transform(const Utf8Decoder())
         .transform(const LineSplitter())
-        .listen((line) => onEvent(ProcessLogEvent(id, line).toJson()));
+        .listen(onLine);
     proc.stderr
         .transform(const Utf8Decoder())
         .transform(const LineSplitter())
-        .listen((line) => onEvent(ProcessLogEvent(id, line).toJson()));
+        .listen(onLine);
   }
 
   Future<void> _waitReady(_DesktopProc tracker, InstanceData data) async {

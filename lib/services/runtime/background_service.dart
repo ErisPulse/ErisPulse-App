@@ -90,6 +90,23 @@ Future<void> onBackgroundStart(ServiceInstance service) async {
     proot.autoRestart = data?['enabled'] as bool? ?? true;
   });
 
+  // 移动端实例环境准备（独立 venv：fresh 新建 / clone 复制源实例 venv）
+  service.on('prepareInstance').listen((data) async {
+    if (data == null) return;
+    final inst = InstanceData.fromJson(
+      data['data'] as Map<String, dynamic>,
+    );
+    final ok = await proot.prepareInstanceEnvironment(
+      inst,
+      mode: data['mode'] as String? ?? 'fresh',
+      sourceWorkingDir: data['sourceWorkingDir'] as String?,
+      sdkVersion: data['sdkVersion'] as String?,
+      installDashboard: data['installDashboard'] as bool? ?? false,
+      indexUrl: data['indexUrl'] as String?,
+    );
+    service.invoke('instanceEnv', {'id': inst.id, 'ready': ok});
+  });
+
   service.on('getState').listen((_) {
     service.invoke('instanceStates', {'states': proot.statusSnapshot});
   });

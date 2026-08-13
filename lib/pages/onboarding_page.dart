@@ -1,8 +1,8 @@
 // 首启向导：准备运行时环境。
 //
 // Android：rootfs 下载 / 解压进度（由 FGS 转发）。
-// 桌面（Windows/Linux）：检查捆绑 Python 与 ErisPulse SDK，
-// 未安装时让用户从 PyPI 选择版本安装（默认最新），完成后进入主界面。
+// 桌面（Windows/Linux/macOS）：App 构建内置对应平台 Python，
+// 释放（含 pip 引导）后进入主界面。
 
 import 'dart:io';
 
@@ -10,8 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/generated/app_localizations.dart';
-import '../services/runtime/desktop_runtime.dart';
-import '../services/runtime/desktop_sdk.dart';
 import '../services/runtime/runtime_controller.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -32,20 +30,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final List<String> _log = [];
   final ScrollController _logScroll = ScrollController();
 
-  // ── 桌面：SDK 环境准备 ──
-  bool _sdkLoaded = false;
-  bool _sdkInstalling = false;
-  String? _sdkVersion;
-  String? _selectedVersion;
-  String? _pythonMissing;
-  List<SdkVersion> _versions = [];
+  // ── 桌面：内置 Python 释放 ──
+  bool _pythonStarted = false;
 
   @override
   void initState() {
     super.initState();
     if (_isDesktop) {
-      _loadDesktopEnv();
-      return;
+      return; // 桌面：由 build 根据 RuntimeController 状态渲染
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctrl = context.read<RuntimeController>();
@@ -67,42 +59,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  Future<void> _loadDesktopEnv() async {
-    final python = await DesktopEnv.pythonPath();
-    if (!File(python).existsSync()) {
-      setState(() => _pythonMissing = python);
-      return;
-    }
-    final sdk = await DesktopSdk.installedVersion();
-    if (!mounted) return;
-    setState(() => _sdkVersion = sdk);
-    if (sdk != null) {
-      widget.onDone();
-      return;
-    }
-    final versions = await DesktopSdk.availableVersions();
-    if (!mounted) return;
-    setState(() {
-      _versions = versions;
-      _sdkLoaded = true;
-      if (_selectedVersion == null && versions.isNotEmpty) {
-        _selectedVersion = versions.first.version;
-      }
-    });
-  }
+  // ── 桌面 ──
 
-  Future<void> _installSdk() async {
-    final version = _selectedVersion ?? _versions.first.version;
-    setState(() => _sdkInstalling = true);
-    await context.read<RuntimeController>().installSdk(
-          version,
-          onLog: _appendLog,
-        );
-    if (!mounted) return;
-    setState(() => _sdkInstalling = false);
-    if (context.read<RuntimeController>().rootfsReady) {
-      widget.onDone();
-    }
+  /// 释放内置 Python 环境（含 pip 引导）
+  void _releasePython() {
+    final runtime = context.read<RuntimeController>();
+    if (runtime.bundledPythonBusy) return;
+    setState(() {
+      _pythonStarted = true;
+      _busy = true;
+    });
+    runtime.ensureBundledPython(onLog: _appendLog);
   }
 
   // ── Android ──
@@ -139,78 +106,55 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return _buildAndroid(context);
   }
 
-  // ── 桌面 UI：SDK 版本选择与安装 ──
+  // ── 桌面 UI：运行时版本选择 ──
 
   Widget _buildDesktop(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ColoredBox(color: theme.colorScheme.surface),
-        ),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.bolt, size: 72),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.onboardingSdkTitle,
-                  style: theme.textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 24),
-                _buildDesktopBody(theme, l10n),
-              ],
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.onboardingSdkTitle)),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: ColoredBox(color: theme.colorScheme.surface),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.bolt, size: 72),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.onboardingSdkTitle,
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDesktopBody(theme, l10n),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildDesktopBody(ThemeData theme, AppLocalizations l10n) {
-    if (_pythonMissing != null) {
+    final runtime = context.watch<RuntimeController>();
+    // 已就绪：进入主界面
+    if (runtime.rootfsReady) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+          const Icon(Icons.check_circle, color: Colors.green, size: 48),
           const SizedBox(height: 12),
           Text(
-            l10n.onboardingSdkPythonMissing(_pythonMissing!),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
+            'Python ${runtime.bundledPythonVersion ?? '?'} ${l10n.onboardingPythonReady}',
+            style: theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: _loadDesktopEnv,
-            child: Text(l10n.onboardingSdkRefresh),
-          ),
-        ],
-      );
-    }
-    if (_sdkInstalling) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(l10n.onboardingSdkInstalling),
-        ],
-      );
-    }
-    if (_sdkVersion != null) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
-          const SizedBox(height: 12),
-          Text(l10n.onboardingSdkInstalled(_sdkVersion!)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: widget.onDone,
             icon: const Icon(Icons.arrow_forward),
@@ -219,62 +163,83 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ],
       );
     }
-    if (_versions.isNotEmpty) {
+    // 释放中：进度 + 日志
+    if (runtime.bundledPythonBusy) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            l10n.onboardingSdkChooseVersion,
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          DropdownButton<String>(
-            value: _selectedVersion,
-            items: [
-              for (final v in _versions)
-                DropdownMenuItem(
-                  value: v.version,
-                  child: Text(v.version),
-                ),
-            ],
-            onChanged: (v) => setState(() => _selectedVersion = v),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _installSdk,
-            icon: const Icon(Icons.download),
-            label: Text(l10n.onboardingSdkInstall),
-          ),
-          TextButton(
-            onPressed: _loadDesktopEnv,
-            child: Text(l10n.onboardingSdkRefresh),
-          ),
-        ],
-      );
-    }
-    if (_sdkLoaded && _versions.isEmpty) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.cloud_off_outlined,
-            size: 48,
-            color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(
+            width: 200,
+            child: LinearProgressIndicator(minHeight: 6),
           ),
           const SizedBox(height: 12),
           Text(
-            l10n.onboardingSdkVersionFailed,
+            runtime.bundledPythonMessage ?? l10n.onboardingPythonReleasing,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: _loadDesktopEnv,
-            child: Text(l10n.onboardingSdkRefresh),
+          if (_log.isNotEmpty)
+            SizedBox(
+              height: 160,
+              width: 480,
+              child: Container(
+                color: const Color(0xFF0D1117),
+                padding: const EdgeInsets.all(8),
+                child: ListView.builder(
+                  controller: _logScroll,
+                  itemCount: _log.length,
+                  itemBuilder: (context, i) => Text(
+                    _log[i],
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: Color(0xFFC9D1D9),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+    // 释放失败：提示 + 重试
+    if (_pythonStarted) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, color: theme.colorScheme.error, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            l10n.onboardingPythonFailed,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: _releasePython,
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.commonRetry),
           ),
         ],
       );
     }
-    return const CircularProgressIndicator();
+    // 未开始：释放按钮
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l10n.onboardingPythonIntro, style: theme.textTheme.bodyMedium),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          onPressed: _releasePython,
+          icon: const Icon(Icons.bolt),
+          label: Text(l10n.onboardingPythonRelease),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => context.read<RuntimeController>().refreshRootfs(),
+          child: Text(l10n.onboardingSdkRefresh),
+        ),
+      ],
+    );
   }
 
   // ── Android UI：rootfs 进度 ──

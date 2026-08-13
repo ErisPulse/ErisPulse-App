@@ -55,6 +55,10 @@ class Instance {
   /// 错误信息（status == error 时填写）
   String? errorMessage;
 
+  /// 桌面端：该实例 venv 中安装的 ErisPulse SDK 版本（创建实例时写入首次
+  /// 安装版本；框架更新后由 PackagesTab 同步）。Android 端忽略此字段。
+  String? runtimeVersion;
+
   Instance({
     required this.id,
     required this.name,
@@ -69,6 +73,7 @@ class Instance {
     this.health = InstanceHealth.unknown,
     this.pid,
     this.errorMessage,
+    this.runtimeVersion,
   });
 
   factory Instance.fromJson(Map<String, dynamic> json) {
@@ -82,6 +87,7 @@ class Instance {
       isRemote: json['isRemote'] as bool? ?? false,
       remoteUrl: json['remoteUrl'] as String?,
       lastStartedAt: json['lastStartedAt'] as String?,
+      runtimeVersion: json['runtimeVersion'] as String?,
     );
   }
 
@@ -94,6 +100,7 @@ class Instance {
         'isRemote': isRemote,
         if (remoteUrl != null) 'remoteUrl': remoteUrl,
         if (lastStartedAt != null) 'lastStartedAt': lastStartedAt,
+        if (runtimeVersion != null) 'runtimeVersion': runtimeVersion,
       };
 
   /// Dashboard 基址（本地回环或远程地址）
@@ -104,10 +111,19 @@ class Instance {
   /// Dashboard Web 界面地址（WebView 加载）
   Uri get dashboardUri => baseUrl.replace(path: '/Dashboard');
 
-  /// API 完整 URL（拼接路径）
+  /// API 完整 URL（拼接路径；支持内嵌 `?query`，拆成真实 query 参数）
   Uri apiUri(String path) {
-    final p = path.startsWith('/') ? path : '/$path';
-    return baseUrl.replace(path: '/Dashboard/api$p');
+    final raw = path.startsWith('/') ? path : '/$path';
+    Map<String, String>? query;
+    final q = raw.indexOf('?');
+    final p = q >= 0 ? raw.substring(0, q) : raw;
+    if (q >= 0) {
+      query = Uri.splitQueryString(raw.substring(q + 1));
+    }
+    final uri = baseUrl.replace(path: '/Dashboard/api$p');
+    return (query != null && query.isNotEmpty)
+        ? uri.replace(queryParameters: query)
+        : uri;
   }
 
   /// Dashboard WebSocket URL（用于日志/事件流）
@@ -159,8 +175,10 @@ class Instance {
     InstanceHealth? health,
     int? pid,
     String? errorMessage,
+    String? runtimeVersion,
     bool clearPid = false,
     bool clearError = false,
+    bool clearRuntimeVersion = false,
   }) {
     return Instance(
       id: id,
@@ -176,6 +194,8 @@ class Instance {
       health: health ?? this.health,
       pid: clearPid ? null : (pid ?? this.pid),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      runtimeVersion:
+          clearRuntimeVersion ? null : (runtimeVersion ?? this.runtimeVersion),
     );
   }
 

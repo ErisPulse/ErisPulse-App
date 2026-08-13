@@ -38,10 +38,11 @@
 - 常驻通知（Android 13+ 首启申请权限）
 - 息屏 / 切后台保持运行（FGS + dataSync）
 
-## Phase 3 — 桌面端嵌入运行时
+## Phase 3 — 桌面端内置运行时
 
-- Win / Mac / Linux：检测系统 Python，直接以子进程运行（无需 proot）
-- 复用现有原生 UI（运行时抽象为接口，桌面用系统 Python 实现）
+- Win / Mac / Linux：构建内置 python-build-standalone（Python 3.15），
+  每个实例独立 venv（`python -m venv`）+ `pip install ErisPulse`，以子进程运行（无需 proot）
+- 复用现有原生 UI（运行时抽象为接口，桌面用内置 Python 实现）
 
 ## Phase 4 — 增强
 

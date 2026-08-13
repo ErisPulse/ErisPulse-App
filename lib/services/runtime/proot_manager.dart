@@ -17,12 +17,17 @@ class InstanceData {
   final String token;
   final String workingDir;
 
+  /// 桌面端：实例 venv 中安装的 ErisPulse SDK 版本（仅记录；启动使用
+  /// 实例自己的 venv）。Android 端忽略（共用 rootfs）。
+  final String? runtimeVersion;
+
   InstanceData({
     required this.id,
     required this.name,
     required this.port,
     required this.token,
     required this.workingDir,
+    this.runtimeVersion,
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +36,7 @@ class InstanceData {
         'port': port,
         'token': token,
         'workingDir': workingDir,
+        if (runtimeVersion != null) 'runtimeVersion': runtimeVersion,
       };
 
   factory InstanceData.fromJson(Map<String, dynamic> json) => InstanceData(
@@ -39,6 +45,7 @@ class InstanceData {
         port: (json['port'] as num).toInt(),
         token: json['token'] as String,
         workingDir: json['workingDir'] as String,
+        runtimeVersion: json['runtimeVersion'] as String?,
       );
 }
 
@@ -319,20 +326,27 @@ class ProotManager {
     }
   }
 
-  /// 构造 proot 启动命令并拉起进程
+  /// 构造 proot 启动命令并拉起进程（实例独立 venv 优先，旧实例回退系统 Python）
   Future<Process> _spawnProot(InstanceData data) async {
-    // 确保 rootfs 内 DNS 与 pip 配置可用
-    await _ensureRuntimeFiles(data.id);
-    // proot 的 loader 注入需要可写临时目录；app 沙箱没有全局 /tmp，必须显式指定
-    final tmpDir = '${_rootfsDir.parent.path}/tmp';
-    await Directory(tmpDir).create(recursive: true);
-    // termux proot 动态依赖（libtalloc.so.2）所在的宿主目录
-    await _setupBin(data.id);
-    final binDir = '${_rootfsDir.parent.path}/bin';
     const pythonCode = 'import asyncio; from ErisPulse import sdk; '
         'asyncio.run(sdk.run())';
 
-    final args = [
+    final useVenv = _hasVenv(data);
+    final python =
+        useVenv ? '${data.workingDir}/.venv/bin/python' : '/usr/bin/python3';
+
+    final proc = await _runProot(
+      data,
+      [python, '-c', pythonCode],
+      extraEnv: useVenv ? {'VIRTUAL_ENV': '${data.workingDir}/.venv'} : null,
+    );
+    _debug(data.id, 'python=$python venv=$useVenv');
+    return proc;
+  }
+
+  /// proot 固定参数（不含实际执行的 guest 命令）
+  List<String> _baseProotArgs(InstanceData data) {
+    return [
       '-0', // 伪 root（无需真 root）
       '--rootfs=${_rootfsDir.path}',
       // 硬链接转软链接：app 沙箱文件系统不支持硬链接
@@ -347,10 +361,34 @@ class ProotManager {
       '--bind=/proc/self/fd/2:/dev/stderr',
       '--cwd=${data.workingDir}', // guest 内路径
       '--kill-on-exit',
-      '/usr/bin/python3',
-      '-c',
-      pythonCode,
     ];
+  }
+
+  /// 实例是否已有独立 venv（guest 路径 `{workingDir}/.venv`）
+  bool _hasVenv(InstanceData data) {
+    final p = File('${_rootfsDir.path}/${data.workingDir}/.venv/bin/python');
+    return p.existsSync();
+  }
+
+  /// 在 rootfs 内执行一条 guest 命令（proot 包装），返回进程。
+  ///
+  /// 确保 DNS / pip 配置与 proot 动态库环境就绪；供实例启动与
+  /// 环境准备（venv / pip / 复制）共用。
+  Future<Process> _runProot(
+    InstanceData data,
+    List<String> guestCmd, {
+    Map<String, String>? extraEnv,
+  }) async {
+    // 确保 rootfs 内 DNS 与 pip 配置可用
+    await _ensureRuntimeFiles(data.id);
+    // proot 的 loader 注入需要可写临时目录；app 沙箱没有全局 /tmp，必须显式指定
+    final tmpDir = '${_rootfsDir.parent.path}/tmp';
+    await Directory(tmpDir).create(recursive: true);
+    // termux proot 动态依赖（libtalloc.so.2）所在的宿主目录
+    await _setupBin(data.id);
+    final binDir = '${_rootfsDir.parent.path}/bin';
+
+    final args = [..._baseProotArgs(data), ...guestCmd];
 
     final env = <String, String>{
       'HOME': data.workingDir,
@@ -369,14 +407,10 @@ class ProotManager {
       'PROOT_NO_PROCESS_VM': '1',
       // 输出 ptrace 诊断到 stderr（经日志页显示），定位问题卡点
       'PROOT_VERBOSE': '1',
+      ...?extraEnv,
     };
 
-    // debug 断点：完整命令与环境
-    _debug(data.id, 'proot=${_prootPath.path}');
-    _debug(data.id, 'rootfs=${_rootfsDir.path}');
-    _debug(data.id, 'tmp=$tmpDir exists=${await Directory(tmpDir).exists()}');
-    _debug(data.id, 'command=${_prootPath.path} ${args.join(' ')}');
-    _debug(data.id, 'env=$env');
+    _debug(data.id, 'proot exec: ${args.join(' ')}');
 
     try {
       final proc = await Process.start(_prootPath.path, args, environment: env);
@@ -392,6 +426,85 @@ class ProotManager {
         ).toJson(),
       );
       rethrow;
+    }
+  }
+
+  /// 为实例准备独立 venv（移动端实例分离）。
+  ///
+  /// - `fresh`：`python3 -m venv --system-site-packages`（离线继承 rootfs 预烘焙
+  ///   ErisPulse），可选按 [sdkVersion] 安装 ErisPulse / [installDashboard] 安装
+  ///   ErisPulse-Dashboard（走 [indexUrl] 镜像）
+  /// - `clone`：复制源实例（[sourceWorkingDir]）的 venv，继承其 SDK 版本与已装包
+  Future<bool> prepareInstanceEnvironment(
+    InstanceData data, {
+    required String mode,
+    String? sourceWorkingDir,
+    String? sdkVersion,
+    bool installDashboard = false,
+    String? indexUrl,
+  }) async {
+    if (!isRootfsReady) {
+      _debug(data.id, 'rootfs 未就绪，无法准备环境');
+      return false;
+    }
+    try {
+      final wd = data.workingDir;
+      final venv = '$wd/.venv';
+
+      if (mode == 'clone') {
+        final src = sourceWorkingDir;
+        if (src == null || src.isEmpty) {
+          _debug(data.id, '克隆环境缺少源实例工作目录');
+          return false;
+        }
+        _debug(data.id, '基于 $src/.venv 复制环境…');
+        final proc = await _runProot(data, ['cp', '-r', '$src/.venv', venv]);
+        final exit = await proc.exitCode;
+        if (exit != 0) {
+          _debug(data.id, '复制 venv 失败 exit=$exit');
+          return false;
+        }
+        _debug(data.id, '环境准备完成（基于已有实例）');
+        return true;
+      }
+
+      // fresh：独立 venv（system-site-packages 提供离线兜底）
+      _debug(data.id, '创建独立 venv（system-site-packages）…');
+      var proc = await _runProot(data, [
+        '/usr/bin/python3',
+        '-m',
+        'venv',
+        '--system-site-packages',
+        venv,
+      ]);
+      var exit = await proc.exitCode;
+      if (exit != 0) {
+        _debug(data.id, '创建 venv 失败 exit=$exit');
+        return false;
+      }
+
+      if ((sdkVersion != null && sdkVersion.isNotEmpty) || installDashboard) {
+        final args = <String>['$venv/bin/pip', 'install'];
+        if (indexUrl != null && indexUrl.isNotEmpty) {
+          args.addAll(['--index-url', indexUrl]);
+        }
+        if (sdkVersion != null && sdkVersion.isNotEmpty) {
+          args.add('ErisPulse==$sdkVersion');
+        }
+        if (installDashboard) args.add('ErisPulse-Dashboard');
+        _debug(data.id, 'pip install ${args.sublist(2).join(' ')} …');
+        proc = await _runProot(data, args);
+        exit = await proc.exitCode;
+        if (exit != 0) {
+          _debug(data.id, 'pip 安装失败 exit=$exit');
+          return false;
+        }
+      }
+      _debug(data.id, '环境准备完成');
+      return true;
+    } catch (e) {
+      _debug(data.id, '环境准备异常: $e');
+      return false;
     }
   }
 

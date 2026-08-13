@@ -15,6 +15,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get commonCancel => 'Отмена';
 
   @override
+  String get commonConfirm => 'Подтвердить';
+
+  @override
+  String get commonSoftRestart => 'Мягкий перезапуск';
+
+  @override
+  String get commonHardRestart => 'Перезапустить процесс';
+
+  @override
   String get commonSave => 'Сохранить';
 
   @override
@@ -52,6 +61,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get commonInitialize => 'Инициализировать';
+
+  @override
+  String get commonInstalled => 'Установлено';
+
+  @override
+  String get commonPreRelease => 'предв.';
+
+  @override
+  String get railInstances => 'Экземпляры';
 
   @override
   String get commonRemote => 'Удалённый';
@@ -186,6 +204,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onboardingSdkInstall => 'Установить';
 
   @override
+  String get onboardingSdkUseInstalled => 'Использовать установленную версию';
+
+  @override
   String get onboardingSdkInstalling => 'Установка…';
 
   @override
@@ -197,6 +218,23 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get onboardingSdkContinue => 'Продолжить';
+
+  @override
+  String get onboardingPythonRelease => 'Развернуть встроенный Python';
+
+  @override
+  String get onboardingPythonReleasing => 'Развёртывание Python…';
+
+  @override
+  String get onboardingPythonReady => 'готов';
+
+  @override
+  String get onboardingPythonIntro =>
+      'Приложение включает Python. Разверните его для начала работы.';
+
+  @override
+  String get onboardingPythonFailed =>
+      'Не удалось развернуть встроенный Python. Повторите попытку.';
 
   @override
   String get homeBannerNeedSdk => 'Требуется установить ErisPulse SDK';
@@ -242,6 +280,55 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get createTokenHelper =>
       'Токен удалённого Dashboard, используется для проверки и входа';
+
+  @override
+  String get createRuntimeLabel => 'Версия среды';
+
+  @override
+  String get createRuntimeDefault => 'Глобальная по умолчанию';
+
+  @override
+  String get createSdkVersionLabel => 'Версия ErisPulse SDK';
+
+  @override
+  String get createSdkVersionHelper =>
+      'Устанавливается в собственное виртуальное окружение экземпляра';
+
+  @override
+  String get createInstallDashboard => 'Установить модуль Dashboard';
+
+  @override
+  String get createInstallDashboardDesc =>
+      'ErisPulse-Dashboard будет установлен вместе с SDK';
+
+  @override
+  String get createEnvFresh => 'Новое окружение';
+
+  @override
+  String get createEnvFreshDesc =>
+      'Создать новое окружение с выбранной версией SDK';
+
+  @override
+  String get createEnvClone => 'На основе существующего экземпляра';
+
+  @override
+  String get createEnvCloneDesc =>
+      'Скопировать окружение существующего экземпляра (версия SDK и установленные пакеты)';
+
+  @override
+  String get createEnvCloneSource => 'Исходный экземпляр';
+
+  @override
+  String get createEnvCloneNeedSource => 'Выберите исходный экземпляр';
+
+  @override
+  String get createPreparingEnv => 'Подготовка окружения';
+
+  @override
+  String get createEnvReady => 'Окружение готово';
+
+  @override
+  String get createEnvFailed => 'Не удалось подготовить окружение';
 
   @override
   String get createPortLabel => 'Порт прослушивания *';
@@ -301,6 +388,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get detailPort => 'Порт';
 
   @override
+  String get detailRuntimeLabel => 'Среда';
+
+  @override
   String get detailTapToReveal => 'Нажмите, чтобы показать и скопировать';
 
   @override
@@ -321,6 +411,109 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get detailOpenDashboard => 'Открыть Dashboard';
+
+  @override
+  String get detailTabOverview => 'Обзор';
+
+  @override
+  String get detailTabModules => 'Модули';
+
+  @override
+  String get detailTabAdapters => 'Адаптеры';
+
+  @override
+  String get detailTabConfig => 'Конфиг';
+
+  @override
+  String get detailTabFiles => 'Файлы';
+
+  @override
+  String get detailTabLogs => 'Журнал';
+
+  @override
+  String get detailTabPackages => 'Пакеты';
+
+  @override
+  String get detailTabEmpty => 'Нет элементов';
+
+  @override
+  String get detailClearLogs => 'Очистить журнал';
+
+  @override
+  String get detailConfigCopy => 'Копировать конфиг';
+
+  @override
+  String get detailAuthInvalid =>
+      'Недействительный или истёкший токен доступа. Проверьте токен экземпляра';
+
+  @override
+  String get detailConfigRender => 'Отображение';
+
+  @override
+  String get detailConfigSource => 'Исходник';
+
+  @override
+  String get detailConfigEdit => 'Изменить';
+
+  @override
+  String get detailConfigSaved => 'Конфиг сохранён';
+
+  @override
+  String get detailPackageInstalled => 'Установленные пакеты';
+
+  @override
+  String get schemaConfigSave => 'Сохранить';
+
+  @override
+  String get schemaConfigSaved => 'Конфиг сохранён';
+
+  @override
+  String get schemaConfigNoSchema => 'Нет схемы конфигурации';
+
+  @override
+  String get detailConfigCopied => 'Конфиг скопирован';
+
+  @override
+  String get detailPackageName => 'Имя пакета';
+
+  @override
+  String get detailPackageInstall => 'Установить пакет';
+
+  @override
+  String get detailPackageUninstall => 'Удалить пакет';
+
+  @override
+  String detailPackageUninstallConfirm(Object name) {
+    return 'Удалить $name?';
+  }
+
+  @override
+  String get detailFrameworkUpdate => 'Обновить фреймворк';
+
+  @override
+  String get detailFrameworkUpdateConfirm =>
+      'Обновить фреймворк до последней версии?';
+
+  @override
+  String get detailFrameworkLatest => 'актуально';
+
+  @override
+  String get detailSdkRestart => 'Перезапустить SDK';
+
+  @override
+  String get detailSdkRestartConfirm =>
+      'Перезапустить SDK? Все соединения будут прерваны.';
+
+  @override
+  String get detailFileSave => 'Сохранить';
+
+  @override
+  String get detailFileSaved => 'Сохранено';
+
+  @override
+  String detailFileDeleteConfirm(Object name) {
+    return 'Удалить $name?';
+  }
 
   @override
   String get detailStartingToast => 'Запуск…';
@@ -422,6 +615,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsDownloadGhproxy => 'Зеркало GitHub (gh-proxy.com)';
 
   @override
+  String get settingsPypiSource => 'Зеркало PyPI';
+
+  @override
+  String get settingsPypiOfficial => 'PyPI официальный';
+
+  @override
+  String get settingsPypiTsinghua => 'Зеркало Tsinghua';
+
+  @override
+  String get settingsPypiAliyun => 'Зеркало Aliyun';
+
+  @override
   String get settingsRuntime => 'Среда выполнения';
 
   @override
@@ -431,6 +636,53 @@ class AppLocalizationsRu extends AppLocalizations {
   String settingsRuntimeReady(Object version) {
     return 'Встроенный Python + ErisPulse $version';
   }
+
+  @override
+  String get settingsRuntimeVersion => 'Версия среды выполнения';
+
+  @override
+  String get settingsRuntimeDownload => 'Скачать среду выполнения';
+
+  @override
+  String get runtimeManagerTitle => 'Управление средами';
+
+  @override
+  String get runtimeManagerInstalled => 'Установленные среды';
+
+  @override
+  String get runtimeManagerAvailable => 'Доступные версии';
+
+  @override
+  String get runtimeManagerEmpty => 'Установленных сред нет';
+
+  @override
+  String get runtimeManagerLoading => 'Получение версий…';
+
+  @override
+  String get runtimeManagerActivate => 'Активировать';
+
+  @override
+  String get runtimeManagerActive => 'Активна';
+
+  @override
+  String get runtimeManagerPath => 'Каталог сред';
+
+  @override
+  String runtimeManagerDeleteConfirm(Object version) {
+    return 'Удалить среду v$version? Это действие необратимо.';
+  }
+
+  @override
+  String get runtimeManagerDesc => 'Встроенный Python и окружения экземпляров';
+
+  @override
+  String get runtimeManagerInstances => 'Окружения экземпляров';
+
+  @override
+  String get runtimeManagerPythonMissing => 'Встроенный Python не готов';
+
+  @override
+  String get settingsOpenSource => 'Исходный код';
 
   @override
   String get settingsRootfsReady => 'Готово';

@@ -71,11 +71,11 @@ Future<void> main() async {
   final instanceManager = InstanceManager();
   await instanceManager.load();
 
-  final runtime = RuntimeController(instanceManager: instanceManager);
-  await runtime.init();
-
   final appSettings = AppSettings();
   await appSettings.load();
+
+  final runtime = RuntimeController(instanceManager: instanceManager);
+  await runtime.init();
 
   runApp(
     MultiProvider(

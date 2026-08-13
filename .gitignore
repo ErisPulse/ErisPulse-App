@@ -57,9 +57,10 @@ linux/flutter/ephemeral/
 *.log
 logs/
 
-# Rootfs / proot / busybox（CI 打包时注入，不进 git）
+# Rootfs / proot / busybox / 内置 Python（CI 打包时注入，不进 git）
 assets/rootfs/*.tar.gz
 assets/rootfs/*.tar.xz
+assets/python/*.zip
 assets/runtime/proot
 assets/runtime/proot-aarch64
 assets/runtime/busybox

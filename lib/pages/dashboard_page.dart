@@ -1,17 +1,14 @@
 // Dashboard WebView 页：全屏内嵌实例的 Dashboard 管理界面。
 //
-// 本地实例加载 http://127.0.0.1:<port>/Dashboard，远程实例加载其
-// remoteUrl/Dashboard。Dashboard 自带全部管理能力（适配器/模块/配置/
-// 日志/文件/包管理），App 只需把它套进 WebView 即可。
-//
-// 认证：Dashboard 首次打开需要输入访问令牌（token）。AppBar 提供
-// "复制令牌"按钮，用户粘贴一次后 Dashboard 会在 WebView 的 localStorage
-// 中记住，后续自动登录。
+// 使用 flutter_inappwebview 实现跨平台内嵌（Android/iOS/macOS WKWebView、
+// Windows WebView2、Linux WebKitGTK）。本地实例加载
+// http://127.0.0.1:<port>/Dashboard，远程实例加载其 remoteUrl/Dashboard。
+// AppBar 提供"复制令牌 / 刷新 / 在外部浏览器打开"。
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../models/instance.dart';
@@ -25,37 +22,9 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  late final WebViewController _controller;
+  InAppWebViewController? _controller;
   bool _loading = true;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.grey.shade900)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (_) {
-            if (mounted) setState(() => _loading = true);
-          },
-          onPageFinished: (_) {
-            if (mounted) setState(() => _loading = false);
-          },
-          onWebResourceError: (err) {
-            if (!mounted) return;
-            setState(() {
-              _error = err.description.isEmpty
-                  ? AppLocalizations.of(context)
-                      .dashboardLoadFailed(err.errorCode)
-                  : err.description;
-            });
-          },
-        ),
-      )
-      ..loadRequest(widget.instance.dashboardUri);
-  }
 
   Future<void> _copyToken() async {
     await Clipboard.setData(ClipboardData(text: widget.instance.token));
@@ -97,7 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: l10n.commonRefresh,
-            onPressed: () => _controller.reload(),
+            onPressed: () => _controller?.reload(),
           ),
           IconButton(
             icon: const Icon(Icons.open_in_new),
@@ -110,7 +79,30 @@ class _DashboardPageState extends State<DashboardPage> {
           ? _buildError()
           : Stack(
               children: [
-                WebViewWidget(controller: _controller),
+                InAppWebView(
+                  initialUrlRequest: URLRequest(
+                    url: WebUri.uri(widget.instance.dashboardUri),
+                  ),
+                  initialSettings: InAppWebViewSettings(
+                    javaScriptEnabled: true,
+                    transparentBackground: true,
+                  ),
+                  onWebViewCreated: (controller) => _controller = controller,
+                  onLoadStart: (controller, url) {
+                    if (mounted) setState(() => _loading = true);
+                  },
+                  onLoadStop: (controller, url) {
+                    if (mounted) setState(() => _loading = false);
+                  },
+                  onReceivedError: (controller, request, error) {
+                    if (!mounted) return;
+                    setState(() {
+                      _error = error.description.isNotEmpty
+                          ? error.description
+                          : 'Load error: ${error.type.toString()}';
+                    });
+                  },
+                ),
                 if (_loading) const Center(child: CircularProgressIndicator()),
               ],
             ),
@@ -140,7 +132,7 @@ class _DashboardPageState extends State<DashboardPage> {
             FilledButton.icon(
               onPressed: () {
                 setState(() => _error = null);
-                _controller.reload();
+                _controller?.reload();
               },
               icon: const Icon(Icons.refresh),
               label: Text(AppLocalizations.of(context).commonRetry),

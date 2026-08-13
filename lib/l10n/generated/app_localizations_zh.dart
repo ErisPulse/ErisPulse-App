@@ -15,6 +15,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonCancel => '取消';
 
   @override
+  String get commonConfirm => '确认';
+
+  @override
+  String get commonSoftRestart => '软重启';
+
+  @override
+  String get commonHardRestart => '重启进程';
+
+  @override
   String get commonSave => '保存';
 
   @override
@@ -52,6 +61,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commonInitialize => '初始化';
+
+  @override
+  String get commonInstalled => '已安装';
+
+  @override
+  String get commonPreRelease => '预发布';
+
+  @override
+  String get railInstances => '实例';
 
   @override
   String get commonRemote => '远程';
@@ -183,6 +201,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingSdkInstall => '安装';
 
   @override
+  String get onboardingSdkUseInstalled => '使用已安装版本';
+
+  @override
   String get onboardingSdkInstalling => '正在安装…';
 
   @override
@@ -193,6 +214,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingSdkContinue => '进入';
+
+  @override
+  String get onboardingPythonRelease => '释放内置 Python';
+
+  @override
+  String get onboardingPythonReleasing => '正在释放 Python 环境…';
+
+  @override
+  String get onboardingPythonReady => '已就绪';
+
+  @override
+  String get onboardingPythonIntro => 'App 内置了 Python 环境，释放后即可开始使用。';
+
+  @override
+  String get onboardingPythonFailed => '内置 Python 释放失败，请重试。';
 
   @override
   String get homeBannerNeedSdk => '需要安装 ErisPulse SDK';
@@ -235,6 +271,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createTokenHelper => '对方 Dashboard 的 token，用于探活与登录';
+
+  @override
+  String get createRuntimeLabel => '运行时版本';
+
+  @override
+  String get createRuntimeDefault => '使用全局默认';
+
+  @override
+  String get createSdkVersionLabel => 'ErisPulse SDK 版本';
+
+  @override
+  String get createSdkVersionHelper => '安装到该实例自己的虚拟环境中';
+
+  @override
+  String get createInstallDashboard => '安装 Dashboard 模块';
+
+  @override
+  String get createInstallDashboardDesc => '随 SDK 一起安装 ErisPulse-Dashboard';
+
+  @override
+  String get createEnvFresh => '全新环境';
+
+  @override
+  String get createEnvFreshDesc => '用所选 SDK 版本新建独立环境';
+
+  @override
+  String get createEnvClone => '基于已有实例';
+
+  @override
+  String get createEnvCloneDesc => '复制某个已有实例的环境（SDK 版本与已装包）';
+
+  @override
+  String get createEnvCloneSource => '源实例';
+
+  @override
+  String get createEnvCloneNeedSource => '请选择源实例';
+
+  @override
+  String get createPreparingEnv => '正在准备环境';
+
+  @override
+  String get createEnvReady => '环境准备完成';
+
+  @override
+  String get createEnvFailed => '环境准备失败';
 
   @override
   String get createPortLabel => '监听端口 *';
@@ -290,6 +371,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get detailPort => '端口';
 
   @override
+  String get detailRuntimeLabel => '运行时';
+
+  @override
   String get detailTapToReveal => '点击查看并复制';
 
   @override
@@ -309,6 +393,106 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get detailOpenDashboard => '打开 Dashboard';
+
+  @override
+  String get detailTabOverview => '概览';
+
+  @override
+  String get detailTabModules => '模块';
+
+  @override
+  String get detailTabAdapters => '适配器';
+
+  @override
+  String get detailTabConfig => '配置';
+
+  @override
+  String get detailTabFiles => '文件';
+
+  @override
+  String get detailTabLogs => '日志';
+
+  @override
+  String get detailTabPackages => '包';
+
+  @override
+  String get detailTabEmpty => '暂无内容';
+
+  @override
+  String get detailClearLogs => '清空日志';
+
+  @override
+  String get detailConfigCopy => '复制配置';
+
+  @override
+  String get detailAuthInvalid => '访问令牌无效或已过期，请检查实例令牌';
+
+  @override
+  String get detailConfigRender => '渲染';
+
+  @override
+  String get detailConfigSource => '源码';
+
+  @override
+  String get detailConfigEdit => '编辑';
+
+  @override
+  String get detailConfigSaved => '配置已保存';
+
+  @override
+  String get detailPackageInstalled => '已安装的包';
+
+  @override
+  String get schemaConfigSave => '保存';
+
+  @override
+  String get schemaConfigSaved => '配置已保存';
+
+  @override
+  String get schemaConfigNoSchema => '无配置 schema';
+
+  @override
+  String get detailConfigCopied => '配置已复制';
+
+  @override
+  String get detailPackageName => '包名';
+
+  @override
+  String get detailPackageInstall => '安装包';
+
+  @override
+  String get detailPackageUninstall => '卸载包';
+
+  @override
+  String detailPackageUninstallConfirm(Object name) {
+    return '卸载 $name？';
+  }
+
+  @override
+  String get detailFrameworkUpdate => '更新框架';
+
+  @override
+  String get detailFrameworkUpdateConfirm => '将框架更新到最新版本？';
+
+  @override
+  String get detailFrameworkLatest => '已是最新';
+
+  @override
+  String get detailSdkRestart => '重启 SDK';
+
+  @override
+  String get detailSdkRestartConfirm => '现在重启 SDK？将中断所有连接。';
+
+  @override
+  String get detailFileSave => '保存';
+
+  @override
+  String get detailFileSaved => '已保存';
+
+  @override
+  String detailFileDeleteConfirm(Object name) {
+    return '删除 $name？';
+  }
 
   @override
   String get detailStartingToast => '正在启动…';
@@ -407,6 +591,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDownloadGhproxy => 'GitHub 镜像 (gh-proxy.com)';
 
   @override
+  String get settingsPypiSource => 'PyPI 镜像源';
+
+  @override
+  String get settingsPypiOfficial => 'PyPI 官方';
+
+  @override
+  String get settingsPypiTsinghua => '清华镜像';
+
+  @override
+  String get settingsPypiAliyun => '阿里云镜像';
+
+  @override
   String get settingsRuntime => '运行时';
 
   @override
@@ -416,6 +612,53 @@ class AppLocalizationsZh extends AppLocalizations {
   String settingsRuntimeReady(Object version) {
     return '捆绑 Python + ErisPulse $version';
   }
+
+  @override
+  String get settingsRuntimeVersion => '运行时版本';
+
+  @override
+  String get settingsRuntimeDownload => '下载运行时';
+
+  @override
+  String get runtimeManagerTitle => '运行时管理';
+
+  @override
+  String get runtimeManagerInstalled => '已安装的运行时';
+
+  @override
+  String get runtimeManagerAvailable => '可下载版本';
+
+  @override
+  String get runtimeManagerEmpty => '暂无已安装的运行时';
+
+  @override
+  String get runtimeManagerLoading => '正在获取版本…';
+
+  @override
+  String get runtimeManagerActivate => '激活';
+
+  @override
+  String get runtimeManagerActive => '已激活';
+
+  @override
+  String get runtimeManagerPath => '运行时目录';
+
+  @override
+  String runtimeManagerDeleteConfirm(Object version) {
+    return '删除运行时 v$version？该操作不可恢复。';
+  }
+
+  @override
+  String get runtimeManagerDesc => '内置 Python 与各实例环境管理';
+
+  @override
+  String get runtimeManagerInstances => '实例环境';
+
+  @override
+  String get runtimeManagerPythonMissing => '内置 Python 未就绪';
+
+  @override
+  String get settingsOpenSource => '开源地址';
 
   @override
   String get settingsRootfsReady => '已就绪';
@@ -569,6 +812,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get commonCancel => '取消';
 
   @override
+  String get commonConfirm => '確認';
+
+  @override
+  String get commonSoftRestart => '軟重啟';
+
+  @override
+  String get commonHardRestart => '重啟程序';
+
+  @override
   String get commonSave => '儲存';
 
   @override
@@ -606,6 +858,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get commonInitialize => '初始化';
+
+  @override
+  String get commonInstalled => '已安裝';
+
+  @override
+  String get commonPreRelease => '預發布';
+
+  @override
+  String get railInstances => '實例';
 
   @override
   String get commonRemote => '遠端';
@@ -737,6 +998,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get onboardingSdkInstall => '安裝';
 
   @override
+  String get onboardingSdkUseInstalled => '使用已安裝版本';
+
+  @override
   String get onboardingSdkInstalling => '正在安裝…';
 
   @override
@@ -747,6 +1011,21 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get onboardingSdkContinue => '進入';
+
+  @override
+  String get onboardingPythonRelease => '釋放內建 Python';
+
+  @override
+  String get onboardingPythonReleasing => '正在釋放 Python 環境…';
+
+  @override
+  String get onboardingPythonReady => '已就緒';
+
+  @override
+  String get onboardingPythonIntro => 'App 內建了 Python 環境，釋放後即可開始使用。';
+
+  @override
+  String get onboardingPythonFailed => '內建 Python 釋放失敗，請重試。';
 
   @override
   String get homeBannerNeedSdk => '需要安裝 ErisPulse SDK';
@@ -789,6 +1068,51 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get createTokenHelper => '對方 Dashboard 的 token，用於探活與登入';
+
+  @override
+  String get createRuntimeLabel => '運行時版本';
+
+  @override
+  String get createRuntimeDefault => '使用全局預設';
+
+  @override
+  String get createSdkVersionLabel => 'ErisPulse SDK 版本';
+
+  @override
+  String get createSdkVersionHelper => '安裝到該實例自己的虛擬環境中';
+
+  @override
+  String get createInstallDashboard => '安裝 Dashboard 模組';
+
+  @override
+  String get createInstallDashboardDesc => '隨 SDK 一起安裝 ErisPulse-Dashboard';
+
+  @override
+  String get createEnvFresh => '全新環境';
+
+  @override
+  String get createEnvFreshDesc => '用所選 SDK 版本新建獨立環境';
+
+  @override
+  String get createEnvClone => '基於已有實例';
+
+  @override
+  String get createEnvCloneDesc => '複製某個已有實例的環境（SDK 版本與已裝包）';
+
+  @override
+  String get createEnvCloneSource => '源實例';
+
+  @override
+  String get createEnvCloneNeedSource => '請選擇源實例';
+
+  @override
+  String get createPreparingEnv => '正在準備環境';
+
+  @override
+  String get createEnvReady => '環境準備完成';
+
+  @override
+  String get createEnvFailed => '環境準備失敗';
 
   @override
   String get createPortLabel => '監聽連接埠 *';
@@ -844,6 +1168,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get detailPort => '連接埠';
 
   @override
+  String get detailRuntimeLabel => '執行環境';
+
+  @override
   String get detailTapToReveal => '點擊檢視並複製';
 
   @override
@@ -863,6 +1190,106 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get detailOpenDashboard => '開啟 Dashboard';
+
+  @override
+  String get detailTabOverview => '概覽';
+
+  @override
+  String get detailTabModules => '模組';
+
+  @override
+  String get detailTabAdapters => '配接器';
+
+  @override
+  String get detailTabConfig => '組態';
+
+  @override
+  String get detailTabFiles => '檔案';
+
+  @override
+  String get detailTabLogs => '日誌';
+
+  @override
+  String get detailTabPackages => '套件';
+
+  @override
+  String get detailTabEmpty => '暫無內容';
+
+  @override
+  String get detailClearLogs => '清空日誌';
+
+  @override
+  String get detailConfigCopy => '複製組態';
+
+  @override
+  String get detailAuthInvalid => '存取權杖無效或已過期，請檢查實例權杖';
+
+  @override
+  String get detailConfigRender => '渲染';
+
+  @override
+  String get detailConfigSource => '原始碼';
+
+  @override
+  String get detailConfigEdit => '編輯';
+
+  @override
+  String get detailConfigSaved => '組態已儲存';
+
+  @override
+  String get detailPackageInstalled => '已安裝的套件';
+
+  @override
+  String get schemaConfigSave => '儲存';
+
+  @override
+  String get schemaConfigSaved => '組態已儲存';
+
+  @override
+  String get schemaConfigNoSchema => '無設定 schema';
+
+  @override
+  String get detailConfigCopied => '組態已複製';
+
+  @override
+  String get detailPackageName => '套件名稱';
+
+  @override
+  String get detailPackageInstall => '安裝套件';
+
+  @override
+  String get detailPackageUninstall => '卸載套件';
+
+  @override
+  String detailPackageUninstallConfirm(Object name) {
+    return '卸載 $name？';
+  }
+
+  @override
+  String get detailFrameworkUpdate => '更新框架';
+
+  @override
+  String get detailFrameworkUpdateConfirm => '將框架更新至最新版本？';
+
+  @override
+  String get detailFrameworkLatest => '已是最新';
+
+  @override
+  String get detailSdkRestart => '重啟 SDK';
+
+  @override
+  String get detailSdkRestartConfirm => '現在重啟 SDK？將中斷所有連線。';
+
+  @override
+  String get detailFileSave => '儲存';
+
+  @override
+  String get detailFileSaved => '已儲存';
+
+  @override
+  String detailFileDeleteConfirm(Object name) {
+    return '刪除 $name？';
+  }
 
   @override
   String get detailStartingToast => '正在啟動…';
@@ -961,6 +1388,18 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsDownloadGhproxy => 'GitHub 鏡像 (gh-proxy.com)';
 
   @override
+  String get settingsPypiSource => 'PyPI 鏡像源';
+
+  @override
+  String get settingsPypiOfficial => 'PyPI 官方';
+
+  @override
+  String get settingsPypiTsinghua => '清華鏡像';
+
+  @override
+  String get settingsPypiAliyun => '阿里雲鏡像';
+
+  @override
   String get settingsRuntime => '執行時期';
 
   @override
@@ -970,6 +1409,53 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String settingsRuntimeReady(Object version) {
     return '捆綁 Python + ErisPulse $version';
   }
+
+  @override
+  String get settingsRuntimeVersion => '運行時版本';
+
+  @override
+  String get settingsRuntimeDownload => '下載執行環境';
+
+  @override
+  String get runtimeManagerTitle => '執行環境管理';
+
+  @override
+  String get runtimeManagerInstalled => '已安裝的執行環境';
+
+  @override
+  String get runtimeManagerAvailable => '可下載版本';
+
+  @override
+  String get runtimeManagerEmpty => '暫無已安裝的執行環境';
+
+  @override
+  String get runtimeManagerLoading => '正在取得版本…';
+
+  @override
+  String get runtimeManagerActivate => '啟動';
+
+  @override
+  String get runtimeManagerActive => '已啟動';
+
+  @override
+  String get runtimeManagerPath => '執行環境目錄';
+
+  @override
+  String runtimeManagerDeleteConfirm(Object version) {
+    return '刪除執行環境 v$version？此操作無法復原。';
+  }
+
+  @override
+  String get runtimeManagerDesc => '內建 Python 與各實例環境管理';
+
+  @override
+  String get runtimeManagerInstances => '實例環境';
+
+  @override
+  String get runtimeManagerPythonMissing => '內建 Python 未就緒';
+
+  @override
+  String get settingsOpenSource => '開源地址';
 
   @override
   String get settingsRootfsReady => '已就緒';

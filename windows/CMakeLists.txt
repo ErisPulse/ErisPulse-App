@@ -53,6 +53,11 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# 在插件编译前加入抑制宏：flutter_inappwebview_windows 使用被弃用的
+# <experimental/coroutine>，最新 MSVC（VS2026 14.51+）会将 STL1011 由
+# 警告升级为硬错误（static assertion failed），此处统一抑制。
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)

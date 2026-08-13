@@ -24,7 +24,7 @@ const String kReleaseBase = String.fromEnvironment(
       'https://github.com/wsu2059q/ErisPulse-App/releases/latest/download',
 );
 
-/// 下载源标识（持久化于 AppSettings）：
+/// GitHub Releases 下载源标识（持久化于 AppSettings，仅用于移动端 rootfs/proot/busybox 下载）：
 /// - `github`：GitHub 官方直连
 /// - `ghfast`：ghfast.top 加速镜像
 /// - `ghproxy`：gh-proxy.com 加速镜像
@@ -32,18 +32,39 @@ const String kDownloadSourceGithub = 'github';
 const String kDownloadSourceGhfast = 'ghfast';
 const String kDownloadSourceGhproxy = 'ghproxy';
 
-/// 根据下载源解析最终 Releases 基址（镜像 = 前缀 + GitHub 官方地址）。
-String resolveReleaseBase(String source) {
-  const base = kReleaseBase;
+/// PyPI 镜像源标识（桌面端 pip 安装 ErisPulse 使用）
+const String kPypiSourceOfficial = 'pypi';
+const String kPypiSourceTsinghua = 'tsinghua';
+const String kPypiSourceAliyun = 'aliyun';
+
+/// PyPI 镜像源 → 索引 URL
+const Map<String, String> kPypiIndexUrl = {
+  kPypiSourceOfficial: 'https://pypi.org/simple',
+  kPypiSourceTsinghua: 'https://pypi.tuna.tsinghua.edu.cn/simple',
+  kPypiSourceAliyun: 'https://mirrors.aliyun.com/pypi/simple',
+};
+
+/// 解析 PyPI 镜像源为索引 URL（未知源回退官方）
+String pypiIndexUrl(String source) =>
+    kPypiIndexUrl[source] ?? kPypiIndexUrl[kPypiSourceOfficial]!;
+
+/// 对任意 GitHub 下载 URL 应用下载源镜像前缀（rootfs / 二进制下载）。
+String mirrorUrl(String source, String url) {
   return switch (source) {
-    kDownloadSourceGhfast => 'https://ghfast.top/$base',
-    kDownloadSourceGhproxy => 'https://gh-proxy.com/$base',
-    _ => base,
+    kDownloadSourceGhfast => 'https://ghfast.top/$url',
+    kDownloadSourceGhproxy => 'https://gh-proxy.com/$url',
+    _ => url,
   };
 }
 
+/// 根据下载源解析最终 Releases 基址（镜像 = 前缀 + GitHub 官方地址）。
+String resolveReleaseBase(String source) => mirrorUrl(source, kReleaseBase);
+
 /// rootfs 发行版本（与 CI 构建产物对应）。
 const String kRootfsVersion = '1.0.0';
+
+/// 项目开源地址（设置页"开源地址"；迁移组织后更新为 ErisPulse/ErisPulse-App）。
+const String kOpenSourceUrl = 'https://github.com/wsu2059q/ErisPulse-App';
 
 // 资产 / 文件名常量
 
@@ -52,6 +73,14 @@ const String kAssetRuntimeDir = 'assets/runtime';
 
 /// assets 中 rootfs 目录（offline flavor CI 注入 tar.xz）
 const String kAssetRootfsDir = 'assets/rootfs';
+
+/// assets 中内置 Python 目录（CI 注入 python-build-standalone 的 tar.gz）
+const String kAssetPythonDir = 'assets/python';
+
+/// assets 中内置 Python 压缩包名模板（`python-{platform}-{arch}.tar.gz`，
+/// 内容为 python-build-standalone 的 install_only 发布产物）
+String bundledPythonAssetName(String platformArch) =>
+    'python-$platformArch.tar.gz';
 
 /// app 私有目录中的文件名
 const String kProotFileName = 'proot';

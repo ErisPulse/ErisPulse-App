@@ -39,13 +39,15 @@ class LogEntry {
     required this.message,
   });
 
-  /// 从 Dashboard WS 推送的 log JSON 解析
+  /// 从 Dashboard WS 推送 / `/api/logs` 的日志 JSON 解析。
+  ///
+  /// 后端字段为 `module`（记录器名）；兼容 `logger` 旧字段。
   factory LogEntry.fromJson(Map<String, dynamic> json) {
     return LogEntry(
       timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
           DateTime.now(),
       level: LogLevel.fromString(json['level'] as String? ?? 'INFO'),
-      logger: json['logger'] as String? ?? '',
+      logger: (json['logger'] as String? ?? json['module'] as String?) ?? '',
       message: json['message'] as String? ?? '',
     );
   }

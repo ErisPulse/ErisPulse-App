@@ -1,16 +1,18 @@
-// 实例原始日志页。
+// 实例日志页（Dashboard 日志流）。
 //
-// 直接读取 proot 进程的 stdout/stderr（FGS 通过 instanceLog 事件写入
-// RuntimeController.debugLog），不依赖 Dashboard WebSocket。
-// 因此即使 Dashboard 未就绪也能看到进程输出。
+// 通过 Dashboard WebSocket（/Dashboard/ws）实时接收日志（log_entry），
+// 打开时先用 /api/logs 拉取历史填充；桌面/移动端统一。
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/generated/app_localizations.dart';
-import '../services/runtime/debug_log.dart';
-import '../services/runtime/runtime_controller.dart';
+import '../models/instance.dart';
+import '../models/log_entry.dart';
+import '../services/dashboard_api.dart';
+import '../services/instance_manager.dart';
+import '../services/log_stream.dart';
 import '../widgets/states.dart';
 
 class LogsPage extends StatefulWidget {
@@ -25,17 +27,40 @@ class _LogsPageState extends State<LogsPage> {
   final ScrollController _scroll = ScrollController();
   bool _autoScroll = true;
   bool _paused = false;
+  LogStream? _stream;
+
+  @override
+  void initState() {
+    super.initState();
+    final inst = context.read<InstanceManager>().findById(widget.instanceId);
+    if (inst != null) {
+      _stream = LogStream(inst);
+      _stream!.start();
+      _loadHistory(inst);
+    }
+  }
+
+  Future<void> _loadHistory(Instance inst) async {
+    try {
+      final logs = await DashboardApi(inst).getLogs(limit: 200);
+      if (mounted && _stream != null) _stream!.seed(logs);
+    } catch (_) {
+      // 历史加载失败不影响实时流
+    }
+  }
 
   @override
   void dispose() {
+    _stream?.stop();
     _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _copyAll(List<DebugLogEntry> entries) async {
+  Future<void> _copyAll(List<LogEntry> entries) async {
     final text = entries
         .map(
-          (e) => '${e.time.toLocal().toString().substring(11, 19)} ${e.line}',
+          (e) => '${e.timestamp.toLocal().toString().substring(11, 19)} '
+              '[${e.level.name}] ${e.logger} ${e.message}',
         )
         .join('\n');
     await Clipboard.setData(ClipboardData(text: text));
@@ -52,38 +77,45 @@ class _LogsPageState extends State<LogsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final name =
+        context.read<InstanceManager>().findById(widget.instanceId)?.name;
+    final stream = _stream;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      body: Consumer<RuntimeController>(
-        builder: (context, runtime, _) => ListenableBuilder(
-          listenable: runtime.debugLog,
-          builder: (context, _) {
-            final entries = runtime.debugLog.entries
-                .where((e) => e.instanceId == widget.instanceId)
-                .toList();
-            if (_autoScroll && !_paused) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scroll.hasClients) {
-                  _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      appBar: AppBar(title: Text(name ?? l10n.commonViewLogs)),
+      body: stream == null
+          ? EmptyState(
+              icon: Icons.terminal,
+              title: l10n.logsEmptyTitle,
+              subtitle: l10n.logsEmptySubtitle,
+            )
+          : ListenableBuilder(
+              listenable: stream,
+              builder: (context, _) {
+                final entries = stream.entries;
+                if (_autoScroll && !_paused) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_scroll.hasClients) {
+                      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                    }
+                  });
                 }
-              });
-            }
-            return Column(
-              children: [
-                _buildToolbar(context, entries),
-                const Divider(height: 1),
-                Expanded(child: _buildBody(entries)),
-              ],
-            );
-          },
-        ),
-      ),
+                return Column(
+                  children: [
+                    _buildToolbar(context, entries),
+                    const Divider(height: 1),
+                    Expanded(child: _buildBody(entries)),
+                  ],
+                );
+              },
+            ),
     );
   }
 
   Widget _buildToolbar(
     BuildContext context,
-    List<DebugLogEntry> entries,
+    List<LogEntry> entries,
   ) {
     final l10n = AppLocalizations.of(context);
     return Padding(
@@ -103,7 +135,7 @@ class _LogsPageState extends State<LogsPage> {
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
             tooltip: l10n.commonClear,
-            onPressed: () => context.read<RuntimeController>().debugLog.clear(),
+            onPressed: () => _stream?.clear(),
           ),
           IconButton(
             icon: const Icon(Icons.copy_all_outlined),
@@ -122,7 +154,7 @@ class _LogsPageState extends State<LogsPage> {
     );
   }
 
-  Widget _buildBody(List<DebugLogEntry> entries) {
+  Widget _buildBody(List<LogEntry> entries) {
     if (entries.isEmpty) {
       final l10n = AppLocalizations.of(context);
       return EmptyState(
@@ -140,17 +172,23 @@ class _LogsPageState extends State<LogsPage> {
   }
 }
 
-/// 单条原始日志行
+/// 单条日志
 class _LogLine extends StatelessWidget {
   const _LogLine({required this.entry});
-  final DebugLogEntry entry;
+  final LogEntry entry;
 
   @override
   Widget build(BuildContext context) {
-    final time = entry.time.toLocal();
+    final time = entry.timestamp.toLocal();
     final hhmmss = '${time.hour.toString().padLeft(2, '0')}:'
         '${time.minute.toString().padLeft(2, '0')}:'
         '${time.second.toString().padLeft(2, '0')}';
+    final levelColor = switch (entry.level) {
+      LogLevel.error || LogLevel.critical => const Color(0xFFF06292),
+      LogLevel.warning => const Color(0xFFFFB74D),
+      LogLevel.debug => const Color(0xFF90A4AE),
+      _ => const Color(0xFF9E9E9E),
+    };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Row(
@@ -167,10 +205,21 @@ class _LogLine extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 52,
+            child: Text(
+              entry.level.name.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 10,
+                color: levelColor,
+              ),
+            ),
+          ),
           Expanded(
             child: SelectableText(
-              entry.line,
+              entry.message,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
             ),
           ),

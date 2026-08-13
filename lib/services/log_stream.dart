@@ -1,12 +1,12 @@
 /// 实例日志流（WebSocket 实时推送）。
 ///
 /// Dashboard 在 `/Dashboard/ws?token=xxx` 暴露 WebSocket，推送：
-///   - `{type: 'log', level: ..., message: ..., timestamp: ...}`
+///   - `{type: 'log_entry', data: {timestamp, level, level_num, module, message}}`
+///   - `{type: 'log', ...}`（兼容旧格式）
 ///   - `{type: 'event', ...}`
 ///   - `{type: 'heartbeat'}`
-///   - 其它（视图变更、安装进度等）
 ///
-/// 本服务仅关心 `type=='log'` 的消息，把它们转为 [LogEntry] 流。
+/// 本服务仅关心日志消息，把它们转为 [LogEntry] 流。
 library;
 
 import 'dart:async';
@@ -46,6 +46,15 @@ class LogStream extends ChangeNotifier {
 
   /// 是否已连接
   bool get isConnected => _channel != null && _reconnectTimer == null;
+
+  /// 注入历史日志（首次打开时用 `/api/logs` 填充）
+  void seed(Iterable<LogEntry> entries) {
+    _buffer.addAll(entries);
+    while (_buffer.length > _maxBuffer) {
+      _buffer.removeAt(0);
+    }
+    notifyListeners();
+  }
 
   /// 启动流（如果已运行则忽略）
   void start() {
@@ -100,9 +109,12 @@ class LogStream extends ChangeNotifier {
       return;
     }
     final type = json['type'] as String?;
-    if (type == null || type != 'log') return;
+    if (type != 'log' && type != 'log_entry') return;
 
-    final entry = LogEntry.fromJson(json);
+    // 后端 log_entry 消息把日志字段嵌在 `data` 里
+    final payload =
+        (json['data'] is Map) ? json['data'] as Map<String, dynamic> : json;
+    final entry = LogEntry.fromJson(payload);
     _buffer.add(entry);
     while (_buffer.length > _maxBuffer) {
       _buffer.removeAt(0);

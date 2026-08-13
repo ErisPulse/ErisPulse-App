@@ -1,6 +1,13 @@
 /// Dashboard REST API 客户端。
 ///
-/// 与 Dashboard 后端路由一一对应，按 UI 用途分组组织。
+/// 端点/请求体与 Dashboard 后端（Core.py 路由）逐项对齐：
+///   - 所有端点前缀 `/Dashboard/api`（由 [Instance.apiUri] 拼接）
+///   - 无统一响应信封：成功直接业务 JSON，失败 `{"error": ...}` + HTTP 状态码
+///   - 鉴权统一 `Authorization: Bearer <token>`；401/403 抛 [ApiException]
+///   - 模块/适配器启停统一走 `POST /modules/action {name, action, type}`
+///   - 配置双模式：渲染走 `GET /config`（JSON 树）+ `PUT /config {key, value}`，
+///     源码走 `GET/POST /config/source`（TOML 原文）
+///   - 文件走 `/files/browse|read|write|delete`
 library;
 
 import 'dart:convert';
@@ -21,6 +28,9 @@ class ApiException implements Exception {
   final String? endpoint;
 
   ApiException(this.message, {this.statusCode, this.endpoint});
+
+  /// 是否为鉴权失败（token 无效/过期）
+  bool get isAuth => statusCode == 401 || statusCode == 403;
 
   @override
   String toString() => 'ApiException($statusCode, $endpoint): $message';
@@ -65,6 +75,23 @@ class DashboardApi {
     return _parseJson(resp, path);
   }
 
+  Future<Map<String, dynamic>> _putJson(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final resp = await http
+        .put(
+          instance.apiUri(path),
+          headers: {
+            ..._headers,
+            'Content-Type': 'application/json',
+          },
+          body: body == null ? null : jsonEncode(body),
+        )
+        .timeout(_timeout);
+    return _parseJson(resp, path);
+  }
+
   Future<Map<String, dynamic>> _parseJson(
     http.Response resp,
     String path,
@@ -77,8 +104,16 @@ class DashboardApi {
       );
     }
     if (resp.statusCode >= 400) {
+      var detail = resp.body.substring(0, resp.body.length.clamp(0, 200));
+      try {
+        final json = jsonDecode(resp.body);
+        if (json is Map) {
+          final msg = json['message'] ?? json['error'];
+          if (msg is String && msg.isNotEmpty) detail = msg;
+        }
+      } catch (_) {}
       throw ApiException(
-        'HTTP ${resp.statusCode}: ${resp.body.substring(0, resp.body.length.clamp(0, 200))}',
+        'HTTP ${resp.statusCode}: $detail',
         statusCode: resp.statusCode,
         endpoint: path,
       );
@@ -132,117 +167,6 @@ class DashboardApi {
   /// 简要状态（用于卡片）
   Future<Map<String, dynamic>> getStatus() => _getJson('/status');
 
-  // 适配器 / Bot
-
-  /// 适配器列表
-  Future<List<AdapterInfo>> getAdapters() async {
-    final json = await _getJson('/adapters');
-    final list = json['adapters'] as List? ?? json['data'] as List? ?? [];
-    return AdapterInfo.fromList(list);
-  }
-
-  /// 启用 / 禁用适配器
-  Future<void> setAdapterEnabled(String platform, bool enabled) async {
-    await _postJson('/adapter/$platform/config', body: {'enabled': enabled});
-  }
-
-  /// 重启适配器
-  Future<void> restartAdapter(String platform) async {
-    await _postJson('/adapter/$platform/restart');
-  }
-
-  /// 适配器配置（platform-specific）
-  Future<Map<String, dynamic>> getAdapterConfig(String platform) =>
-      _getJson('/adapter/$platform/config');
-
-  Future<void> setAdapterConfig(
-    String platform,
-    Map<String, dynamic> config,
-  ) =>
-      _postJson('/adapter/$platform/config', body: config);
-
-  // 模块
-
-  /// 模块列表
-  Future<List<ModuleInfo>> getModules() async {
-    final json = await _getJson('/modules');
-    final list = json['modules'] as List? ?? json['data'] as List? ?? [];
-    return ModuleInfo.fromList(list);
-  }
-
-  /// 启用 / 禁用模块
-  Future<void> setModuleEnabled(String name, bool enabled) async {
-    await _postJson(
-      '/modules/action',
-      body: {
-        'name': name,
-        'action': enabled ? 'enable' : 'disable',
-      },
-    );
-  }
-
-  /// 模块配置
-  Future<Map<String, dynamic>> getModuleConfig(String name) =>
-      _getJson('/module/$name/config');
-
-  Future<void> setModuleConfig(String name, Map<String, dynamic> config) =>
-      _postJson('/module/$name/config', body: config);
-
-  // 日志
-
-  /// 拉取历史日志（用于初始化日志页）
-  Future<List<LogEntry>> getLogs({LogLevel? minLevel, int limit = 200}) async {
-    final json = await _getJson('/logs');
-    final list = json['logs'] as List? ?? [];
-    var entries = LogEntry.fromList(list);
-    if (minLevel != null) {
-      entries = entries.where((e) => e.level.index >= minLevel.index).toList();
-    }
-    if (entries.length > limit) {
-      entries = entries.sublist(entries.length - limit);
-    }
-    return entries;
-  }
-
-  Future<void> clearLogs() async => _postJson('/logs/clear');
-
-  // 配置
-
-  /// 完整 ErisPulse 配置树（JSON）
-  Future<Map<String, dynamic>> getConfig() => _getJson('/config');
-
-  /// TOML 源码（用于配置页代码视图）
-  Future<String> getConfigSource() async {
-    final resp = await http
-        .get(instance.apiUri('/config/source'), headers: _headers)
-        .timeout(_timeout);
-    if (resp.statusCode != 200) {
-      throw ApiException(
-        '获取 TOML 源码失败',
-        statusCode: resp.statusCode,
-        endpoint: '/config/source',
-      );
-    }
-    return resp.body;
-  }
-
-  /// 设置配置项（点分路径 + 值）
-  Future<void> setConfig(String dotPath, dynamic value) async {
-    await _postJson('/config', body: {'path': dotPath, 'value': value});
-  }
-
-  // 存储 KV
-
-  Future<Map<String, dynamic>> getStorage() => _getJson('/storage');
-
-  Future<void> setStorageKey(String key, dynamic value) async {
-    await _postJson('/storage', body: {'key': key, 'value': value});
-  }
-
-  Future<void> deleteStorageKey(String key) async {
-    await _postJson('/storage/delete', body: {'key': key});
-  }
-
   // 生命周期 / 事件
 
   /// 最近事件列表
@@ -259,8 +183,145 @@ class DashboardApi {
 
   Future<void> clearEvents() => _postJson('/events/clear');
 
+  // 模块
+
+  /// 模块列表（后端 /modules 混排返回 module + adapter 条目）
+  Future<List<ModuleInfo>> getModules() async {
+    final json = await _getJson('/modules');
+    final list = json['modules'] as List? ?? json['data'] as List? ?? [];
+    return ModuleInfo.fromList(list);
+  }
+
+  /// 执行模块/适配器动作（enable/disable/load/unload/reload）
+  Future<void> setModuleAction(
+    String name,
+    String action, {
+    String type = 'module',
+    String? package,
+  }) async {
+    await _postJson(
+      '/modules/action',
+      body: {
+        'name': name,
+        'action': action,
+        'type': type,
+        if (package != null) 'package': package,
+      },
+    );
+  }
+
+  /// 启用 / 禁用模块
+  Future<void> setModuleEnabled(String name, bool enabled) async {
+    await setModuleAction(name, enabled ? 'enable' : 'disable');
+  }
+
+  /// 模块配置（schema 驱动表单数据源）
+  Future<Map<String, dynamic>> getModuleConfig(String name) =>
+      _getJson('/module/$name/config');
+
+  /// 整组保存模块配置（浅合并）
+  Future<void> saveModuleConfig(String name, Map<String, dynamic> values) =>
+      _putJson('/module/$name/config', body: {'values': values});
+
+  // 适配器
+
+  /// 适配器列表（复用 /modules 混排，过滤 type=adapter）
+  Future<List<AdapterInfo>> getAdapters() async {
+    final json = await _getJson('/modules');
+    final list = json['modules'] as List? ?? json['data'] as List? ?? [];
+    return AdapterInfo.fromList(list);
+  }
+
+  /// 执行适配器动作（enable/disable/load/unload/reload）
+  Future<void> setAdapterAction(String platform, String action) async {
+    await setModuleAction(platform, action, type: 'adapter');
+  }
+
+  /// 启用 / 禁用适配器（disable 同时 shutdown）
+  Future<void> setAdapterEnabled(String platform, bool enabled) async {
+    await setAdapterAction(platform, enabled ? 'enable' : 'disable');
+  }
+
+  /// 启动适配器
+  Future<void> startAdapter(String platform) =>
+      setAdapterAction(platform, 'load');
+
+  /// 停止适配器
+  Future<void> stopAdapter(String platform) =>
+      setAdapterAction(platform, 'unload');
+
+  /// 重启适配器
+  Future<void> restartAdapter(String platform) =>
+      setAdapterAction(platform, 'reload');
+
+  /// 适配器配置（schema 驱动表单数据源）
+  Future<Map<String, dynamic>> getAdapterConfig(String platform) =>
+      _getJson('/adapter/$platform/config');
+
+  /// 整组保存适配器配置（浅合并）
+  Future<void> saveAdapterConfig(
+    String platform,
+    Map<String, dynamic> values,
+  ) =>
+      _putJson('/adapter/$platform/config', body: {'values': values});
+
+  // 配置
+
+  /// 完整配置树（JSON，渲染模式；token 已被后端脱敏）
+  Future<Map<String, dynamic>> getConfig() async {
+    final json = await _getJson('/config');
+    return json['config'] as Map<String, dynamic>? ?? {};
+  }
+
+  /// 设置配置项（点分 key + 值）
+  Future<void> setConfig(String dotKey, dynamic value) async {
+    await _putJson('/config', body: {'key': dotKey, 'value': value});
+  }
+
+  /// TOML 源码正文（源码模式；返回 content 而非 JSON 外壳）
+  Future<String> getConfigSource() async {
+    final json = await _getJson('/config/source');
+    return json['content'] as String? ?? '';
+  }
+
+  /// 整文件保存 TOML 源码（写文件并 reload 配置）
+  Future<void> saveConfigSource(String content) async {
+    await _postJson('/config/source', body: {'content': content});
+  }
+
+  // 存储 KV
+
+  Future<Map<String, dynamic>> getStorage() => _getJson('/storage');
+
+  Future<void> setStorageKey(String key, dynamic value) async {
+    await _postJson('/storage', body: {'key': key, 'value': value});
+  }
+
+  Future<void> deleteStorageKey(String key) async {
+    await _postJson('/storage/delete', body: {'key': key});
+  }
+
+  // 日志
+
+  /// 拉取历史日志
+  Future<List<LogEntry>> getLogs({LogLevel? minLevel, int limit = 200}) async {
+    final json = await _getJson('/logs');
+    final list = json['logs'] as List? ?? [];
+    var entries = LogEntry.fromList(list);
+    if (minLevel != null) {
+      entries = entries.where((e) => e.level.index >= minLevel.index).toList();
+    }
+    if (entries.length > limit) {
+      entries = entries.sublist(entries.length - limit);
+    }
+    return entries;
+  }
+
+  Future<void> clearLogs() async => _postJson('/logs/clear');
+
   // 包管理（pip / uv）
 
+  /// 已安装 pip 包列表
   Future<List<Map<String, dynamic>>> getPackages() async {
     final json = await _getJson('/packages');
     final list = json['packages'] as List? ?? [];
@@ -270,12 +331,19 @@ class DashboardApi {
         .toList();
   }
 
-  Future<void> installPackage(String name) async {
-    await _postJson('/packages/install', body: {'name': name});
+  /// 安装包（可多个，支持 `pkg==1.0` / `git+...`）
+  Future<void> installPackages(List<String> names, {bool force = false}) async {
+    await _postJson(
+      '/packages/install',
+      body: {
+        'packages': names,
+        'force': force,
+      },
+    );
   }
 
   Future<void> uninstallPackage(String name) async {
-    await _postJson('/packages/uninstall', body: {'name': name});
+    await _postJson('/packages/uninstall', body: {'package': name});
   }
 
   // 框架自更新 / 重启
@@ -289,19 +357,30 @@ class DashboardApi {
         .toList();
   }
 
-  Future<void> updateFramework({String? version}) async {
-    await _postJson('/framework/update', body: {'version': version});
+  /// 框架状态（current/latest/versions 完整响应）
+  Future<Map<String, dynamic>> getFrameworkStatus() =>
+      _getJson('/framework/versions');
+
+  Future<void> updateFramework({String? version, String lang = 'zh'}) async {
+    await _postJson(
+      '/framework/update',
+      body: {
+        'version': version,
+        'lang': lang,
+      },
+    );
   }
 
   /// 软重启 SDK（保留进程）
   Future<void> restartSdk() => _postJson('/restart');
 
-  // 文件管理
+  // 文件管理（rootfs 相对路径）
 
-  /// 列目录
+  /// 列目录（browse 端点，解析 entries）
   Future<List<Map<String, dynamic>>> listFiles({String? path}) async {
-    final json = await _getJson('/files?path=${path ?? '/'}');
-    final list = json['files'] as List? ?? [];
+    final p = (path == null || path.isEmpty) ? '.' : path;
+    final json = await _getJson('/files/browse?path=$p');
+    final list = json['entries'] as List? ?? [];
     return list
         .map((e) => e is Map<String, dynamic> ? e : null)
         .whereType<Map<String, dynamic>>()
@@ -317,5 +396,10 @@ class DashboardApi {
   /// 写文件
   Future<void> writeFile(String path, String content) async {
     await _postJson('/files/write', body: {'path': path, 'content': content});
+  }
+
+  /// 删除文件 / 目录（批量）
+  Future<void> deleteFiles(List<String> paths) async {
+    await _postJson('/files/delete', body: {'paths': paths});
   }
 }

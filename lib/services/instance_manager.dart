@@ -69,6 +69,7 @@ class InstanceManager extends ChangeNotifier {
     int? preferredPort,
     bool isRemote = false,
     String? remoteUrl,
+    String? runtimeVersion,
   }) async {
     if (_instances.any((n) => n.name.toLowerCase() == name.toLowerCase())) {
       throw ArgumentError('实例名称已存在: $name');
@@ -87,6 +88,7 @@ class InstanceManager extends ChangeNotifier {
       createdAt: DateTime.now().toUtc().toIso8601String(),
       isRemote: isRemote,
       remoteUrl: isRemote ? remoteUrl!.trim() : null,
+      runtimeVersion: runtimeVersion,
     );
 
     _instances = [..._instances, inst];
@@ -112,6 +114,16 @@ class InstanceManager extends ChangeNotifier {
     await _update(id, name: newName);
   }
 
+  /// 记录实例 venv 中安装的 ErisPulse SDK 版本（创建时写入首次安装版本，
+  /// 框架更新后由 PackagesTab 同步）
+  Future<void> setInstanceRuntime(String id, String? version) async {
+    await _update(
+      id,
+      runtimeVersion: version,
+      clearRuntimeVersion: version == null,
+    );
+  }
+
   /// 更新实例字段
   Future<void> _update(
     String id, {
@@ -124,8 +136,10 @@ class InstanceManager extends ChangeNotifier {
     InstanceHealth? health,
     int? pid,
     String? errorMessage,
+    String? runtimeVersion,
     bool clearPid = false,
     bool clearError = false,
+    bool clearRuntimeVersion = false,
   }) async {
     final idx = _instances.indexWhere((n) => n.id == id);
     if (idx < 0) throw ArgumentError('实例不存在: $id');
@@ -140,8 +154,10 @@ class InstanceManager extends ChangeNotifier {
       health: health,
       pid: pid,
       errorMessage: errorMessage,
+      runtimeVersion: runtimeVersion,
       clearPid: clearPid,
       clearError: clearError,
+      clearRuntimeVersion: clearRuntimeVersion,
     );
     _instances = List.of(_instances)..[idx] = next;
 

@@ -115,6 +115,24 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancel;
 
+  /// No description provided for @commonConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get commonConfirm;
+
+  /// No description provided for @commonSoftRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft restart'**
+  String get commonSoftRestart;
+
+  /// No description provided for @commonHardRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart process'**
+  String get commonHardRestart;
+
   /// No description provided for @commonSave.
   ///
   /// In en, this message translates to:
@@ -192,6 +210,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Initialize'**
   String get commonInitialize;
+
+  /// No description provided for @commonInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get commonInstalled;
+
+  /// No description provided for @commonPreRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-release'**
+  String get commonPreRelease;
+
+  /// No description provided for @railInstances.
+  ///
+  /// In en, this message translates to:
+  /// **'Instances'**
+  String get railInstances;
 
   /// No description provided for @commonRemote.
   ///
@@ -433,6 +469,12 @@ abstract class AppLocalizations {
   /// **'Install'**
   String get onboardingSdkInstall;
 
+  /// No description provided for @onboardingSdkUseInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Use installed version'**
+  String get onboardingSdkUseInstalled;
+
   /// No description provided for @onboardingSdkInstalling.
   ///
   /// In en, this message translates to:
@@ -456,6 +498,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get onboardingSdkContinue;
+
+  /// No description provided for @onboardingPythonRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Release bundled Python'**
+  String get onboardingPythonRelease;
+
+  /// No description provided for @onboardingPythonReleasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Releasing Python environment…'**
+  String get onboardingPythonReleasing;
+
+  /// No description provided for @onboardingPythonReady.
+  ///
+  /// In en, this message translates to:
+  /// **'ready'**
+  String get onboardingPythonReady;
+
+  /// No description provided for @onboardingPythonIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The app bundles a Python environment. Release it to start.'**
+  String get onboardingPythonIntro;
+
+  /// No description provided for @onboardingPythonFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to release the bundled Python. Please retry.'**
+  String get onboardingPythonFailed;
 
   /// No description provided for @homeBannerNeedSdk.
   ///
@@ -540,6 +612,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Token of the remote Dashboard, used for health check and login'**
   String get createTokenHelper;
+
+  /// No description provided for @createRuntimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime version'**
+  String get createRuntimeLabel;
+
+  /// No description provided for @createRuntimeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Global default'**
+  String get createRuntimeDefault;
+
+  /// No description provided for @createSdkVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ErisPulse SDK version'**
+  String get createSdkVersionLabel;
+
+  /// No description provided for @createSdkVersionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed into this instance\'s own virtual environment'**
+  String get createSdkVersionHelper;
+
+  /// No description provided for @createInstallDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Dashboard module'**
+  String get createInstallDashboard;
+
+  /// No description provided for @createInstallDashboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Installs ErisPulse-Dashboard along with the SDK'**
+  String get createInstallDashboardDesc;
+
+  /// No description provided for @createEnvFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh environment'**
+  String get createEnvFresh;
+
+  /// No description provided for @createEnvFreshDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new venv with the selected SDK version'**
+  String get createEnvFreshDesc;
+
+  /// No description provided for @createEnvClone.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on existing instance'**
+  String get createEnvClone;
+
+  /// No description provided for @createEnvCloneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy an existing instance\'s venv (SDK version + installed packages)'**
+  String get createEnvCloneDesc;
+
+  /// No description provided for @createEnvCloneSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source instance'**
+  String get createEnvCloneSource;
+
+  /// No description provided for @createEnvCloneNeedSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a source instance'**
+  String get createEnvCloneNeedSource;
+
+  /// No description provided for @createPreparingEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing environment'**
+  String get createPreparingEnv;
+
+  /// No description provided for @createEnvReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment ready'**
+  String get createEnvReady;
+
+  /// No description provided for @createEnvFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment preparation failed'**
+  String get createEnvFailed;
 
   /// No description provided for @createPortLabel.
   ///
@@ -643,6 +805,12 @@ abstract class AppLocalizations {
   /// **'Port'**
   String get detailPort;
 
+  /// No description provided for @detailRuntimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime'**
+  String get detailRuntimeLabel;
+
   /// No description provided for @detailTapToReveal.
   ///
   /// In en, this message translates to:
@@ -684,6 +852,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Dashboard'**
   String get detailOpenDashboard;
+
+  /// No description provided for @detailTabOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get detailTabOverview;
+
+  /// No description provided for @detailTabModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Modules'**
+  String get detailTabModules;
+
+  /// No description provided for @detailTabAdapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapters'**
+  String get detailTabAdapters;
+
+  /// No description provided for @detailTabConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Config'**
+  String get detailTabConfig;
+
+  /// No description provided for @detailTabFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get detailTabFiles;
+
+  /// No description provided for @detailTabLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs'**
+  String get detailTabLogs;
+
+  /// No description provided for @detailTabPackages.
+  ///
+  /// In en, this message translates to:
+  /// **'Packages'**
+  String get detailTabPackages;
+
+  /// No description provided for @detailTabEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No items'**
+  String get detailTabEmpty;
+
+  /// No description provided for @detailClearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs'**
+  String get detailClearLogs;
+
+  /// No description provided for @detailConfigCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy config'**
+  String get detailConfigCopy;
+
+  /// No description provided for @detailAuthInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token invalid or expired. Check the instance token.'**
+  String get detailAuthInvalid;
+
+  /// No description provided for @detailConfigRender.
+  ///
+  /// In en, this message translates to:
+  /// **'Render'**
+  String get detailConfigRender;
+
+  /// No description provided for @detailConfigSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get detailConfigSource;
+
+  /// No description provided for @detailConfigEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get detailConfigEdit;
+
+  /// No description provided for @detailConfigSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Config saved'**
+  String get detailConfigSaved;
+
+  /// No description provided for @detailPackageInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed packages'**
+  String get detailPackageInstalled;
+
+  /// No description provided for @schemaConfigSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get schemaConfigSave;
+
+  /// No description provided for @schemaConfigSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Config saved'**
+  String get schemaConfigSaved;
+
+  /// No description provided for @schemaConfigNoSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'No config schema'**
+  String get schemaConfigNoSchema;
+
+  /// No description provided for @detailConfigCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Config copied'**
+  String get detailConfigCopied;
+
+  /// No description provided for @detailPackageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Package name'**
+  String get detailPackageName;
+
+  /// No description provided for @detailPackageInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install package'**
+  String get detailPackageInstall;
+
+  /// No description provided for @detailPackageUninstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall package'**
+  String get detailPackageUninstall;
+
+  /// No description provided for @detailPackageUninstallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall {name}?'**
+  String detailPackageUninstallConfirm(Object name);
+
+  /// No description provided for @detailFrameworkUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update framework'**
+  String get detailFrameworkUpdate;
+
+  /// No description provided for @detailFrameworkUpdateConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Update framework to the latest version?'**
+  String get detailFrameworkUpdateConfirm;
+
+  /// No description provided for @detailFrameworkLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'up to date'**
+  String get detailFrameworkLatest;
+
+  /// No description provided for @detailSdkRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart SDK'**
+  String get detailSdkRestart;
+
+  /// No description provided for @detailSdkRestartConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart SDK now? All connections will be interrupted.'**
+  String get detailSdkRestartConfirm;
+
+  /// No description provided for @detailFileSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get detailFileSave;
+
+  /// No description provided for @detailFileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get detailFileSaved;
+
+  /// No description provided for @detailFileDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String detailFileDeleteConfirm(Object name);
 
   /// No description provided for @detailStartingToast.
   ///
@@ -865,6 +1225,30 @@ abstract class AppLocalizations {
   /// **'GitHub mirror (gh-proxy.com)'**
   String get settingsDownloadGhproxy;
 
+  /// No description provided for @settingsPypiSource.
+  ///
+  /// In en, this message translates to:
+  /// **'PyPI mirror'**
+  String get settingsPypiSource;
+
+  /// No description provided for @settingsPypiOfficial.
+  ///
+  /// In en, this message translates to:
+  /// **'PyPI official'**
+  String get settingsPypiOfficial;
+
+  /// No description provided for @settingsPypiTsinghua.
+  ///
+  /// In en, this message translates to:
+  /// **'Tsinghua mirror'**
+  String get settingsPypiTsinghua;
+
+  /// No description provided for @settingsPypiAliyun.
+  ///
+  /// In en, this message translates to:
+  /// **'Aliyun mirror'**
+  String get settingsPypiAliyun;
+
   /// No description provided for @settingsRuntime.
   ///
   /// In en, this message translates to:
@@ -882,6 +1266,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bundled Python + ErisPulse {version}'**
   String settingsRuntimeReady(Object version);
+
+  /// No description provided for @settingsRuntimeVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime version'**
+  String get settingsRuntimeVersion;
+
+  /// No description provided for @settingsRuntimeDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download runtime'**
+  String get settingsRuntimeDownload;
+
+  /// No description provided for @runtimeManagerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime Manager'**
+  String get runtimeManagerTitle;
+
+  /// No description provided for @runtimeManagerInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed runtimes'**
+  String get runtimeManagerInstalled;
+
+  /// No description provided for @runtimeManagerAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available versions'**
+  String get runtimeManagerAvailable;
+
+  /// No description provided for @runtimeManagerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No runtimes installed'**
+  String get runtimeManagerEmpty;
+
+  /// No description provided for @runtimeManagerLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching versions…'**
+  String get runtimeManagerLoading;
+
+  /// No description provided for @runtimeManagerActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get runtimeManagerActivate;
+
+  /// No description provided for @runtimeManagerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get runtimeManagerActive;
+
+  /// No description provided for @runtimeManagerPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime directory'**
+  String get runtimeManagerPath;
+
+  /// No description provided for @runtimeManagerDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete runtime v{version}? This cannot be undone.'**
+  String runtimeManagerDeleteConfirm(Object version);
+
+  /// No description provided for @runtimeManagerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled Python & per-instance environments'**
+  String get runtimeManagerDesc;
+
+  /// No description provided for @runtimeManagerInstances.
+  ///
+  /// In en, this message translates to:
+  /// **'Instance environments'**
+  String get runtimeManagerInstances;
+
+  /// No description provided for @runtimeManagerPythonMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled Python not ready'**
+  String get runtimeManagerPythonMissing;
+
+  /// No description provided for @settingsOpenSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source'**
+  String get settingsOpenSource;
 
   /// No description provided for @settingsRootfsReady.
   ///

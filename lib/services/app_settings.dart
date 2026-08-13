@@ -8,18 +8,23 @@ class AppSettings extends ChangeNotifier {
   static const _kThemeMode = 'erispulse.theme_mode';
   static const _kLocale = 'erispulse.locale';
   static const _kDownloadSource = 'erispulse.download_source';
+  static const _kPypiSource = 'erispulse.pypi_source';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
   String _downloadSource = 'github';
+  String _pypiSource = 'pypi';
 
   ThemeMode get themeMode => _themeMode;
 
   /// 界面语言；null 表示跟随系统
   Locale? get locale => _locale;
 
-  /// 运行时资产下载源（github / ghfast / ghproxy）
+  /// GitHub 资产下载源（github / ghfast / ghproxy，移动端 rootfs 用）
   String get downloadSource => _downloadSource;
+
+  /// PyPI 镜像源（pypi / tsinghua / aliyun，桌面端 pip 用）
+  String get pypiSource => _pypiSource;
 
   /// 从本地存储加载
   Future<void> load() async {
@@ -33,6 +38,7 @@ class AppSettings extends ChangeNotifier {
       };
       _locale = _localeFromCode(prefs.getString(_kLocale));
       _downloadSource = prefs.getString(_kDownloadSource) ?? 'github';
+      _pypiSource = prefs.getString(_kPypiSource) ?? 'pypi';
     } catch (_) {}
     notifyListeners();
   }
@@ -76,7 +82,7 @@ class AppSettings extends ChangeNotifier {
         _ => null,
       };
 
-  /// 切换下载源（github 直连 / 国内加速镜像）
+  /// 切换下载源（github 直连 / 国内加速镜像，用于移动端 rootfs 下载）
   Future<void> setDownloadSource(String source) async {
     if (_downloadSource == source) return;
     _downloadSource = source;
@@ -84,6 +90,17 @@ class AppSettings extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kDownloadSource, source);
+    } catch (_) {}
+  }
+
+  /// 切换 PyPI 镜像源（pypi 官方 / 清华 / 阿里，桌面端 pip 安装用）
+  Future<void> setPypiSource(String source) async {
+    if (_pypiSource == source) return;
+    _pypiSource = source;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kPypiSource, source);
     } catch (_) {}
   }
 }

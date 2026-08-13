@@ -15,6 +15,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonCancel => 'キャンセル';
 
   @override
+  String get commonConfirm => '確定';
+
+  @override
+  String get commonSoftRestart => 'ソフト再起動';
+
+  @override
+  String get commonHardRestart => 'プロセスを再起動';
+
+  @override
   String get commonSave => '保存';
 
   @override
@@ -52,6 +61,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commonInitialize => '初期化';
+
+  @override
+  String get commonInstalled => 'インストール済み';
+
+  @override
+  String get commonPreRelease => 'プレリリース';
+
+  @override
+  String get railInstances => 'インスタンス';
 
   @override
   String get commonRemote => 'リモート';
@@ -183,6 +201,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingSdkInstall => 'インストール';
 
   @override
+  String get onboardingSdkUseInstalled => 'インストール済みを使用';
+
+  @override
   String get onboardingSdkInstalling => 'インストール中…';
 
   @override
@@ -193,6 +214,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingSdkContinue => '進む';
+
+  @override
+  String get onboardingPythonRelease => 'バンドル Python を展開';
+
+  @override
+  String get onboardingPythonReleasing => 'Python 環境を展開中…';
+
+  @override
+  String get onboardingPythonReady => '準備完了';
+
+  @override
+  String get onboardingPythonIntro => 'アプリに Python 環境が同梱されています。展開して開始します。';
+
+  @override
+  String get onboardingPythonFailed => 'バンドル Python の展開に失敗しました。再試行してください。';
 
   @override
   String get homeBannerNeedSdk => 'ErisPulse SDK のインストールが必要です';
@@ -236,6 +272,52 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get createTokenHelper => '相手 Dashboard のトークン。疎通確認とログインに使用';
+
+  @override
+  String get createRuntimeLabel => 'ランタイムバージョン';
+
+  @override
+  String get createRuntimeDefault => 'グローバルデフォルト';
+
+  @override
+  String get createSdkVersionLabel => 'ErisPulse SDK バージョン';
+
+  @override
+  String get createSdkVersionHelper => 'このインスタンス専用の仮想環境にインストール';
+
+  @override
+  String get createInstallDashboard => 'Dashboard モジュールをインストール';
+
+  @override
+  String get createInstallDashboardDesc =>
+      'SDK と一緒に ErisPulse-Dashboard をインストール';
+
+  @override
+  String get createEnvFresh => '新規環境';
+
+  @override
+  String get createEnvFreshDesc => '選択した SDK バージョンで新しい仮想環境を作成';
+
+  @override
+  String get createEnvClone => '既存インスタンスをベースにする';
+
+  @override
+  String get createEnvCloneDesc => '既存インスタンスの環境をコピー（SDK バージョンとインストール済みパッケージ）';
+
+  @override
+  String get createEnvCloneSource => 'コピー元インスタンス';
+
+  @override
+  String get createEnvCloneNeedSource => 'コピー元インスタンスを選択してください';
+
+  @override
+  String get createPreparingEnv => '環境を準備中';
+
+  @override
+  String get createEnvReady => '環境の準備が完了しました';
+
+  @override
+  String get createEnvFailed => '環境の準備に失敗しました';
 
   @override
   String get createPortLabel => '待受ポート *';
@@ -292,6 +374,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get detailPort => 'ポート';
 
   @override
+  String get detailRuntimeLabel => 'ランタイム';
+
+  @override
   String get detailTapToReveal => 'タップして表示・コピー';
 
   @override
@@ -312,6 +397,106 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get detailOpenDashboard => 'Dashboard を開く';
+
+  @override
+  String get detailTabOverview => '概要';
+
+  @override
+  String get detailTabModules => 'モジュール';
+
+  @override
+  String get detailTabAdapters => 'アダプター';
+
+  @override
+  String get detailTabConfig => '設定';
+
+  @override
+  String get detailTabFiles => 'ファイル';
+
+  @override
+  String get detailTabLogs => 'ログ';
+
+  @override
+  String get detailTabPackages => 'パッケージ';
+
+  @override
+  String get detailTabEmpty => '項目なし';
+
+  @override
+  String get detailClearLogs => 'ログをクリア';
+
+  @override
+  String get detailConfigCopy => '設定をコピー';
+
+  @override
+  String get detailAuthInvalid => 'アクセストークンが無効または期限切れです。インスタンスのトークンを確認してください';
+
+  @override
+  String get detailConfigRender => '表示';
+
+  @override
+  String get detailConfigSource => 'ソース';
+
+  @override
+  String get detailConfigEdit => '編集';
+
+  @override
+  String get detailConfigSaved => '設定を保存しました';
+
+  @override
+  String get detailPackageInstalled => 'インストール済みパッケージ';
+
+  @override
+  String get schemaConfigSave => '保存';
+
+  @override
+  String get schemaConfigSaved => '設定を保存しました';
+
+  @override
+  String get schemaConfigNoSchema => '設定スキーマがありません';
+
+  @override
+  String get detailConfigCopied => '設定をコピーしました';
+
+  @override
+  String get detailPackageName => 'パッケージ名';
+
+  @override
+  String get detailPackageInstall => 'パッケージをインストール';
+
+  @override
+  String get detailPackageUninstall => 'パッケージをアンインストール';
+
+  @override
+  String detailPackageUninstallConfirm(Object name) {
+    return '$name をアンインストールしますか？';
+  }
+
+  @override
+  String get detailFrameworkUpdate => 'フレームワークを更新';
+
+  @override
+  String get detailFrameworkUpdateConfirm => 'フレームワークを最新版に更新しますか？';
+
+  @override
+  String get detailFrameworkLatest => '最新です';
+
+  @override
+  String get detailSdkRestart => 'SDK を再起動';
+
+  @override
+  String get detailSdkRestartConfirm => 'SDK を再起動しますか？すべての接続が切断されます。';
+
+  @override
+  String get detailFileSave => '保存';
+
+  @override
+  String get detailFileSaved => '保存しました';
+
+  @override
+  String detailFileDeleteConfirm(Object name) {
+    return '$name を削除しますか？';
+  }
 
   @override
   String get detailStartingToast => '起動中…';
@@ -410,6 +595,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsDownloadGhproxy => 'GitHub ミラー (gh-proxy.com)';
 
   @override
+  String get settingsPypiSource => 'PyPI ミラー';
+
+  @override
+  String get settingsPypiOfficial => 'PyPI 公式';
+
+  @override
+  String get settingsPypiTsinghua => '清華ミラー';
+
+  @override
+  String get settingsPypiAliyun => 'Alibaba Cloud ミラー';
+
+  @override
   String get settingsRuntime => 'ランタイム';
 
   @override
@@ -419,6 +616,53 @@ class AppLocalizationsJa extends AppLocalizations {
   String settingsRuntimeReady(Object version) {
     return 'バンドル Python + ErisPulse $version';
   }
+
+  @override
+  String get settingsRuntimeVersion => 'ランタイムバージョン';
+
+  @override
+  String get settingsRuntimeDownload => 'ランタイムをダウンロード';
+
+  @override
+  String get runtimeManagerTitle => 'ランタイム管理';
+
+  @override
+  String get runtimeManagerInstalled => 'インストール済みランタイム';
+
+  @override
+  String get runtimeManagerAvailable => '利用可能なバージョン';
+
+  @override
+  String get runtimeManagerEmpty => 'インストール済みランタイムはありません';
+
+  @override
+  String get runtimeManagerLoading => 'バージョンを取得中…';
+
+  @override
+  String get runtimeManagerActivate => '有効化';
+
+  @override
+  String get runtimeManagerActive => '有効';
+
+  @override
+  String get runtimeManagerPath => 'ランタイムディレクトリ';
+
+  @override
+  String runtimeManagerDeleteConfirm(Object version) {
+    return 'ランタイム v$version を削除しますか？元に戻せません。';
+  }
+
+  @override
+  String get runtimeManagerDesc => 'バンドル Python とインスタンス環境の管理';
+
+  @override
+  String get runtimeManagerInstances => 'インスタンス環境';
+
+  @override
+  String get runtimeManagerPythonMissing => 'バンドル Python 未準備';
+
+  @override
+  String get settingsOpenSource => 'オープンソース';
 
   @override
   String get settingsRootfsReady => '準備完了';

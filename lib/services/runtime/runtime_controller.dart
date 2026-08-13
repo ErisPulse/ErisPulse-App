@@ -1,7 +1,8 @@
 // UI 侧运行时控制器。
 //
 // Android：与 Foreground Service isolate 通信（proot/rootfs 由 FGS 管理）。
-// 桌面（Windows/Linux）：直接管理本地实例进程（捆绑 Python），无 FGS。
+// 桌面（Windows/Linux/macOS）：App 内置平台 Python（python-build-standalone），
+// 每个实例使用独立 venv 并 pip 安装 ErisPulse；本地进程由 DesktopRuntime 管理。
 // 对外暴露统一的环境状态（rootfsReady 等）与实例启停命令。
 
 import 'dart:async';
@@ -11,7 +12,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 
 import '../../models/enums.dart';
+import '../../models/instance.dart';
 import '../instance_manager.dart';
+import 'assets.dart';
 import 'debug_log.dart';
 import 'desktop_runtime.dart';
 import 'desktop_sdk.dart';
@@ -21,10 +24,12 @@ class RuntimeController extends ChangeNotifier {
   RuntimeController({required this.instanceManager});
 
   final InstanceManager instanceManager;
-  final FlutterBackgroundService _service = FlutterBackgroundService();
 
-  /// 是否桌面平台（Windows/Linux/macOS）：本地进程管理，无 FGS
+  /// 是否桌面平台：本地进程管理，无 FGS（仅 Android/iOS 使用 FGS）
   final bool _isDesktop = !Platform.isAndroid && !Platform.isIOS;
+
+  /// FGS 服务（仅 Android/iOS 创建；懒初始化）
+  FlutterBackgroundService? _service;
 
   /// 桌面运行时（仅桌面平台）
   DesktopRuntime? _desktop;
@@ -32,18 +37,21 @@ class RuntimeController extends ChangeNotifier {
   /// 运行时调试日志（proot / 实例进程 启动/退出/输出）
   final DebugLogBuffer debugLog = DebugLogBuffer();
 
-  // 环境状态（Android = rootfs；桌面 = 捆绑 Python + SDK 就绪）
+  // 环境状态（Android = rootfs 就绪；桌面 = 内置 Python 就绪）
   bool rootfsReady = false;
   bool rootfsStatusLoaded = false;
   double? rootfsProgress;
   String? rootfsMessage;
   String? rootfsError;
 
-  /// 桌面已安装的 ErisPulse 版本（未安装为 null）
-  String? sdkInstalledVersion;
+  /// 桌面：内置 Python 版本号（未释放为 null）
+  String? bundledPythonVersion;
 
-  /// 桌面是否正在安装 / 升级 SDK
-  bool sdkInstalling = false;
+  /// 桌面：是否正在释放内置 Python
+  bool bundledPythonBusy = false;
+
+  /// 桌面：释放/引导进度消息
+  String? bundledPythonMessage;
 
   /// 崩溃自动重启（UI 状态，默认开启）
   bool autoRestart = true;
@@ -55,19 +63,20 @@ class RuntimeController extends ChangeNotifier {
     if (_isDesktop) {
       _desktop = DesktopRuntime(onEvent: _handleBackendEvent);
       _desktop!.autoRestart = autoRestart;
-      await _refreshEnvironment();
+      await _refreshBundledPython();
       return;
     }
 
+    _service = FlutterBackgroundService();
     _subs
-      ..add(_service.on('rootfsProgress').listen(_handleRootfsProgress))
-      ..add(_service.on('rootfsReady').listen(_handleRootfsReady))
-      ..add(_service.on('instanceStatus').listen(_handleInstanceStatus))
-      ..add(_service.on('instanceStates').listen(_handleInstanceStates))
-      ..add(_service.on('instanceLog').listen(_handleInstanceLog));
+      ..add(_service!.on('rootfsProgress').listen(_handleRootfsProgress))
+      ..add(_service!.on('rootfsReady').listen(_handleRootfsReady))
+      ..add(_service!.on('instanceStatus').listen(_handleInstanceStatus))
+      ..add(_service!.on('instanceStates').listen(_handleInstanceStates))
+      ..add(_service!.on('instanceLog').listen(_handleInstanceLog));
 
-    _service.invoke('getRootfsReady');
-    _service.invoke('getState');
+    _invoke('getRootfsReady');
+    _invoke('getState');
   }
 
   /// 桌面后端事件统一入口（DesktopRuntime 回调）
@@ -80,13 +89,10 @@ class RuntimeController extends ChangeNotifier {
     }
   }
 
-  /// 桌面：重新检查捆绑 Python 与 SDK 安装情况
-  Future<void> _refreshEnvironment() async {
-    final python = await DesktopEnv.pythonPath();
-    final hasPython = File(python).existsSync();
-    final sdkVer = await DesktopSdk.installedVersion();
-    sdkInstalledVersion = sdkVer;
-    rootfsReady = hasPython && sdkVer != null;
+  /// 桌面：刷新内置 Python 就绪状态
+  Future<void> _refreshBundledPython() async {
+    bundledPythonVersion = await DesktopSdk.bundledPythonVersion();
+    rootfsReady = bundledPythonVersion != null;
     rootfsStatusLoaded = true;
     notifyListeners();
   }
@@ -169,24 +175,138 @@ class RuntimeController extends ChangeNotifier {
     };
   }
 
-  // ── 对外操作 ──────────────────────────────────────────────
+  void _invoke(String method, [Map<String, dynamic>? args]) {
+    _service?.invoke(method, args);
+  }
 
-  /// 准备环境（Android 下载/解压 rootfs；桌面刷新环境检查）
+  // ── 桌面：环境管理 ─────────────────────────────────
+
+  /// 释放内置 Python（含 pip 引导）。日志经回调上报。
+  Future<void> ensureBundledPython({void Function(String line)? onLog}) async {
+    if (bundledPythonBusy) return;
+    bundledPythonBusy = true;
+    bundledPythonMessage = null;
+    notifyListeners();
+    void log(String line) {
+      debugLog.add('python', line);
+      onLog?.call(line);
+      bundledPythonMessage = line;
+      notifyListeners();
+    }
+
+    try {
+      final code = await DesktopSdk.ensureBundledPython(onLog: log);
+      if (code != 0) {
+        bundledPythonMessage = '内置 Python 释放失败 (exit $code)';
+        notifyListeners();
+      }
+      await _refreshBundledPython();
+    } finally {
+      bundledPythonBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// 桌面：实例环境是否就绪（venv 中已装 ErisPulse）
+  Future<bool> isInstanceReady(String instanceId) =>
+      DesktopSdk.isInstanceReady(instanceId);
+
+  /// 桌面：查询实例 venv 中 ErisPulse 版本
+  Future<String?> instanceSdkVersion(String instanceId) =>
+      DesktopSdk.installedSdkVersion(instanceId);
+
+  /// 为实例准备独立 venv（fresh 新建 / clone 复制源实例环境）。
+  ///
+  /// 桌面：内置 Python 建 venv + pip 安装；移动端经 FGS 在 rootfs 内执行，
+  /// 结果由 `instanceEnv` 事件异步回填。返回 0 表示成功。
+  Future<int> prepareInstanceEnvironment({
+    required Instance instance,
+    required String mode, // 'fresh' | 'clone'
+    String? sourceInstanceId,
+    String? sdkVersion,
+    bool installDashboard = false,
+    String? indexUrl,
+    void Function(String line)? onLog,
+  }) {
+    if (_isDesktop) {
+      if (mode == 'clone') {
+        return DesktopSdk.cloneInstanceEnv(
+          sourceInstanceId: sourceInstanceId!,
+          newInstanceId: instance.id,
+          onLog: onLog ?? (_) {},
+        );
+      }
+      return DesktopSdk.prepareInstance(
+        instanceId: instance.id,
+        version: sdkVersion ?? DesktopSdk.kDefaultVersion,
+        installDashboard: installDashboard,
+        indexUrl: indexUrl ?? pypiIndexUrl(kPypiSourceOfficial),
+        onLog: (l) {
+          debugLog.add(instance.id, l);
+          onLog?.call(l);
+        },
+      );
+    }
+
+    final src = sourceInstanceId != null
+        ? instanceManager.findById(sourceInstanceId)
+        : null;
+    _invoke('prepareInstance', {
+      'data': InstanceData(
+        id: instance.id,
+        name: instance.name,
+        port: instance.port,
+        token: instance.token,
+        workingDir: instance.workingDir,
+      ).toJson(),
+      'mode': mode,
+      'sdkVersion': sdkVersion,
+      'installDashboard': installDashboard,
+      'indexUrl': indexUrl,
+      'sourceWorkingDir': src?.workingDir,
+    });
+    return _awaitInstanceEnv(instance.id);
+  }
+
+  /// 等待移动端环境准备完成（FGS `instanceEnv` 事件），超时 5 分钟
+  Future<int> _awaitInstanceEnv(String instanceId) {
+    final completer = Completer<int>();
+    StreamSubscription<Map<String, dynamic>?>? sub;
+    sub = _service!.on('instanceEnv').listen((e) {
+      if (e?['id'] != instanceId) return;
+      sub?.cancel();
+      final ready = e?['ready'] == true;
+      completer.complete(ready ? 0 : 1);
+    });
+    Timer(const Duration(minutes: 5), () {
+      sub?.cancel();
+      if (!completer.isCompleted) completer.complete(1);
+    });
+    return completer.future;
+  }
+
+  /// 桌面：删除实例 venv（删除实例时调用）
+  Future<void> removeInstanceEnvironment(String instanceId) =>
+      DesktopSdk.removeInstanceEnv(instanceId);
+
+  // ── 对外操作 ──────────────────────────────────────
+
+  /// 准备环境（Android 下载/解压 rootfs；桌面释放内置 Python）
   void ensureRootfs() {
     if (_isDesktop) {
-      unawaited(_refreshEnvironment());
+      unawaited(ensureBundledPython());
       return;
     }
-    _service.invoke('ensureRootfs');
+    _invoke('ensureRootfs');
   }
 
   /// 重新查询环境状态
   void refreshRootfs() {
     if (_isDesktop) {
-      unawaited(_refreshEnvironment());
+      unawaited(_refreshBundledPython());
       return;
     }
-    _service.invoke('getRootfsReady');
+    _invoke('getRootfsReady');
   }
 
   /// 启动实例
@@ -195,7 +315,7 @@ class RuntimeController extends ChangeNotifier {
       _desktop?.startInstance(data);
       return;
     }
-    _service.invoke('startInstance', data.toJson());
+    _invoke('startInstance', data.toJson());
   }
 
   /// 停止实例
@@ -204,7 +324,7 @@ class RuntimeController extends ChangeNotifier {
       _desktop?.stopInstance(id);
       return;
     }
-    _service.invoke('stopInstance', {'id': id});
+    _invoke('stopInstance', {'id': id});
   }
 
   /// 重启实例
@@ -213,7 +333,7 @@ class RuntimeController extends ChangeNotifier {
       _desktop?.restartInstance(data);
       return;
     }
-    _service.invoke('restartInstance', data.toJson());
+    _invoke('restartInstance', data.toJson());
   }
 
   /// 停止全部
@@ -222,7 +342,7 @@ class RuntimeController extends ChangeNotifier {
       _desktop?.stopAll();
       return;
     }
-    _service.invoke('stopAll');
+    _invoke('stopAll');
   }
 
   /// 设置崩溃自动重启
@@ -231,25 +351,9 @@ class RuntimeController extends ChangeNotifier {
     if (_isDesktop) {
       _desktop?.autoRestart = enabled;
     } else {
-      _service.invoke('setAutoRestart', {'enabled': enabled});
+      _invoke('setAutoRestart', {'enabled': enabled});
     }
     notifyListeners();
-  }
-
-  /// 桌面：安装 / 升级 SDK 到指定版本（日志逐行回调）
-  Future<void> installSdk(
-    String version, {
-    required void Function(String line) onLog,
-  }) async {
-    if (!_isDesktop || sdkInstalling) return;
-    sdkInstalling = true;
-    notifyListeners();
-    try {
-      await DesktopSdk.install(version, onLog: onLog);
-    } finally {
-      sdkInstalling = false;
-      await _refreshEnvironment();
-    }
   }
 
   @override

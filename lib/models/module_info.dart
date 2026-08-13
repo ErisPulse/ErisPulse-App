@@ -23,6 +23,27 @@ class ModuleInfo {
   /// 作者
   final String? author;
 
+  /// 来源包名
+  final String? package;
+
+  /// 加载策略（后端为 dict：{lazy_load, priority, depends}）
+  final Map<String, dynamic>? loadStrategy;
+
+  /// 注册路由数
+  final int routesCount;
+
+  /// 注册视图数
+  final int viewsCount;
+
+  /// 是否声明了配置 schema
+  final bool hasConfig;
+
+  /// 适配器条目：登录账号数
+  final int botsCount;
+
+  /// 适配器条目：能力列表
+  final List<String> capabilities;
+
   ModuleInfo({
     required this.name,
     this.type = 'module',
@@ -31,17 +52,35 @@ class ModuleInfo {
     this.version,
     this.description,
     this.author,
+    this.package,
+    this.loadStrategy,
+    this.routesCount = 0,
+    this.viewsCount = 0,
+    this.hasConfig = false,
+    this.botsCount = 0,
+    this.capabilities = const [],
   });
 
   factory ModuleInfo.fromJson(Map<String, dynamic> json) {
     return ModuleInfo(
-      name: json['name'] as String? ?? '',
-      type: json['type'] as String? ?? 'module',
+      name: json['name']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'module',
       enabled: json['enabled'] as bool? ?? false,
       loaded: json['loaded'] as bool? ?? false,
-      version: json['version'] as String?,
-      description: json['description'] as String?,
-      author: json['author'] as String?,
+      version: json['version']?.toString(),
+      description: json['description']?.toString(),
+      author: json['author']?.toString(),
+      package: json['package']?.toString(),
+      loadStrategy: json['load_strategy'] is Map
+          ? Map<String, dynamic>.from(json['load_strategy'] as Map)
+          : null,
+      routesCount: json['routes_count'] as int? ?? 0,
+      viewsCount: json['views_count'] as int? ?? 0,
+      hasConfig: json['has_config'] as bool? ?? false,
+      botsCount: json['bots_count'] as int? ?? 0,
+      capabilities:
+          (json['capabilities'] as List?)?.whereType<String>().toList() ??
+              const [],
     );
   }
 

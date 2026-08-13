@@ -15,6 +15,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancel => 'Cancel';
 
   @override
+  String get commonConfirm => 'Confirm';
+
+  @override
+  String get commonSoftRestart => 'Soft restart';
+
+  @override
+  String get commonHardRestart => 'Restart process';
+
+  @override
   String get commonSave => 'Save';
 
   @override
@@ -52,6 +61,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonInitialize => 'Initialize';
+
+  @override
+  String get commonInstalled => 'Installed';
+
+  @override
+  String get commonPreRelease => 'Pre-release';
+
+  @override
+  String get railInstances => 'Instances';
 
   @override
   String get commonRemote => 'Remote';
@@ -186,6 +204,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSdkInstall => 'Install';
 
   @override
+  String get onboardingSdkUseInstalled => 'Use installed version';
+
+  @override
   String get onboardingSdkInstalling => 'Installing…';
 
   @override
@@ -197,6 +218,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingSdkContinue => 'Continue';
+
+  @override
+  String get onboardingPythonRelease => 'Release bundled Python';
+
+  @override
+  String get onboardingPythonReleasing => 'Releasing Python environment…';
+
+  @override
+  String get onboardingPythonReady => 'ready';
+
+  @override
+  String get onboardingPythonIntro =>
+      'The app bundles a Python environment. Release it to start.';
+
+  @override
+  String get onboardingPythonFailed =>
+      'Failed to release the bundled Python. Please retry.';
 
   @override
   String get homeBannerNeedSdk => 'ErisPulse SDK needs to be installed';
@@ -241,6 +279,55 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createTokenHelper =>
       'Token of the remote Dashboard, used for health check and login';
+
+  @override
+  String get createRuntimeLabel => 'Runtime version';
+
+  @override
+  String get createRuntimeDefault => 'Global default';
+
+  @override
+  String get createSdkVersionLabel => 'ErisPulse SDK version';
+
+  @override
+  String get createSdkVersionHelper =>
+      'Installed into this instance\'s own virtual environment';
+
+  @override
+  String get createInstallDashboard => 'Install Dashboard module';
+
+  @override
+  String get createInstallDashboardDesc =>
+      'Installs ErisPulse-Dashboard along with the SDK';
+
+  @override
+  String get createEnvFresh => 'Fresh environment';
+
+  @override
+  String get createEnvFreshDesc =>
+      'Create a new venv with the selected SDK version';
+
+  @override
+  String get createEnvClone => 'Based on existing instance';
+
+  @override
+  String get createEnvCloneDesc =>
+      'Copy an existing instance\'s venv (SDK version + installed packages)';
+
+  @override
+  String get createEnvCloneSource => 'Source instance';
+
+  @override
+  String get createEnvCloneNeedSource => 'Please select a source instance';
+
+  @override
+  String get createPreparingEnv => 'Preparing environment';
+
+  @override
+  String get createEnvReady => 'Environment ready';
+
+  @override
+  String get createEnvFailed => 'Environment preparation failed';
 
   @override
   String get createPortLabel => 'Listen port *';
@@ -300,6 +387,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailPort => 'Port';
 
   @override
+  String get detailRuntimeLabel => 'Runtime';
+
+  @override
   String get detailTapToReveal => 'Tap to reveal and copy';
 
   @override
@@ -320,6 +410,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailOpenDashboard => 'Open Dashboard';
+
+  @override
+  String get detailTabOverview => 'Overview';
+
+  @override
+  String get detailTabModules => 'Modules';
+
+  @override
+  String get detailTabAdapters => 'Adapters';
+
+  @override
+  String get detailTabConfig => 'Config';
+
+  @override
+  String get detailTabFiles => 'Files';
+
+  @override
+  String get detailTabLogs => 'Logs';
+
+  @override
+  String get detailTabPackages => 'Packages';
+
+  @override
+  String get detailTabEmpty => 'No items';
+
+  @override
+  String get detailClearLogs => 'Clear logs';
+
+  @override
+  String get detailConfigCopy => 'Copy config';
+
+  @override
+  String get detailAuthInvalid =>
+      'Access token invalid or expired. Check the instance token.';
+
+  @override
+  String get detailConfigRender => 'Render';
+
+  @override
+  String get detailConfigSource => 'Source';
+
+  @override
+  String get detailConfigEdit => 'Edit';
+
+  @override
+  String get detailConfigSaved => 'Config saved';
+
+  @override
+  String get detailPackageInstalled => 'Installed packages';
+
+  @override
+  String get schemaConfigSave => 'Save';
+
+  @override
+  String get schemaConfigSaved => 'Config saved';
+
+  @override
+  String get schemaConfigNoSchema => 'No config schema';
+
+  @override
+  String get detailConfigCopied => 'Config copied';
+
+  @override
+  String get detailPackageName => 'Package name';
+
+  @override
+  String get detailPackageInstall => 'Install package';
+
+  @override
+  String get detailPackageUninstall => 'Uninstall package';
+
+  @override
+  String detailPackageUninstallConfirm(Object name) {
+    return 'Uninstall $name?';
+  }
+
+  @override
+  String get detailFrameworkUpdate => 'Update framework';
+
+  @override
+  String get detailFrameworkUpdateConfirm =>
+      'Update framework to the latest version?';
+
+  @override
+  String get detailFrameworkLatest => 'up to date';
+
+  @override
+  String get detailSdkRestart => 'Restart SDK';
+
+  @override
+  String get detailSdkRestartConfirm =>
+      'Restart SDK now? All connections will be interrupted.';
+
+  @override
+  String get detailFileSave => 'Save';
+
+  @override
+  String get detailFileSaved => 'Saved';
+
+  @override
+  String detailFileDeleteConfirm(Object name) {
+    return 'Delete $name?';
+  }
 
   @override
   String get detailStartingToast => 'Starting…';
@@ -421,6 +614,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDownloadGhproxy => 'GitHub mirror (gh-proxy.com)';
 
   @override
+  String get settingsPypiSource => 'PyPI mirror';
+
+  @override
+  String get settingsPypiOfficial => 'PyPI official';
+
+  @override
+  String get settingsPypiTsinghua => 'Tsinghua mirror';
+
+  @override
+  String get settingsPypiAliyun => 'Aliyun mirror';
+
+  @override
   String get settingsRuntime => 'Runtime';
 
   @override
@@ -430,6 +635,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsRuntimeReady(Object version) {
     return 'Bundled Python + ErisPulse $version';
   }
+
+  @override
+  String get settingsRuntimeVersion => 'Runtime version';
+
+  @override
+  String get settingsRuntimeDownload => 'Download runtime';
+
+  @override
+  String get runtimeManagerTitle => 'Runtime Manager';
+
+  @override
+  String get runtimeManagerInstalled => 'Installed runtimes';
+
+  @override
+  String get runtimeManagerAvailable => 'Available versions';
+
+  @override
+  String get runtimeManagerEmpty => 'No runtimes installed';
+
+  @override
+  String get runtimeManagerLoading => 'Fetching versions…';
+
+  @override
+  String get runtimeManagerActivate => 'Activate';
+
+  @override
+  String get runtimeManagerActive => 'Active';
+
+  @override
+  String get runtimeManagerPath => 'Runtime directory';
+
+  @override
+  String runtimeManagerDeleteConfirm(Object version) {
+    return 'Delete runtime v$version? This cannot be undone.';
+  }
+
+  @override
+  String get runtimeManagerDesc => 'Bundled Python & per-instance environments';
+
+  @override
+  String get runtimeManagerInstances => 'Instance environments';
+
+  @override
+  String get runtimeManagerPythonMissing => 'Bundled Python not ready';
+
+  @override
+  String get settingsOpenSource => 'Open source';
 
   @override
   String get settingsRootfsReady => 'Ready';

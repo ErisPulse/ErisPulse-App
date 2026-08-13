@@ -5,6 +5,7 @@ analyzer:
     - "**/generated_plugin_registrant.dart"
     - "**/*.g.dart"
     - "build/**"
+    - "third_party/**"
   errors:
     # 把常见错误提前为 error，避免漏改
     invalid_annotation_target: ignore

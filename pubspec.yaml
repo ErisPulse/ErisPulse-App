@@ -54,14 +54,14 @@ dependencies:
   flutter_background_service: ^5.0.10
 
   # WebView（内嵌 Dashboard 管理界面）
-  webview_flutter: ^4.10.0
-
   # 外部浏览器打开 Dashboard / 链接
   url_launcher: ^6.3.0
 
   # 设备 / 应用信息（调试诊断页）
   device_info_plus: ^11.0.0
   package_info_plus: ^8.0.0
+  archive: ^4.0.9
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:
@@ -72,11 +72,26 @@ dev_dependencies:
   # 生成应用图标
   flutter_launcher_icons: ^0.14.1
 
+dependency_overrides:
+  flutter_inappwebview_android:
+    path: third_party/flutter_inappwebview_android
+
 flutter_launcher_icons:
   android: true
   image_path: "assets/images/logo_square.png"
   adaptive_icon_background: "#E3F2FD"
   adaptive_icon_foreground: "assets/images/logo_foreground.png"
+  windows:
+    generate: true
+    image_path: "assets/images/logo_square.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/images/logo_square.png"
+  linux:
+    generate: true
+    image_path: "assets/images/logo_square.png"
+    icon_size: 256
 
 flutter:
   generate: true
@@ -89,3 +104,5 @@ flutter:
     - assets/runtime/
     # rootfs 目录（offline flavor 由 CI 注入 tar.xz；本地保留 README 占位）
     - assets/rootfs/
+    # 内置 Python 目录（CI 注入 python-build-standalone 打包的 zip）
+    - assets/python/
