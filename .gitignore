@@ -1,0 +1,75 @@
+# Build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/.flutter/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Flutter / Dart generated
+**/generated_plugin_registrant.dart
+**/PluginRegistry.h
+*.lock
+!pubspec.lock
+
+# Native build outputs
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/key.properties
+android/app/debug
+android/app/profile
+android/app/release
+*.apk
+*.aab
+*.dex
+*.class
+
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+macos/Flutter/ephemeral/
+macos/Pods/
+
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Rootfs / proot / busybox（CI 打包时注入，不进 git）
+assets/rootfs/*.tar.gz
+assets/rootfs/*.tar.xz
+assets/runtime/proot
+assets/runtime/proot-aarch64
+assets/runtime/busybox
+assets/runtime/busybox-aarch64
+android/app/src/main/jniLibs/
+
+# Coverage
+coverage/
+
+# Temporary
+*.swp
+*.swo
+*~

@@ -1,0 +1,38 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/generated_plugin_registrant.dart"
+    - "**/*.g.dart"
+    - "build/**"
+  errors:
+    # 把常见错误提前为 error，避免漏改
+    invalid_annotation_target: ignore
+    missing_required_param: error
+    missing_return: error
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # 风格统一
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+
+    # 命名
+    constant_identifier_names: true
+    non_constant_identifier_names: true
+
+    # 健壮性
+    avoid_print: true
+    avoid_dynamic_calls: true
+    unawaited_futures: true
+
+    # 文档
+    public_member_api_docs: false  # 首期不强制，避免拖慢交付
+    lines_longer_than_80_chars: false

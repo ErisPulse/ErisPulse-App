@@ -1,0 +1,50 @@
+# 构建 ErisPulse rootfs 镜像（arm64）
+#
+# 由 buildx 以 --platform linux/arm64 构建，QEMU 在 build 阶段执行。
+# 文件系统随后由 docker create + export 导出。
+#
+# 构建上下文：仓库根目录。
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+# 安装 Python + ErisPulse（预烘焙进 rootfs）
+COPY scripts/build-rootfs.sh /build-rootfs.sh
+RUN bash /build-rootfs.sh
+
+# 在 arm64 环境内获取 proot 工具链 + busybox
+# （必须在 arm64 容器中执行，所以放在 Dockerfile 里而非宿主机脚本）
+
+# termux proot 工具链（bionic 编译，Android 上无 clone3 SIGSYS 问题）。
+# 含四个文件：proot 主程序 + ptrace loader + 动态依赖 libtalloc.so.2 + libandroid-shmem.so。
+# 版本号对应 termux 仓库当前构建；升级时同步更新 URL。
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends \
+      curl dpkg && \
+    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.1.107.90_aarch64.deb" -o /tmp/proot.deb && \
+    dpkg-deb -x /tmp/proot.deb /tmp/proot-pkg && \
+    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/libtalloc_2.4.3_aarch64.deb" -o /tmp/talloc.deb && \
+    dpkg-deb -x /tmp/talloc.deb /tmp/talloc-pkg && \
+    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/liba/libandroid-shmem/libandroid-shmem_0.7_aarch64.deb" -o /tmp/shmem.deb && \
+    dpkg-deb -x /tmp/shmem.deb /tmp/shmem-pkg && \
+    PREFIX=/tmp/proot-pkg/data/data/com.termux/files/usr && \
+    cp "$PREFIX/bin/proot" /proot-aarch64 && \
+    cp "$PREFIX/libexec/proot/loader" /loader-aarch64 && \
+    cp /tmp/talloc-pkg/data/data/com.termux/files/usr/lib/libtalloc.so.2 /libtalloc.so.2-aarch64 && \
+    cp /tmp/shmem-pkg/data/data/com.termux/files/usr/lib/libandroid-shmem.so /libandroid-shmem.so-aarch64 && \
+    chmod +x /proot-aarch64 /loader-aarch64 /libandroid-shmem.so-aarch64 && \
+    rm -rf /tmp/proot.deb /tmp/talloc.deb /tmp/shmem.deb /tmp/proot-pkg /tmp/talloc-pkg /tmp/shmem-pkg
+
+# 获取 busybox-static（Alpine 的 aarch64 静态二进制）
+RUN curl -fsSL "$(curl -fsSL 'https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/' \
+      | grep -o 'busybox-static-[0-9][^"<>]*\.apk' | sort -V | tail -1 \
+      | sed 's|^|https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/|')" \
+      -o /tmp/busybox.apk && \
+    mkdir -p /tmp/bb && tar -xzf /tmp/busybox.apk -C /tmp/bb && \
+    cp /tmp/bb/bin/busybox.static /busybox-aarch64 && \
+    chmod +x /busybox-aarch64 && \
+    rm -rf /tmp/busybox.apk /tmp/bb
+
+CMD ["/bin/true"]

@@ -1,0 +1,577 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get appName => 'ErisPulse';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
+  String get commonStart => 'Start';
+
+  @override
+  String get commonStop => 'Stop';
+
+  @override
+  String get commonRestart => 'Restart';
+
+  @override
+  String get commonCreate => 'Create';
+
+  @override
+  String get commonRefresh => 'Refresh';
+
+  @override
+  String get commonSettings => 'Settings';
+
+  @override
+  String get commonCopy => 'Copy';
+
+  @override
+  String get commonCopyAll => 'Copy all';
+
+  @override
+  String get commonClear => 'Clear';
+
+  @override
+  String get commonRetry => 'Retry';
+
+  @override
+  String get commonInitialize => 'Initialize';
+
+  @override
+  String get commonRemote => 'Remote';
+
+  @override
+  String get commonLocal => 'Local';
+
+  @override
+  String get commonCreateInstance => 'Create instance';
+
+  @override
+  String get commonDeleteInstance => 'Delete instance';
+
+  @override
+  String get commonRename => 'Rename';
+
+  @override
+  String get commonViewLogs => 'View logs';
+
+  @override
+  String get statusStopped => 'Stopped';
+
+  @override
+  String get statusStarting => 'Starting';
+
+  @override
+  String get statusRunning => 'Running';
+
+  @override
+  String get statusError => 'Error';
+
+  @override
+  String get statusDestroying => 'Destroying';
+
+  @override
+  String get statusHealthy => 'Healthy';
+
+  @override
+  String get statusBooting => 'Starting';
+
+  @override
+  String get statusTokenInvalid => 'Invalid token';
+
+  @override
+  String get statusOffline => 'Offline';
+
+  @override
+  String get statusUnknown => 'Not checked';
+
+  @override
+  String get statusOnline => 'Online';
+
+  @override
+  String get statusConnecting => 'Connecting';
+
+  @override
+  String get statusRemoteUnknown => 'Unknown';
+
+  @override
+  String get homeDebugTooltip => 'Debug log';
+
+  @override
+  String get homeEmptyTitle => 'No instances yet';
+
+  @override
+  String get homeEmptySubtitle =>
+      'Create your first ErisPulse instance\nEach instance is an independent bot';
+
+  @override
+  String homeDeleteConfirmContent(Object name) {
+    return 'Delete \"$name\"?\nThe instance working directory will be kept; only metadata is removed.';
+  }
+
+  @override
+  String get homeBannerTitle => 'Runtime not ready';
+
+  @override
+  String get homeBannerInitializing => 'Initializing…';
+
+  @override
+  String get homeBannerNeedDownload =>
+      'A runtime image needs to be downloaded and extracted';
+
+  @override
+  String get onboardingTitle => 'Prepare runtime';
+
+  @override
+  String get onboardingDescription =>
+      'The first launch needs to prepare the runtime image\n(Ubuntu + Python + ErisPulse)';
+
+  @override
+  String get onboardingStartButton => 'Start initialization';
+
+  @override
+  String get onboardingTapHint =>
+      'Tap anywhere to switch between Progress / Log views';
+
+  @override
+  String get onboardingProcessing => 'Processing…';
+
+  @override
+  String get onboardingLogTitle => 'Initialization log';
+
+  @override
+  String get onboardingStartingLog => 'Starting runtime initialization…';
+
+  @override
+  String get onboardingReadyLog => 'Runtime ready ✓';
+
+  @override
+  String onboardingErrorLog(Object msg) {
+    return 'Error: $msg';
+  }
+
+  @override
+  String get onboardingSdkTitle => 'Install ErisPulse SDK';
+
+  @override
+  String onboardingSdkPythonMissing(Object path) {
+    return 'Bundled Python not found: $path';
+  }
+
+  @override
+  String onboardingSdkInstalled(Object version) {
+    return 'ErisPulse $version installed';
+  }
+
+  @override
+  String get onboardingSdkChooseVersion => 'Choose version to install';
+
+  @override
+  String get onboardingSdkInstall => 'Install';
+
+  @override
+  String get onboardingSdkInstalling => 'Installing…';
+
+  @override
+  String get onboardingSdkVersionFailed =>
+      'Failed to fetch versions, check network';
+
+  @override
+  String get onboardingSdkRefresh => 'Refresh';
+
+  @override
+  String get onboardingSdkContinue => 'Continue';
+
+  @override
+  String get homeBannerNeedSdk => 'ErisPulse SDK needs to be installed';
+
+  @override
+  String get createTitle => 'Create an ErisPulse instance';
+
+  @override
+  String get createSubtitle =>
+      'A local instance runs independently on this phone;\na remote instance connects to an instance deployed on another host.';
+
+  @override
+  String get createNameLabel => 'Instance name *';
+
+  @override
+  String get createNameHint => 'e.g. My bot';
+
+  @override
+  String get createNameHelper => 'Used to distinguish instances in the list';
+
+  @override
+  String get createNameRequired => 'Name is required';
+
+  @override
+  String get createNameTooLong => 'Name too long (max 24 chars)';
+
+  @override
+  String get createUrlLabel => 'Dashboard URL *';
+
+  @override
+  String get createUrlHelper => 'Base URL of the remote Dashboard';
+
+  @override
+  String get createUrlRequired => 'URL is required';
+
+  @override
+  String get createUrlScheme => 'Must start with http:// or https://';
+
+  @override
+  String get createTokenLabel => 'Access token (optional)';
+
+  @override
+  String get createTokenHelper =>
+      'Token of the remote Dashboard, used for health check and login';
+
+  @override
+  String get createPortLabel => 'Listen port *';
+
+  @override
+  String get createPortHelper =>
+      'Each instance uses its own port; auto-assigned by default';
+
+  @override
+  String get createPortRequired => 'Port is required';
+
+  @override
+  String get createPortRange => 'Port must be 1024-65535';
+
+  @override
+  String get createRemoteNote =>
+      'The remote instance runs on the remote host; the app views and manages it through its Dashboard.';
+
+  @override
+  String get createLocalNote =>
+      'The instance is created in the \"Stopped\" state; you can start it on the detail page.';
+
+  @override
+  String createCreated(Object name) {
+    return 'Instance \"$name\" created';
+  }
+
+  @override
+  String get createFailed => 'Creation failed';
+
+  @override
+  String get createFailedRetry => 'Creation failed, please retry';
+
+  @override
+  String get detailSystemResource => 'System resource';
+
+  @override
+  String get detailResourceHint =>
+      'Dashboard system resource shown after the instance starts';
+
+  @override
+  String get detailMemory => 'Memory';
+
+  @override
+  String get detailUptime => 'Uptime';
+
+  @override
+  String get detailThreads => 'Threads';
+
+  @override
+  String get detailCores => 'Cores';
+
+  @override
+  String get detailAddress => 'Address';
+
+  @override
+  String get detailPort => 'Port';
+
+  @override
+  String get detailTapToReveal => 'Tap to reveal and copy';
+
+  @override
+  String get detailTokenCopied => 'Access token copied';
+
+  @override
+  String get detailRefreshState => 'Refresh status';
+
+  @override
+  String get detailNotFound => 'Instance not found';
+
+  @override
+  String get detailRecentEvents => 'Recent events';
+
+  @override
+  String get detailNoEvents =>
+      'No events yet; framework/adapter events will be recorded after the instance starts';
+
+  @override
+  String get detailOpenDashboard => 'Open Dashboard';
+
+  @override
+  String get detailStartingToast => 'Starting…';
+
+  @override
+  String get detailStoppedToast => 'Stop requested';
+
+  @override
+  String get detailRestartingToast => 'Restarting…';
+
+  @override
+  String get detailUnreachableError =>
+      'Instance not running or Dashboard unreachable';
+
+  @override
+  String get detailOverview => 'Overview';
+
+  @override
+  String get detailModules => 'Modules';
+
+  @override
+  String get detailAdapters => 'Adapters';
+
+  @override
+  String detailEnabledCount(Object count) {
+    return '$count enabled';
+  }
+
+  @override
+  String detailRunningCount(Object count) {
+    return '$count running';
+  }
+
+  @override
+  String dashboardLoadFailed(Object code) {
+    return 'Load failed ($code)';
+  }
+
+  @override
+  String get dashboardTokenCopied =>
+      'Access token copied; paste it into the login page';
+
+  @override
+  String get dashboardExternalFailed => 'Cannot open external browser';
+
+  @override
+  String get dashboardCopyTokenTooltip => 'Copy access token';
+
+  @override
+  String get dashboardExternalOpen => 'Open in external browser';
+
+  @override
+  String get dashboardCheckHint =>
+      'Make sure the instance is running and this address is reachable';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsThemeSystem => 'Follow system';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLangSystem => 'Follow system';
+
+  @override
+  String get settingsLangZh => '简体中文';
+
+  @override
+  String get settingsLangZhHant => '繁體中文';
+
+  @override
+  String get settingsLangEn => 'English';
+
+  @override
+  String get settingsLangJa => '日本語';
+
+  @override
+  String get settingsLangRu => 'Русский';
+
+  @override
+  String get settingsDownloadSource => 'Download source';
+
+  @override
+  String get settingsDownloadGithub => 'GitHub official';
+
+  @override
+  String get settingsDownloadGhfast => 'GitHub mirror (ghfast.top)';
+
+  @override
+  String get settingsDownloadGhproxy => 'GitHub mirror (gh-proxy.com)';
+
+  @override
+  String get settingsRuntime => 'Runtime';
+
+  @override
+  String get settingsRootfsTitle => 'Runtime environment (rootfs)';
+
+  @override
+  String settingsRuntimeReady(Object version) {
+    return 'Bundled Python + ErisPulse $version';
+  }
+
+  @override
+  String get settingsRootfsReady => 'Ready';
+
+  @override
+  String get settingsRootfsNotReady => 'Not ready';
+
+  @override
+  String get settingsAutoRestart => 'Auto-restart on crash';
+
+  @override
+  String get settingsAutoRestartDesc =>
+      'Restart the instance automatically after abnormal exit';
+
+  @override
+  String get settingsStopAll => 'Stop all instances';
+
+  @override
+  String get settingsStopAllDesc => 'Shut down all local instance processes';
+
+  @override
+  String get settingsStopAllConfirm => 'Stop all running local instances?';
+
+  @override
+  String get settingsStopAllAction => 'Stop all';
+
+  @override
+  String get settingsData => 'Data';
+
+  @override
+  String get settingsClearLogs => 'Clear debug log';
+
+  @override
+  String get settingsClearLogsDesc => 'Clear the proot process log buffer';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get settingsVersion => 'Version';
+
+  @override
+  String get settingsAboutApp => 'About ErisPulse-App';
+
+  @override
+  String get settingsAboutSubtitle =>
+      'Multi-device management client (launcher + Dashboard)';
+
+  @override
+  String get settingsAboutDialog =>
+      'ErisPulse multi-device management client.\nLocal instances run on proot + Ubuntu; the management UI is provided by Dashboard.\n\nMIT License';
+
+  @override
+  String get debugTitle => 'Debug info';
+
+  @override
+  String get debugCopyAllTooltip => 'Copy all';
+
+  @override
+  String get debugClearLogsTooltip => 'Clear log';
+
+  @override
+  String get debugCopiedAll => 'Full debug info copied';
+
+  @override
+  String get debugCopiedLogs => 'Log copied';
+
+  @override
+  String get debugAppVersion => 'App version';
+
+  @override
+  String get debugPackageName => 'Package';
+
+  @override
+  String get debugDeviceModel => 'Device model';
+
+  @override
+  String get debugBrand => 'Brand';
+
+  @override
+  String get debugAndroid => 'Android';
+
+  @override
+  String get debugAbi => 'ABI';
+
+  @override
+  String get debugNativeLib => 'native lib';
+
+  @override
+  String get debugRootfs => 'rootfs';
+
+  @override
+  String get debugRootfsError => 'rootfs error';
+
+  @override
+  String get debugInstanceCount => 'Instance count';
+
+  @override
+  String get debugInfoHeader => '== ErisPulse-App Debug Info ==';
+
+  @override
+  String get debugReady => 'Ready';
+
+  @override
+  String get debugNotReady => 'Not ready';
+
+  @override
+  String get debugRootfsMessage => 'rootfs message';
+
+  @override
+  String get debugLogHeader => '== Log ==';
+
+  @override
+  String get debugNoLogs =>
+      'No log yet\nOnce an instance is started, proot process output will appear here in real time';
+
+  @override
+  String get debugProcessLogs => 'Process log';
+
+  @override
+  String logsCopiedLines(Object count) {
+    return 'Copied $count lines of log';
+  }
+
+  @override
+  String get logsResume => 'Resume';
+
+  @override
+  String get logsPause => 'Pause';
+
+  @override
+  String get logsAutoScroll => 'Auto scroll';
+
+  @override
+  String logsLineCount(Object count) {
+    return '$count lines';
+  }
+
+  @override
+  String get logsEmptyTitle => 'No log';
+
+  @override
+  String get logsEmptySubtitle =>
+      'Once an instance is started, raw process output will appear here in real time';
+}
