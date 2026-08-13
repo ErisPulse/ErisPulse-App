@@ -1,0 +1,91 @@
+name: erispulse_app
+description: "ErisPulse 多端管理客户端 — 一个 App 管理多个本地 ErisPulse 实例。"
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 依赖说明
+#
+# 选型原则：
+#   - 仅依赖跨多端的插件（首期 Android，预留桌面）
+#   - 优先 official / flutter-favorite 包
+#   - 全原生 UI，无 WebView
+# ─────────────────────────────────────────────────────────────────────────────
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI 基础
+  cupertino_icons: ^1.0.8
+  dynamic_color: ^1.7.0           # 跟随系统壁纸取色
+
+  # 状态管理
+  provider: ^6.1.2
+
+  # 持久化
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2  # 实例 token / 凭据
+
+  # 网络
+  http: ^1.2.2                    # Dashboard REST
+  web_socket_channel: ^3.0.1      # 日志 / 事件流（Dashboard /ws）
+  dio: ^5.7.0                     # rootfs 断点续传下载
+
+  # 数据
+  intl: ^0.20.0                   # 数字/日期格式化
+
+  # 图表
+  fl_chart: ^0.69.2               # 系统监控折线图
+
+  # 文件 / 路径
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # 本地通知（实例崩溃 / 状态变化告警）
+  flutter_local_notifications: ^17.2.3
+
+  # Android Foreground Service（保活 + 后台常驻）
+  flutter_background_service: ^5.0.10
+
+  # WebView（内嵌 Dashboard 管理界面）
+  webview_flutter: ^4.10.0
+
+  # 外部浏览器打开 Dashboard / 链接
+  url_launcher: ^6.3.0
+
+  # 设备 / 应用信息（调试诊断页）
+  device_info_plus: ^11.0.0
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  # 测试直接 import 其内存 mock（InMemorySharedPreferencesAsync）
+  shared_preferences_platform_interface: ^2.4.0
+  # 生成应用图标
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/images/logo_square.png"
+  adaptive_icon_background: "#E3F2FD"
+  adaptive_icon_foreground: "assets/images/logo_foreground.png"
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/scripts/
+    # 运行时二进制目录（CI 注入 proot/busybox；本地保留 README 占位）
+    - assets/runtime/
+    # rootfs 目录（offline flavor 由 CI 注入 tar.xz；本地保留 README 占位）
+    - assets/rootfs/

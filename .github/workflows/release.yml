@@ -1,0 +1,270 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（如 0.2.0），留空则从 pubspec.yaml 读取"
+        required: false
+      force_rootfs:
+        description: "强制重建 rootfs（忽略已有资产）"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  # 代码质量检查（独立 job，失败不影响后续构建任务的独立性）
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.8
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib/ test/
+      - run: flutter analyze
+      - run: flutter test
+
+  # rootfs：构建或复用（该版本已有则跳过）
+  build-rootfs:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            V=$(grep '^version' pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
+            echo "version=$V" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check rootfs in release
+        id: rootfs
+        run: |
+          if [ "${{ github.event.inputs.force_rootfs }}" == "true" ]; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "force_rootfs=true, 强制重建"
+            exit 0
+          fi
+          TAG="v${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null \
+            | grep -q "rootfs-aarch64.tar.gz"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build rootfs image (arm64)
+        if: steps.rootfs.outputs.exists == 'false'
+        run: |
+          docker buildx build --platform linux/arm64 --load \
+            -t erispulse-rootfs:build -f scripts/Dockerfile.rootfs .
+
+      - name: Export rootfs + extract runtime binaries
+        if: steps.rootfs.outputs.exists == 'false'
+        run: |
+          docker create --platform linux/arm64 --name rootfs-build erispulse-rootfs:build
+          docker export rootfs-build -o rootfs.tar
+          mkdir -p /tmp/extract
+          tar -xf rootfs.tar -C /tmp/extract \
+            proot-aarch64 busybox-aarch64 loader-aarch64 \
+            libtalloc.so.2-aarch64 libandroid-shmem.so-aarch64
+          mkdir -p /tmp/clean
+          tar -xf rootfs.tar -C /tmp/clean \
+            --exclude=proot-aarch64 --exclude=busybox-aarch64 \
+            --exclude=loader-aarch64 --exclude=libtalloc.so.2-aarch64 \
+            --exclude=libandroid-shmem.so-aarch64 \
+            --exclude=build-rootfs.sh
+          tar -cf - -C /tmp/clean . | gzip -9 > rootfs.tar.gz
+          docker rm rootfs-build
+          cp /tmp/extract/proot-aarch64 proot-aarch64
+          cp /tmp/extract/busybox-aarch64 busybox-aarch64
+          cp /tmp/extract/loader-aarch64 loader-aarch64
+          cp /tmp/extract/libtalloc.so.2-aarch64 libtalloc.so.2-aarch64
+          cp /tmp/extract/libandroid-shmem.so-aarch64 libandroid-shmem.so-aarch64
+          rm -rf /tmp/extract /tmp/clean rootfs.tar
+
+      - name: Download existing rootfs assets
+        if: steps.rootfs.outputs.exists == 'true'
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          gh release download "$TAG" -R ${{ github.repository }} --clobber \
+            -p "*-rootfs-aarch64.tar.gz" -p "*-proot-aarch64" -p "*-busybox-aarch64" \
+            -p "*-loader-aarch64" -p "*-libtalloc.so.2-aarch64" \
+            -p "*-libandroid-shmem.so-aarch64"
+          mv *-rootfs-aarch64.tar.gz rootfs.tar.gz
+          mv *-proot-aarch64 proot-aarch64
+          mv *-busybox-aarch64 busybox-aarch64
+          mv *-loader-aarch64 loader-aarch64
+          mv *-libtalloc.so.2-aarch64 libtalloc.so.2-aarch64
+          mv *-libandroid-shmem.so-aarch64 libandroid-shmem.so-aarch64
+
+      - name: Upload runtime assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-assets
+          path: |
+            rootfs.tar.gz
+            proot-aarch64
+            busybox-aarch64
+            loader-aarch64
+            libtalloc.so.2-aarch64
+            libandroid-shmem.so-aarch64
+          retention-days: 7
+
+  # APK：online 不内置 rootfs，offline 内置 rootfs（矩阵并行，各自可独立重试）
+  build-apk:
+    needs: [verify, build-rootfs]
+    runs-on: ubuntu-latest
+    env:
+      # 正式签名（keystore 与口令来自 CI secrets，保证 online/offline 同签名，可覆盖升级）
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [online, offline]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.8
+          cache: true
+
+      - name: Download runtime assets
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-assets
+          path: runtime/
+
+      - name: Stage runtime binaries (jniLibs)
+        run: |
+          # proot/busybox/loader/talloc/libandroid-shmem 作为 native lib 打包进 APK（jniLibs）：
+          # 只有 native lib 目录（apk_data_file，useLegacyPackaging 提取后）
+          # 允许 untrusted_app 直接执行（execute_no_trans）。
+          # assets 里的文件落在 app 私有目录（app_data_file），无法 exec。
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          cp runtime/proot-aarch64            android/app/src/main/jniLibs/arm64-v8a/libproot.so
+          cp runtime/busybox-aarch64          android/app/src/main/jniLibs/arm64-v8a/libbusybox.so
+          cp runtime/loader-aarch64           android/app/src/main/jniLibs/arm64-v8a/libloader.so
+          cp runtime/libtalloc.so.2-aarch64   android/app/src/main/jniLibs/arm64-v8a/liblibtalloc.so.2.so
+          cp runtime/libandroid-shmem.so-aarch64 android/app/src/main/jniLibs/arm64-v8a/libandroid-shmem.so
+          chmod +x android/app/src/main/jniLibs/arm64-v8a/*.so
+
+      - name: Stage rootfs (offline only)
+        if: matrix.flavor == 'offline'
+        run: |
+          cp runtime/rootfs.tar.gz assets/rootfs/erispulse-rootfs-aarch64.tar.gz
+
+      - name: Install deps
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build APKs
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build apk --release --split-per-abi --dart-define=FLAVOR=${{ matrix.flavor }}
+          flutter build apk --release --dart-define=FLAVOR=${{ matrix.flavor }}
+
+      - name: Rename APKs (arm64-v8a + universal only)
+        run: |
+          mkdir -p out
+          V=$(grep '^version' pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
+          F="${{ matrix.flavor }}"
+          SRC="build/app/outputs/flutter-apk"
+          # 仅 arm64-v8a / universal：runtime 二进制（proot/busybox）只有 arm64 构建，
+          # armeabi-v7a / x86_64 APK 不含 native lib 无法运行
+          cp "$SRC/app-arm64-v8a-release.apk" "out/ErisPulse-App-${V}-${F}-arm64-v8a.apk"
+          cp "$SRC/app-release.apk"           "out/ErisPulse-App-${V}-${F}-universal.apk"
+          ls -lh out/
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.flavor }}
+          path: out/*.apk
+          retention-days: 7
+
+  # Release：收集全部产物，创建 / 更新 v{version}
+  release:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            V=$(grep '^version' pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
+            echo "version=$V" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Collect release assets
+        run: |
+          mkdir -p out
+          V="${{ steps.version.outputs.version }}"
+          # APK（来自 build-apk 矩阵）
+          cp artifacts/apk-online/*.apk out/ 2>/dev/null || true
+          cp artifacts/apk-offline/*.apk out/ 2>/dev/null || true
+          # rootfs + 二进制（来自 build-rootfs）
+          # rootfs 使用固定资产名：App 端通过 releases/latest/download/erispulse-rootfs-aarch64.tar.gz 下载
+          cp artifacts/runtime-assets/rootfs.tar.gz              "out/erispulse-rootfs-aarch64.tar.gz"
+          cp artifacts/runtime-assets/proot-aarch64              "out/ErisPulse-App-${V}-proot-aarch64"
+          cp artifacts/runtime-assets/busybox-aarch64            "out/ErisPulse-App-${V}-busybox-aarch64"
+          cp artifacts/runtime-assets/loader-aarch64             "out/ErisPulse-App-${V}-loader-aarch64"
+          cp artifacts/runtime-assets/libtalloc.so.2-aarch64     "out/ErisPulse-App-${V}-libtalloc.so.2-aarch64"
+          cp artifacts/runtime-assets/libandroid-shmem.so-aarch64 "out/ErisPulse-App-${V}-libandroid-shmem.so-aarch64"
+          ls -lh out/
+
+      - name: Create / update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          TAG="v$V"
+          NOTES=$(sed -n "/^## \[$V\] -/,/^## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+
+          if gh release view "$TAG" &>/dev/null; then
+            gh release edit "$TAG" --notes "$NOTES" --title "ErisPulse-App $TAG"
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --title "ErisPulse-App $TAG" --notes "$NOTES"
+          fi
