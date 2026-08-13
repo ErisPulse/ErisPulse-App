@@ -286,13 +286,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get createSdkVersionHelper => 'このインスタンス専用の仮想環境にインストール';
 
   @override
-  String get createInstallDashboard => 'Dashboard モジュールをインストール';
-
-  @override
-  String get createInstallDashboardDesc =>
-      'SDK と一緒に ErisPulse-Dashboard をインストール';
-
-  @override
   String get createEnvFresh => '新規環境';
 
   @override
@@ -426,13 +419,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get detailClearLogs => 'ログをクリア';
 
   @override
-  String get detailConfigCopy => '設定をコピー';
-
-  @override
   String get detailAuthInvalid => 'アクセストークンが無効または期限切れです。インスタンスのトークンを確認してください';
-
-  @override
-  String get detailConfigRender => '表示';
 
   @override
   String get detailConfigSource => 'ソース';
@@ -783,6 +770,20 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String logsCopiedLines(Object count) {
     return '$count 行のログをコピーしました';
+  }
+
+  @override
+  String get logsFilter => 'レベルでフィルター';
+
+  @override
+  String get logsFilterAll => 'すべて';
+
+  @override
+  String get logsDownload => 'ログをダウンロード';
+
+  @override
+  String logsDownloaded(Object path) {
+    return '保存先: $path';
   }
 
   @override

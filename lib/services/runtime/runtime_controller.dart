@@ -217,14 +217,13 @@ class RuntimeController extends ChangeNotifier {
 
   /// 为实例准备独立 venv（fresh 新建 / clone 复制源实例环境）。
   ///
-  /// 桌面：内置 Python 建 venv + pip 安装；移动端经 FGS 在 rootfs 内执行，
-  /// 结果由 `instanceEnv` 事件异步回填。返回 0 表示成功。
+  /// 桌面：内置 Python 建 venv + pip 安装（随装 Dashboard）；移动端经 FGS
+  /// 在 rootfs 内执行，结果由 `instanceEnv` 事件异步回填。返回 0 表示成功。
   Future<int> prepareInstanceEnvironment({
     required Instance instance,
     required String mode, // 'fresh' | 'clone'
     String? sourceInstanceId,
     String? sdkVersion,
-    bool installDashboard = false,
     String? indexUrl,
     void Function(String line)? onLog,
   }) {
@@ -239,7 +238,6 @@ class RuntimeController extends ChangeNotifier {
       return DesktopSdk.prepareInstance(
         instanceId: instance.id,
         version: sdkVersion ?? DesktopSdk.kDefaultVersion,
-        installDashboard: installDashboard,
         indexUrl: indexUrl ?? pypiIndexUrl(kPypiSourceOfficial),
         onLog: (l) {
           debugLog.add(instance.id, l);
@@ -261,7 +259,6 @@ class RuntimeController extends ChangeNotifier {
       ).toJson(),
       'mode': mode,
       'sdkVersion': sdkVersion,
-      'installDashboard': installDashboard,
       'indexUrl': indexUrl,
       'sourceWorkingDir': src?.workingDir,
     });

@@ -203,12 +203,11 @@ class DesktopSdk {
 
   // ── 实例环境（每实例独立 venv）──────────────────────
 
-  /// 为实例创建 venv 并安装 ErisPulse SDK（可选 Dashboard）。
+  /// 为实例创建 venv 并安装 ErisPulse SDK（随装 ErisPulse-Dashboard）。
   /// 返回 0 表示成功。
   static Future<int> prepareInstance({
     required String instanceId,
     required String version,
-    required bool installDashboard,
     required String indexUrl,
     required void Function(String line) onLog,
   }) async {
@@ -235,11 +234,9 @@ class DesktopSdk {
       '--index-url',
       indexUrl,
       pkgSpec,
+      'ErisPulse-Dashboard',
     ];
-    if (installDashboard) args.add('ErisPulse-Dashboard');
-    onLog(
-      '安装 $pkgSpec${installDashboard ? ' + ErisPulse-Dashboard' : ''} …',
-    );
+    onLog('安装 $pkgSpec + ErisPulse-Dashboard …');
     r = await Process.run(venvPy, args);
     if (r.exitCode != 0) {
       onLog('安装失败:\n${r.stdout}\n${r.stderr}');
@@ -350,14 +347,15 @@ class DesktopSdk {
   /// 版本比较（公开，供 UI 排序）。返回 >0 表示 a 新于 b。
   static int compareVersions(String a, String b) => _compareVersions(a, b);
 
-  /// 简易版本号比较（按 . 分段，数字优先）。返回 >0 表示 a 新于 b。
+  /// 版本号比较：先比基础数字段；基础段相同且一方为预发布时，
+  /// 预发布（dev/alpha/beta/rc 等）排在正式版前（降序列表在前）。
   static int _compareVersions(String a, String b) {
-    final as = a.split(RegExp(r'[\.\-+]'));
-    final bs = b.split(RegExp(r'[\.\-+]'));
-    final len = as.length > bs.length ? as.length : bs.length;
+    final ab = _baseParts(a);
+    final bb = _baseParts(b);
+    final len = ab.length > bb.length ? ab.length : bb.length;
     for (var i = 0; i < len; i++) {
-      final av = as.length > i ? as[i] : '';
-      final bv = bs.length > i ? bs[i] : '';
+      final av = ab.length > i ? ab[i] : '';
+      final bv = bb.length > i ? bb[i] : '';
       final an = int.tryParse(av);
       final bn = int.tryParse(bv);
       if (an != null && bn != null) {
@@ -367,6 +365,25 @@ class DesktopSdk {
         if (cmp != 0) return cmp;
       }
     }
+    final aPre = _hasPreRelease(a);
+    final bPre = _hasPreRelease(b);
+    if (aPre != bPre) return aPre ? 1 : -1;
     return 0;
   }
+
+  /// 版本的基础数字段（截掉预发布标识及之后，如 `2.7.1-dev.0` → `[2, 7, 1]`）
+  static List<String> _baseParts(String v) {
+    final parts = v.split(RegExp(r'[\.\-+]'));
+    final out = <String>[];
+    for (final p in parts) {
+      if (int.tryParse(p) == null) break;
+      out.add(p);
+    }
+    return out.isEmpty ? parts : out;
+  }
+
+  /// 是否为预发布版本（含 alpha/beta/rc/dev/preview 标识）
+  static bool _hasPreRelease(String v) =>
+      RegExp(r'(a|alpha|b|beta|rc|dev|preview)', caseSensitive: false)
+          .hasMatch(v);
 }

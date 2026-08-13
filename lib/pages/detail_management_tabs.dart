@@ -10,7 +10,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -322,17 +321,6 @@ class _ConfigTabState extends State<ConfigTab> {
     setState(() => _configFuture = DashboardApi(widget.instance).getConfig());
   }
 
-  Future<void> _copy(String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).detailConfigCopied),
-        ),
-      );
-    }
-  }
-
   Future<void> _editLeaf(_ConfigLeaf leaf) async {
     final result = await showDialog<({dynamic value, bool changed})>(
       context: context,
@@ -372,33 +360,7 @@ class _ConfigTabState extends State<ConfigTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(
-            children: [
-              Text(
-                l10n.detailConfigRender,
-                style: theme.textTheme.titleSmall,
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.copy_outlined),
-                tooltip: l10n.detailConfigCopy,
-                onPressed: () {
-                  _configFuture.then(
-                    (c) => _copy(const JsonEncoder.withIndent('  ').convert(c)),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(child: _buildRender(theme, l10n)),
-      ],
-    );
+    return _buildRender(theme, l10n);
   }
 
   Widget _buildRender(ThemeData theme, AppLocalizations l10n) {

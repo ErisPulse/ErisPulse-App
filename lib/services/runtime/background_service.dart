@@ -101,7 +101,6 @@ Future<void> onBackgroundStart(ServiceInstance service) async {
       mode: data['mode'] as String? ?? 'fresh',
       sourceWorkingDir: data['sourceWorkingDir'] as String?,
       sdkVersion: data['sdkVersion'] as String?,
-      installDashboard: data['installDashboard'] as bool? ?? false,
       indexUrl: data['indexUrl'] as String?,
     );
     service.invoke('instanceEnv', {'id': inst.id, 'ready': ok});

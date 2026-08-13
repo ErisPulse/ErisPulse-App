@@ -432,15 +432,14 @@ class ProotManager {
   /// 为实例准备独立 venv（移动端实例分离）。
   ///
   /// - `fresh`：`python3 -m venv --system-site-packages`（离线继承 rootfs 预烘焙
-  ///   ErisPulse），可选按 [sdkVersion] 安装 ErisPulse / [installDashboard] 安装
-  ///   ErisPulse-Dashboard（走 [indexUrl] 镜像）
+  ///   ErisPulse），并按 [sdkVersion] 安装 ErisPulse + 随装 ErisPulse-Dashboard
+  ///   （走 [indexUrl] 镜像）
   /// - `clone`：复制源实例（[sourceWorkingDir]）的 venv，继承其 SDK 版本与已装包
   Future<bool> prepareInstanceEnvironment(
     InstanceData data, {
     required String mode,
     String? sourceWorkingDir,
     String? sdkVersion,
-    bool installDashboard = false,
     String? indexUrl,
   }) async {
     if (!isRootfsReady) {
@@ -482,16 +481,13 @@ class ProotManager {
         _debug(data.id, '创建 venv 失败 exit=$exit');
         return false;
       }
-
-      if ((sdkVersion != null && sdkVersion.isNotEmpty) || installDashboard) {
+      if (sdkVersion != null && sdkVersion.isNotEmpty) {
         final args = <String>['$venv/bin/pip', 'install'];
         if (indexUrl != null && indexUrl.isNotEmpty) {
           args.addAll(['--index-url', indexUrl]);
         }
-        if (sdkVersion != null && sdkVersion.isNotEmpty) {
-          args.add('ErisPulse==$sdkVersion');
-        }
-        if (installDashboard) args.add('ErisPulse-Dashboard');
+        args.add('ErisPulse==$sdkVersion');
+        args.add('ErisPulse-Dashboard');
         _debug(data.id, 'pip install ${args.sublist(2).join(' ')} …');
         proc = await _runProot(data, args);
         exit = await proc.exitCode;

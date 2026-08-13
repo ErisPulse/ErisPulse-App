@@ -242,22 +242,43 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                   onSelected: (v) {
                     if (v == 'start') _start();
                     if (v == 'stop') _stop();
+                    if (v == 'softRestart') _softRestart();
                     if (v == 'restart') _restart();
                   },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'start',
-                      child: Text(l10n.commonStart),
-                    ),
-                    PopupMenuItem(
-                      value: 'stop',
-                      child: Text(l10n.commonStop),
-                    ),
-                    PopupMenuItem(
-                      value: 'restart',
-                      child: Text(l10n.commonRestart),
-                    ),
-                  ],
+                  itemBuilder: (_) {
+                    final running = inst != null &&
+                        (inst.status == InstanceStatus.running ||
+                            inst.status == InstanceStatus.starting);
+                    final startable = inst != null &&
+                        !inst.isRemote &&
+                        (inst.status == InstanceStatus.stopped ||
+                            inst.status == InstanceStatus.error);
+                    return [
+                      if (startable)
+                        PopupMenuItem(
+                          value: 'start',
+                          child: Text(l10n.commonStart),
+                        ),
+                      if (inst != null && !inst.isRemote && running) ...[
+                        PopupMenuItem(
+                          value: 'stop',
+                          child: Text(l10n.commonStop),
+                        ),
+                      ],
+                      if (running) ...[
+                        PopupMenuItem(
+                          value: 'softRestart',
+                          child: Text(l10n.commonSoftRestart),
+                        ),
+                      ],
+                      if (inst != null && !inst.isRemote && running) ...[
+                        PopupMenuItem(
+                          value: 'restart',
+                          child: Text(l10n.commonHardRestart),
+                        ),
+                      ],
+                    ];
+                  },
                 ),
               ],
               bottom: TabBar(
@@ -321,11 +342,6 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
           ),
           const SizedBox(height: 16),
           _ActionSection(
-            instance: inst,
-            onStart: _start,
-            onStop: _stop,
-            onRestart: _restart,
-            onSoftRestart: _softRestart,
             onOpenDashboard: _openDashboard,
             onOpenLogs: _openLogs,
           ),
@@ -1034,23 +1050,13 @@ class _EventLine extends StatelessWidget {
   }
 }
 
-/// 操作区：打开 Dashboard + 查看日志 + 本地启停
+/// 操作区：打开 Dashboard + 查看日志（启停 / 重启已移至右上角菜单）
 class _ActionSection extends StatelessWidget {
   const _ActionSection({
-    required this.instance,
-    required this.onStart,
-    required this.onStop,
-    required this.onRestart,
-    required this.onSoftRestart,
     required this.onOpenDashboard,
     required this.onOpenLogs,
   });
 
-  final Instance instance;
-  final VoidCallback onStart;
-  final VoidCallback onStop;
-  final VoidCallback onRestart;
-  final VoidCallback onSoftRestart;
   final VoidCallback onOpenDashboard;
   final VoidCallback onOpenLogs;
 
@@ -1077,47 +1083,6 @@ class _ActionSection extends StatelessWidget {
           icon: const Icon(Icons.terminal_outlined),
           label: Text(l10n.commonViewLogs),
         ),
-        if (!instance.isRemote) ...[
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              if (instance.status == InstanceStatus.running ||
-                  instance.status == InstanceStatus.starting) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onStop,
-                    icon: const Icon(Icons.stop),
-                    label: Text(l10n.commonStop),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onSoftRestart,
-                    icon: const Icon(Icons.autorenew),
-                    label: Text(l10n.commonSoftRestart),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onRestart,
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(l10n.commonHardRestart),
-                  ),
-                ),
-              ] else ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onStart,
-                    icon: const Icon(Icons.play_arrow),
-                    label: Text(l10n.commonStart),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
       ],
     );
   }

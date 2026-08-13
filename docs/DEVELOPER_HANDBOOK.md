@@ -12,7 +12,7 @@
 - proot + Ubuntu rootfs + Python + ErisPulse 运行时内嵌，离线可用
 - Android Foreground Service 后台保活 + 崩溃自动重启
 
-仓库：`https://github.com/wsu2059q/ErisPulse-APP`（分支 `main`，单 commit "init"）
+仓库：`https://github.com/ErisPulse/ErisPulse-App`（分支 `main`）
 
 ---
 
@@ -173,7 +173,7 @@ JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.20.8-hotspot
 
 ```powershell
 # 准备运行时二进制（放 jniLibs + assets/runtime）
-# proot/busybox 从 rootfs release 下载：https://github.com/wsu2059q/ErisPulse-APP/releases
+# proot/busybox 从 rootfs release 下载：https://github.com/ErisPulse/ErisPulse-App/releases
 # 放到 android/app/src/main/jniLibs/arm64-v8a/libproot.so（命名 .so 必须！）
 # rootfs 放 assets/rootfs/erispulse-rootfs-aarch64.tar.gz（offline 需要）
 

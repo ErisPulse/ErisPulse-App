@@ -285,12 +285,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createSdkVersionHelper => '安装到该实例自己的虚拟环境中';
 
   @override
-  String get createInstallDashboard => '安装 Dashboard 模块';
-
-  @override
-  String get createInstallDashboardDesc => '随 SDK 一起安装 ErisPulse-Dashboard';
-
-  @override
   String get createEnvFresh => '全新环境';
 
   @override
@@ -422,13 +416,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get detailClearLogs => '清空日志';
 
   @override
-  String get detailConfigCopy => '复制配置';
-
-  @override
   String get detailAuthInvalid => '访问令牌无效或已过期，请检查实例令牌';
-
-  @override
-  String get detailConfigRender => '渲染';
 
   @override
   String get detailConfigSource => '源码';
@@ -781,6 +769,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get logsFilter => '等级过滤';
+
+  @override
+  String get logsFilterAll => '全部';
+
+  @override
+  String get logsDownload => '下载日志';
+
+  @override
+  String logsDownloaded(Object path) {
+    return '已保存到 $path';
+  }
+
+  @override
   String get logsResume => '继续';
 
   @override
@@ -1082,12 +1084,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get createSdkVersionHelper => '安裝到該實例自己的虛擬環境中';
 
   @override
-  String get createInstallDashboard => '安裝 Dashboard 模組';
-
-  @override
-  String get createInstallDashboardDesc => '隨 SDK 一起安裝 ErisPulse-Dashboard';
-
-  @override
   String get createEnvFresh => '全新環境';
 
   @override
@@ -1219,13 +1215,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get detailClearLogs => '清空日誌';
 
   @override
-  String get detailConfigCopy => '複製組態';
-
-  @override
   String get detailAuthInvalid => '存取權杖無效或已過期，請檢查實例權杖';
-
-  @override
-  String get detailConfigRender => '渲染';
 
   @override
   String get detailConfigSource => '原始碼';
@@ -1575,6 +1565,20 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String logsCopiedLines(Object count) {
     return '已複製 $count 行日誌';
+  }
+
+  @override
+  String get logsFilter => '等級過濾';
+
+  @override
+  String get logsFilterAll => '全部';
+
+  @override
+  String get logsDownload => '下載日誌';
+
+  @override
+  String logsDownloaded(Object path) {
+    return '已保存到 $path';
   }
 
   @override

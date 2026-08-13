@@ -48,9 +48,6 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
   /// 选中的 SDK 版本（全新环境）
   String? _sdkVersion;
 
-  /// 是否随环境安装 Dashboard
-  bool _installDashboard = true;
-
   /// 环境来源：全新环境 / 基于已有实例
   _EnvMode _envMode = _EnvMode.fresh;
 
@@ -260,12 +257,6 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
                     ],
                     onChanged: (v) => setState(() => _sdkVersion = v),
                   ),
-                SwitchListTile(
-                  title: Text(l10n.createInstallDashboard),
-                  subtitle: Text(l10n.createInstallDashboardDesc),
-                  value: _installDashboard,
-                  onChanged: (v) => setState(() => _installDashboard = v),
-                ),
               ] else ...[
                 Padding(
                   padding: const EdgeInsets.only(left: 16, top: 4),
@@ -360,7 +351,6 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
           sdkVersion: _envMode == _EnvMode.fresh
               ? (_sdkVersion ?? DesktopSdk.kDefaultVersion)
               : null,
-          installDashboard: _installDashboard,
           indexUrl: pypiIndexUrl(settings.pypiSource),
           sourceInstanceId:
               _envMode == _EnvMode.clone ? _sourceInstanceId : null,
@@ -398,7 +388,6 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
     required Instance instance,
     required _EnvMode mode,
     String? sdkVersion,
-    required bool installDashboard,
     required String indexUrl,
     String? sourceInstanceId,
   }) async {
@@ -409,7 +398,6 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
         instance: instance,
         mode: mode,
         sdkVersion: sdkVersion,
-        installDashboard: installDashboard,
         indexUrl: indexUrl,
         sourceInstanceId: sourceInstanceId,
       ),
@@ -453,7 +441,6 @@ class _EnvProgressDialog extends StatefulWidget {
     required this.instance,
     required this.mode,
     this.sdkVersion,
-    required this.installDashboard,
     required this.indexUrl,
     this.sourceInstanceId,
   });
@@ -461,7 +448,6 @@ class _EnvProgressDialog extends StatefulWidget {
   final Instance instance;
   final _EnvMode mode;
   final String? sdkVersion;
-  final bool installDashboard;
   final String indexUrl;
   final String? sourceInstanceId;
 
@@ -531,7 +517,6 @@ class _EnvProgressDialogState extends State<_EnvProgressDialog> {
           mode: widget.mode.name,
           sourceInstanceId: widget.sourceInstanceId,
           sdkVersion: widget.sdkVersion,
-          installDashboard: widget.installDashboard,
           indexUrl: widget.indexUrl,
           onLog: _append,
         );

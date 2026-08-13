@@ -295,13 +295,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Устанавливается в собственное виртуальное окружение экземпляра';
 
   @override
-  String get createInstallDashboard => 'Установить модуль Dashboard';
-
-  @override
-  String get createInstallDashboardDesc =>
-      'ErisPulse-Dashboard будет установлен вместе с SDK';
-
-  @override
   String get createEnvFresh => 'Новое окружение';
 
   @override
@@ -440,14 +433,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get detailClearLogs => 'Очистить журнал';
 
   @override
-  String get detailConfigCopy => 'Копировать конфиг';
-
-  @override
   String get detailAuthInvalid =>
       'Недействительный или истёкший токен доступа. Проверьте токен экземпляра';
-
-  @override
-  String get detailConfigRender => 'Отображение';
 
   @override
   String get detailConfigSource => 'Исходник';
@@ -807,6 +794,20 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String logsCopiedLines(Object count) {
     return 'Скопировано строк журнала: $count';
+  }
+
+  @override
+  String get logsFilter => 'Фильтр по уровню';
+
+  @override
+  String get logsFilterAll => 'Все';
+
+  @override
+  String get logsDownload => 'Скачать лог';
+
+  @override
+  String logsDownloaded(Object path) {
+    return 'Сохранено в $path';
   }
 
   @override

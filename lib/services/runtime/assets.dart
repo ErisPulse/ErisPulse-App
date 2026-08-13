@@ -21,7 +21,7 @@ const AppFlavor kFlavor =
 const String kReleaseBase = String.fromEnvironment(
   'ERISPULSE_RELEASE_BASE',
   defaultValue:
-      'https://github.com/wsu2059q/ErisPulse-App/releases/latest/download',
+      'https://github.com/ErisPulse/ErisPulse-App/releases/latest/download',
 );
 
 /// GitHub Releases 下载源标识（持久化于 AppSettings，仅用于移动端 rootfs/proot/busybox 下载）：
@@ -63,8 +63,8 @@ String resolveReleaseBase(String source) => mirrorUrl(source, kReleaseBase);
 /// rootfs 发行版本（与 CI 构建产物对应）。
 const String kRootfsVersion = '1.0.0';
 
-/// 项目开源地址（设置页"开源地址"；迁移组织后更新为 ErisPulse/ErisPulse-App）。
-const String kOpenSourceUrl = 'https://github.com/wsu2059q/ErisPulse-App';
+/// 项目开源地址（设置页"开源地址"）。
+const String kOpenSourceUrl = 'https://github.com/ErisPulse/ErisPulse-App';
 
 // 资产 / 文件名常量
 

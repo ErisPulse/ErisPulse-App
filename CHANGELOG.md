@@ -2,7 +2,7 @@
 
 版本遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
 
-## [0.2.0] - 2026/08/14
+## [0.1.1] - 2026/08/14
 
 ### 新增
 
@@ -39,6 +39,17 @@
   `module` 字段），桌面 / 移动端统一（历史用 `/api/logs` 填充 + WS 实时）
 - 配置页删除源码模式，只保留渲染（JSON 树 + 单键编辑）
 - 修复实例安装包被装到系统环境的问题（见上"每实例独立 venv"）
+- 适配器 Tab 过滤混排的模块条目（只保留 `type=adapter`）
+- 配置 Tab 删除顶部"渲染 / 复制"栏，只保留配置树
+- 日志页新增等级过滤与导出下载（系统下载 / 文档目录）
+- PyPI 版本排序：预发布（dev/alpha/beta/rc）排在对应正式版之前
+- 详情页操作按钮移入右上角菜单（停止 / 软重启 / 重启进程），概览页更简洁
+- 开源地址与 rootfs 下载镜像更新为 `ErisPulse/ErisPulse-App`
+- CI：修复 Windows 打包步骤 PowerShell 语法、macOS ditto 产物路径（`erispulse_app.app`）
+
+### 变更
+
+- Dashboard 随 SDK 一起安装（移除"安装 Dashboard 模块"开关，恒装 `ErisPulse-Dashboard`）
 
 ## [0.1.0] - 2026/08/13
 

@@ -3,8 +3,11 @@
 // 通过 Dashboard WebSocket（/Dashboard/ws）实时接收日志（log_entry），
 // 打开时先用 /api/logs 拉取历史填充；桌面/移动端统一。
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -28,6 +31,9 @@ class _LogsPageState extends State<LogsPage> {
   bool _autoScroll = true;
   bool _paused = false;
   LogStream? _stream;
+
+  /// 等级过滤（null = 全部）
+  LogLevel? _levelFilter;
 
   @override
   void initState() {
@@ -75,6 +81,43 @@ class _LogsPageState extends State<LogsPage> {
     }
   }
 
+  /// 导出日志到系统下载目录（桌面 / Android）或 app 文档目录（iOS 回退）
+  Future<void> _download(List<LogEntry> entries) async {
+    final text = entries
+        .map(
+          (e) => '${e.timestamp.toLocal().toString().substring(11, 19)} '
+              '[${e.level.name}] ${e.logger} ${e.message}',
+        )
+        .join('\n');
+    final name =
+        context.read<InstanceManager>().findById(widget.instanceId)?.name ??
+            'instance';
+    try {
+      final dir = await getDownloadsDirectory() ??
+          await getApplicationDocumentsDirectory();
+      final file = File(
+        '${dir.path}/erispulse-$name-'
+        '${DateTime.now().millisecondsSinceEpoch}.log',
+      );
+      await file.writeAsString(text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).logsDownloaded(file.path),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -94,6 +137,9 @@ class _LogsPageState extends State<LogsPage> {
               listenable: stream,
               builder: (context, _) {
                 final entries = stream.entries;
+                final visible = _levelFilter == null
+                    ? entries
+                    : entries.where((e) => e.level >= _levelFilter!).toList();
                 if (_autoScroll && !_paused) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scroll.hasClients) {
@@ -103,9 +149,9 @@ class _LogsPageState extends State<LogsPage> {
                 }
                 return Column(
                   children: [
-                    _buildToolbar(context, entries),
+                    _buildToolbar(context, visible),
                     const Divider(height: 1),
-                    Expanded(child: _buildBody(entries)),
+                    Expanded(child: _buildBody(visible)),
                   ],
                 );
               },
@@ -141,6 +187,31 @@ class _LogsPageState extends State<LogsPage> {
             icon: const Icon(Icons.copy_all_outlined),
             tooltip: l10n.commonCopyAll,
             onPressed: () => _copyAll(entries),
+          ),
+          PopupMenuButton<LogLevel?>(
+            icon: const Icon(Icons.filter_list),
+            tooltip: l10n.logsFilter,
+            onSelected: (v) => setState(() => _levelFilter = v),
+            itemBuilder: (_) => [
+              PopupMenuItem<LogLevel?>(
+                value: null,
+                child: Text(
+                  l10n.logsFilterAll + (_levelFilter == null ? ' ✓' : ''),
+                ),
+              ),
+              for (final lv in LogLevel.values)
+                PopupMenuItem<LogLevel?>(
+                  value: lv,
+                  child: Text(
+                    lv.name.toUpperCase() + (_levelFilter == lv ? ' ✓' : ''),
+                  ),
+                ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: l10n.logsDownload,
+            onPressed: () => _download(entries),
           ),
           const Spacer(),
           Text(

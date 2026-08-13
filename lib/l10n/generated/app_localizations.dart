@@ -637,18 +637,6 @@ abstract class AppLocalizations {
   /// **'Installed into this instance\'s own virtual environment'**
   String get createSdkVersionHelper;
 
-  /// No description provided for @createInstallDashboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Install Dashboard module'**
-  String get createInstallDashboard;
-
-  /// No description provided for @createInstallDashboardDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Installs ErisPulse-Dashboard along with the SDK'**
-  String get createInstallDashboardDesc;
-
   /// No description provided for @createEnvFresh.
   ///
   /// In en, this message translates to:
@@ -907,23 +895,11 @@ abstract class AppLocalizations {
   /// **'Clear logs'**
   String get detailClearLogs;
 
-  /// No description provided for @detailConfigCopy.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy config'**
-  String get detailConfigCopy;
-
   /// No description provided for @detailAuthInvalid.
   ///
   /// In en, this message translates to:
   /// **'Access token invalid or expired. Check the instance token.'**
   String get detailAuthInvalid;
-
-  /// No description provided for @detailConfigRender.
-  ///
-  /// In en, this message translates to:
-  /// **'Render'**
-  String get detailConfigRender;
 
   /// No description provided for @detailConfigSource.
   ///
@@ -1590,6 +1566,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied {count} lines of log'**
   String logsCopiedLines(Object count);
+
+  /// No description provided for @logsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by level'**
+  String get logsFilter;
+
+  /// No description provided for @logsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get logsFilterAll;
+
+  /// No description provided for @logsDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download log'**
+  String get logsDownload;
+
+  /// No description provided for @logsDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String logsDownloaded(Object path);
 
   /// No description provided for @logsResume.
   ///

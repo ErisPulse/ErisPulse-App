@@ -294,13 +294,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Installed into this instance\'s own virtual environment';
 
   @override
-  String get createInstallDashboard => 'Install Dashboard module';
-
-  @override
-  String get createInstallDashboardDesc =>
-      'Installs ErisPulse-Dashboard along with the SDK';
-
-  @override
   String get createEnvFresh => 'Fresh environment';
 
   @override
@@ -439,14 +432,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailClearLogs => 'Clear logs';
 
   @override
-  String get detailConfigCopy => 'Copy config';
-
-  @override
   String get detailAuthInvalid =>
       'Access token invalid or expired. Check the instance token.';
-
-  @override
-  String get detailConfigRender => 'Render';
 
   @override
   String get detailConfigSource => 'Source';
@@ -804,6 +791,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String logsCopiedLines(Object count) {
     return 'Copied $count lines of log';
+  }
+
+  @override
+  String get logsFilter => 'Filter by level';
+
+  @override
+  String get logsFilterAll => 'All';
+
+  @override
+  String get logsDownload => 'Download log';
+
+  @override
+  String logsDownloaded(Object path) {
+    return 'Saved to $path';
   }
 
   @override

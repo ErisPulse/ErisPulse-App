@@ -229,7 +229,12 @@ class DashboardApi {
   Future<List<AdapterInfo>> getAdapters() async {
     final json = await _getJson('/modules');
     final list = json['modules'] as List? ?? json['data'] as List? ?? [];
-    return AdapterInfo.fromList(list);
+    // 后端 /modules 混排返回 module + adapter，只保留 adapter 条目
+    final adapters = list
+        .whereType<Map<String, dynamic>>()
+        .where((e) => (e['type']?.toString() ?? '') == 'adapter')
+        .toList();
+    return AdapterInfo.fromList(adapters);
   }
 
   /// 执行适配器动作（enable/disable/load/unload/reload）
