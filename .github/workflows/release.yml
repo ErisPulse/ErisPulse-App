@@ -258,12 +258,15 @@ jobs:
 
       - name: Determine version
         id: version
+        shell: bash
         run: |
           V=$(grep '^version' pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
           echo "version=$V" >> $GITHUB_OUTPUT
 
       - name: Fetch bundled Python (python-build-standalone)
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
           PA="${{ matrix.platform_arch }}"
@@ -272,9 +275,17 @@ jobs:
             linux-x64)   triple="x86_64-unknown-linux-gnu" ;;
             macos-arm64) triple="aarch64-apple-darwin" ;;
           esac
-          ASSET=$(curl -sL "https://api.github.com/repos/astral-sh/python-build-standalone/releases?per_page=100" \
-            | jq -r --arg t "$triple" \
-              '[.[].assets[] | select(.name | test("cpython-3\\.15\\..*" + $t + ".*install_only\\.tar\\.gz$"))][0].browser_download_url')
+          RESP=$(curl -sL --retry 3 --retry-delay 2 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/astral-sh/python-build-standalone/releases?per_page=100")
+          echo "$RESP" | jq -e 'type == "array"' >/dev/null 2>&1 || {
+            echo "::error::GitHub API 响应异常（可能触发限流）"
+            echo "$RESP" | head -c 500
+            exit 1
+          }
+          ASSET=$(echo "$RESP" | jq -r --arg t "$triple" \
+            '[.[].assets[] | select(.name | test("cpython-3\\.15\\..*" + $t + ".*install_only\\.tar\\.gz$"))][0].browser_download_url')
           if [ -z "$ASSET" ] || [ "$ASSET" = "null" ]; then
             echo "::error::No bundled Python asset for $PA"
             exit 1
