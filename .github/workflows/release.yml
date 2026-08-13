@@ -315,7 +315,7 @@ jobs:
 
       - name: Build macOS (unsigned)
         if: runner.os == 'macOS'
-        run: flutter build macos --release --no-codesign
+        run: flutter build macos --release
 
       - name: Package Windows
         if: runner.os == 'Windows'
