@@ -347,8 +347,9 @@ class DesktopSdk {
   /// 版本比较（公开，供 UI 排序）。返回 >0 表示 a 新于 b。
   static int compareVersions(String a, String b) => _compareVersions(a, b);
 
-  /// 版本号比较：先比基础数字段；基础段相同且一方为预发布时，
-  /// 预发布（dev/alpha/beta/rc 等）排在正式版前（降序列表在前）。
+  /// 版本号比较（PEP 440 语义）：先比基础数字段；基础段相同且一方为
+  /// 预发布时，正式版排在预发布之前；同为预发布时按 pre 段数字比较
+  /// （如 `2.7.1.dev4` > `2.7.1.dev3`）。
   static int _compareVersions(String a, String b) {
     final ab = _baseParts(a);
     final bb = _baseParts(b);
@@ -367,7 +368,30 @@ class DesktopSdk {
     }
     final aPre = _hasPreRelease(a);
     final bPre = _hasPreRelease(b);
-    if (aPre != bPre) return aPre ? 1 : -1;
+    if (aPre != bPre) return aPre ? -1 : 1; // 正式版在前
+    if (aPre) return _comparePreParts(a, b);
+    return 0;
+  }
+
+  /// 比较两个预发布版本的后缀段（如 `dev4` vs `dev3`），数字段优先
+  static int _comparePreParts(String a, String b) {
+    final ap = _preParts(a);
+    final bp = _preParts(b);
+    final len = ap.length > bp.length ? ap.length : bp.length;
+    for (var i = 0; i < len; i++) {
+      final av = ap.length > i ? ap[i] : '';
+      final bv = bp.length > i ? bp[i] : '';
+      final an = int.tryParse(av);
+      final bn = int.tryParse(bv);
+      if (an != null && bn != null) {
+        if (an != bn) return an - bn;
+      } else if (an == null && bn == null) {
+        final cmp = av.compareTo(bv);
+        if (cmp != 0) return cmp;
+      } else {
+        return an != null ? 1 : -1;
+      }
+    }
     return 0;
   }
 
@@ -380,6 +404,14 @@ class DesktopSdk {
       out.add(p);
     }
     return out.isEmpty ? parts : out;
+  }
+
+  /// 预发布后缀段（第一个非数字段开始，如 `2.7.1-dev.0` → `[dev, 0]`）
+  static List<String> _preParts(String v) {
+    final parts = v.split(RegExp(r'[\.\-+]'));
+    final idx = parts.indexWhere((p) => int.tryParse(p) == null);
+    if (idx < 0) return const [];
+    return parts.sublist(idx);
   }
 
   /// 是否为预发布版本（含 alpha/beta/rc/dev/preview 标识）

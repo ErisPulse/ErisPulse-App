@@ -42,7 +42,10 @@
 - 适配器 Tab 过滤混排的模块条目（只保留 `type=adapter`）
 - 配置 Tab 删除顶部"渲染 / 复制"栏，只保留配置树
 - 日志页新增等级过滤与导出下载（系统下载 / 文档目录）
-- PyPI 版本排序：预发布（dev/alpha/beta/rc）排在对应正式版之前
+- PyPI 版本排序修正：正式版排在预发布之前（`2.7.1` > `2.7.1.dev4` > … > `2.7.1.dev0`），
+  预发布按后缀数字排序（PEP 440 语义）
+- 桌面 App 关闭时终止全部实例进程（`AppLifecycleListener.onExitRequested`），
+  不再残留 python 进程
 - 详情页操作按钮移入右上角菜单（停止 / 软重启 / 重启进程），概览页更简洁
 - 开源地址与 rootfs 下载镜像更新为 `ErisPulse/ErisPulse-App`
 - CI：修复 Windows 打包步骤 PowerShell 语法、macOS ditto 产物路径（`erispulse_app.app`）

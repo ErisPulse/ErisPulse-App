@@ -10,6 +10,7 @@
 
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show AppExitResponse;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -97,43 +98,82 @@ class ErisPulseApp extends StatelessWidget {
     return Consumer<AppSettings>(
       builder: (context, settings, _) => DynamicColorBuilder(
         builder: (lightDynamic, darkDynamic) {
-          return MaterialApp(
-            title: 'ErisPulse',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: lightDynamic ??
-                  ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
-              brightness: Brightness.light,
+          return _ExitHandler(
+            child: MaterialApp(
+              title: 'ErisPulse',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                useMaterial3: true,
+                colorScheme: lightDynamic ??
+                    ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
+                brightness: Brightness.light,
+              ),
+              darkTheme: ThemeData(
+                useMaterial3: true,
+                colorScheme: darkDynamic ??
+                    ColorScheme.fromSeed(
+                      seedColor: const Color(0xFF6750A4),
+                      brightness: Brightness.dark,
+                    ),
+                brightness: Brightness.dark,
+              ),
+              themeMode: settings.themeMode,
+              locale: settings.locale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const SplashGate(),
+              routes: {
+                SettingsPage.routeName: (_) => const SettingsPage(),
+                DebugPage.routeName: (_) => const DebugPage(),
+              },
             ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              colorScheme: darkDynamic ??
-                  ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF6750A4),
-                    brightness: Brightness.dark,
-                  ),
-              brightness: Brightness.dark,
-            ),
-            themeMode: settings.themeMode,
-            locale: settings.locale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const SplashGate(),
-            routes: {
-              SettingsPage.routeName: (_) => const SettingsPage(),
-              DebugPage.routeName: (_) => const DebugPage(),
-            },
           );
         },
       ),
     );
   }
+}
+
+/// 桌面平台退出钩子：App 关闭时终止全部实例进程，避免 python 残留。
+class _ExitHandler extends StatefulWidget {
+  const _ExitHandler({required this.child});
+  final Widget child;
+
+  @override
+  State<_ExitHandler> createState() => _ExitHandlerState();
+}
+
+class _ExitHandlerState extends State<_ExitHandler> {
+  AppLifecycleListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    // 仅桌面：App 退出（关闭窗口）时杀全部实例进程；
+    // 移动端实例由 FGS 保活，退出 UI 不清进程
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      _listener = AppLifecycleListener(
+        onExitRequested: () async {
+          await context.read<RuntimeController>().stopAll();
+          return AppExitResponse.exit;
+        },
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _listener?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// 启动闸门：等 InstanceManager 就绪 + rootfs 就绪

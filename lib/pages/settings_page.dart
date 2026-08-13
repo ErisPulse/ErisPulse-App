@@ -64,7 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
-    if (ok == true) runtime.stopAll();
+    if (ok == true) await runtime.stopAll();
   }
 
   Future<void> _openUrl(Uri uri) async {

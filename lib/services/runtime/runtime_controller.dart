@@ -333,10 +333,10 @@ class RuntimeController extends ChangeNotifier {
     _invoke('restartInstance', data.toJson());
   }
 
-  /// 停止全部
-  void stopAll() {
+  /// 停止全部实例（App 退出时调用，桌面终止全部进程）
+  Future<void> stopAll() async {
     if (_isDesktop) {
-      _desktop?.stopAll();
+      await _desktop?.stopAll();
       return;
     }
     _invoke('stopAll');
