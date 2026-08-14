@@ -400,19 +400,98 @@ class DashboardApi {
         .toList();
   }
 
-  /// 安装包（可多个，支持 `pkg==1.0` / `git+...`）
-  Future<void> installPackages(List<String> names, {bool force = false}) async {
-    await _postJson(
+  /// 安装包（可多个，支持 `pkg==1.0` / `git+...`；后台任务，返回 task_id）
+  Future<String> installPackages(
+    List<String> names, {
+    bool force = false,
+    String? indexUrl,
+  }) async {
+    final json = await _postJson(
       '/packages/install',
       body: {
         'packages': names,
         'force': force,
+        if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
       },
     );
+    return json['task_id']?.toString() ?? '';
   }
 
   Future<void> uninstallPackage(String name) async {
     await _postJson('/packages/uninstall', body: {'package': name});
+  }
+
+  // 模块商店（/store/* + 包升级）
+
+  /// 商店远程注册表数据（packages.modules/adapters + installed_versions）
+  Future<Map<String, dynamic>> getStoreRemote({bool force = false}) =>
+      _getJson('/store/remote${force ? '?force=true' : ''}');
+
+  /// 商店安装（后台 pip 任务，返回 task_id 用于轮询进度）
+  Future<String> storeInstall(
+    List<String> packages, {
+    bool force = false,
+    String? indexUrl,
+  }) async {
+    final json = await _postJson(
+      '/store/install',
+      body: {
+        'packages': packages,
+        'force': force,
+        if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+      },
+    );
+    return json['task_id']?.toString() ?? '';
+  }
+
+  /// 安装/升级任务状态（status/started_at/packages/output/error）
+  Future<Map<String, dynamic>> getInstallStatus(String taskId) => _getJson(
+        '/store/install/status?task_id=${Uri.encodeComponent(taskId)}',
+      );
+
+  /// 包详情（PyPI 元信息：描述/作者/License/依赖/版本列表 + 注册表信息）
+  Future<Map<String, dynamic>> getPackageDetail(String package) => _getJson(
+        '/store/package/detail?package=${Uri.encodeComponent(package)}',
+      );
+
+  /// 可更新包列表（name/current/latest/source）
+  Future<List<Map<String, dynamic>>> getPackageUpdates({
+    bool force = false,
+  }) async {
+    final json =
+        await _getJson('/packages/updates${force ? '?force=true' : ''}');
+    final list = json['updates'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  /// 升级包（后台 pip 任务，返回 task_id）
+  Future<String> upgradePackages(
+    List<String> packages, {
+    String? indexUrl,
+  }) async {
+    final json = await _postJson(
+      '/packages/upgrade',
+      body: {
+        'packages': packages,
+        if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+      },
+    );
+    return json['task_id']?.toString() ?? '';
+  }
+
+  /// Git 包列表与可更新项（packages/updates）
+  Future<Map<String, dynamic>> getGitPackages() => _getJson('/packages/git');
+
+  /// Git 包升级（后台任务，返回 task_id）
+  Future<String> upgradeGitPackage(String gitUrl) async {
+    final json = await _postJson(
+      '/packages/git-upgrade',
+      body: {'git_url': gitUrl},
+    );
+    return json['task_id']?.toString() ?? '';
   }
 
   // 框架自更新 / 重启

@@ -6,7 +6,7 @@
 
 # ErisPulse-App
 
-**Run ErisPulse on Android, Windows and Linux — multiple instances, native UI, always-on.**
+**Run ErisPulse on Android, Windows, Linux and macOS — multiple instances, native UI, always-on.**
 
 An official multi-platform client for [ErisPulse](https://github.com/ErisPulse/ErisPulse) — the event-driven multi-platform bot framework. Create, run, and manage bot instances with a fully native UI. No PC, terminal, or setup steps required.
 
@@ -34,7 +34,7 @@ An official multi-platform client for [ErisPulse](https://github.com/ErisPulse/E
 
 ### Multi-platform
 
-Android is released; Windows and Linux desktop builds are in progress. A single Flutter codebase across every platform.
+Android, Windows, Linux and macOS installers are all published on [Releases](https://github.com/ErisPulse/ErisPulse-App/releases). A single Flutter codebase across every platform.
 
 </td>
 <td width="33%" align="center" valign="top">
@@ -103,7 +103,7 @@ GitHub releases can be slow or unreachable in some regions — switch the downlo
 - The UI talks to each instance through `127.0.0.1:<port>/Dashboard/*` — the same REST and WebSocket API the web Dashboard uses.
 - Each instance runs the SDK in its own working directory under the shared rootfs, with its own port and token.
 
-### Desktop (Windows / Linux)
+### Desktop (Windows / Linux / macOS)
 
 ```
 ┌────────────────────────────────────────────────────┐
@@ -145,7 +145,7 @@ Both install the same way:
 
 ### Desktop
 
-> Windows and Linux desktop builds are in progress.
+> Pick the build for your platform from [Releases](https://github.com/ErisPulse/ErisPulse-App/releases): Windows `setup.exe` (or portable `zip`), Linux `tar.gz`, macOS `zip`.
 
 1. Install and launch.
 2. Choose an ErisPulse SDK version on the welcome screen (latest is preselected) and install it.

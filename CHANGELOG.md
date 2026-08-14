@@ -2,6 +2,37 @@
 
 版本遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2026/08/15
+
+### 新增
+
+- 详情页导航对齐 Dashboard 侧边栏颗粒度：
+  - 视图按 5 个分组组织（概览 / 事件 / 扩展 / 管理 / 运维），桌面端左侧
+    导航显示分组标题，移动端 TabBar 保持同一顺序平铺
+  - 顺序：概览（机器人）→ 事件（事件流、命令）→ 扩展（模块、商店）→
+    管理（适配器、配置）→ 运维（监控、文件）
+- 新增「监控」视图：日志 / 生命周期 / 审计三合一子 tab（对齐 Dashboard
+  monitor 页结构，替代原先 3 个独立视图）
+- 新增「商店」视图（对齐 Dashboard store 页）：
+  - 商店浏览：搜索（防抖）/ 类型过滤（模块 / 适配器）/ 标签多选筛选 /
+    强制刷新；卡片含类型徽章、官方标识、安装状态（未安装 / 有更新 /
+    已安装带版本），一键安装或升级
+  - 包详情对话框：描述 / 作者 / 许可证 / 主页 / 依赖 / 历史版本列表，
+    点击任意版本安装指定版本
+  - 包管理：已安装（升级 / 卸载 + 框架更新卡）、可更新（单包 / 全部
+    升级）、安装新包（`pkg==1.0` 与 `git+` URL）、Git 包列表与升级
+  - 安装 / 升级为后台 pip 任务：确认框可选 pip 镜像源与强制重装，
+    进度对话框轮询 task 实时状态与输出（running / success / error）
+- `DashboardApi` 新增商店端点：`getStoreRemote` / `storeInstall` /
+  `getInstallStatus` / `getPackageDetail` / `getPackageUpdates` /
+  `upgradePackages` / `getGitPackages` / `upgradeGitPackage`；
+  `installPackages` 改为返回 task_id 支持进度跟踪
+
+### 变更
+
+- 「包」视图（PackagesTab）并入商店「包管理」tab，框架更新 / SDK 重启
+  随之迁移；详情页视图 11 → 10（概览 + 9 个注册视图）
+
 ## [0.2.0] - 2026/08/15
 
 ### 新增
@@ -24,7 +55,10 @@
   - 消息分段编辑器（多段，字段名自动缓存）、可选字段 key/value 注入、
     JSON 实时预览（可复制）、提交校验（`/api/builder/segments` +
     `/api/builder/submit`），提交后自动回切查看模式并刷新
-- 全局设置页新增「生命周期清理」相关键（`/api/lifecycle/clear`）
+### 文档
+
+- README（全部 5 语言）：桌面端（Windows / Linux / macOS）构建已发布，
+  移除"开发中"表述，安装说明改为按平台从 Releases 选择下载
 
 ### 修复
 

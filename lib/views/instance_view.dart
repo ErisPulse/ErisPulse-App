@@ -33,11 +33,18 @@ class InstanceView {
   /// 视图内容构建器
   final InstanceViewBuilder builder;
 
+  /// 导航分组标题（对齐 Dashboard 侧边栏分组颗粒度）。
+  ///
+  /// 仅在该视图开启一个新分组时提供（连续同组的后续视图留空），
+  /// 桌面端左侧导航会渲染小节标题；为 null 时沿用上一个分组。
+  final String Function(AppLocalizations l10n)? group;
+
   const InstanceView({
     required this.id,
     required this.icon,
     required this.title,
     required this.builder,
+    this.group,
   });
 }
 

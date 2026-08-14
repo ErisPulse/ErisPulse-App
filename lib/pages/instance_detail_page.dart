@@ -1447,21 +1447,47 @@ class _NavRail extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
+            // 概览为固定第一项，与首个注册视图（机器人）同属"概览"分组
+            _NavGroupHeader(l10n.navGroupOverview),
             _NavItem(
               icon: Icons.space_dashboard_outlined,
               title: l10n.detailTabOverview,
               selected: selectedIndex == 0,
               onTap: () => onSelect(0),
             ),
-            for (var i = 0; i < views.length; i++)
+            for (var i = 0; i < views.length; i++) ...[
+              if (views[i].group != null)
+                _NavGroupHeader(views[i].group!(l10n)),
               _NavItem(
                 icon: views[i].icon,
                 title: views[i].title(l10n),
                 selected: selectedIndex == i + 1,
                 onTap: () => onSelect(i + 1),
               ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 导航分组标题（对齐 Dashboard 侧边栏的分组颗粒度）
+class _NavGroupHeader extends StatelessWidget {
+  const _NavGroupHeader(this.title);
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
       ),
     );
   }

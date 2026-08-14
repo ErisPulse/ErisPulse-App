@@ -1065,6 +1065,129 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get eventsBuilderSubmit => '提交事件';
+
+  @override
+  String get navGroupOverview => '概览';
+
+  @override
+  String get navGroupEvents => '事件';
+
+  @override
+  String get navGroupExtensions => '扩展';
+
+  @override
+  String get navGroupManagement => '管理';
+
+  @override
+  String get navGroupOperations => '运维';
+
+  @override
+  String get detailTabStore => '模块商店';
+
+  @override
+  String get detailTabMonitor => '监控';
+
+  @override
+  String get storeBrowseTab => '商店';
+
+  @override
+  String get storePackagesTab => '包管理';
+
+  @override
+  String get storeSearch => '搜索模块、适配器…';
+
+  @override
+  String get storeTypeAll => '全部';
+
+  @override
+  String get storeTypeModule => '模块';
+
+  @override
+  String get storeTypeAdapter => '适配器';
+
+  @override
+  String get storeForceRefresh => '强制刷新';
+
+  @override
+  String get storeInstalled => '已安装';
+
+  @override
+  String get storeUpdateAvailable => '有更新';
+
+  @override
+  String get storeUpgrade => '升级';
+
+  @override
+  String get storeOfficial => '官方';
+
+  @override
+  String get storeDetail => '详情';
+
+  @override
+  String get storeAuthor => '作者';
+
+  @override
+  String get storeLicense => '许可证';
+
+  @override
+  String get storeHomepage => '主页';
+
+  @override
+  String get storeRequires => '依赖';
+
+  @override
+  String get storeVersions => '历史版本';
+
+  @override
+  String get storeVersionInstall => '安装此版本';
+
+  @override
+  String get storeEmpty => '商店为空';
+
+  @override
+  String get storeFilteredEmpty => '没有匹配的包';
+
+  @override
+  String get storeMirror => 'pip 镜像源（可选）';
+
+  @override
+  String get storeForce => '强制重装';
+
+  @override
+  String get storeTaskRunning => '任务执行中…';
+
+  @override
+  String get storeTaskSuccess => '任务完成';
+
+  @override
+  String get storeTaskFailed => '任务失败';
+
+  @override
+  String get storeCurrent => '当前';
+
+  @override
+  String get storeLatest => '最新';
+
+  @override
+  String get pkgInstalledTab => '已安装';
+
+  @override
+  String get pkgUpdatesTab => '可更新';
+
+  @override
+  String get pkgInstallNewTab => '安装新包';
+
+  @override
+  String get pkgGitTab => 'Git 安装';
+
+  @override
+  String get pkgUpgradeAll => '全部升级';
+
+  @override
+  String get pkgNoUpdates => '暂无可更新包';
+
+  @override
+  String get pkgNoGit => '暂无 Git 包';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2128,4 +2251,127 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get eventsBuilderSubmit => '提交事件';
+
+  @override
+  String get navGroupOverview => '概覽';
+
+  @override
+  String get navGroupEvents => '事件';
+
+  @override
+  String get navGroupExtensions => '擴充';
+
+  @override
+  String get navGroupManagement => '管理';
+
+  @override
+  String get navGroupOperations => '維運';
+
+  @override
+  String get detailTabStore => '模組商店';
+
+  @override
+  String get detailTabMonitor => '監控';
+
+  @override
+  String get storeBrowseTab => '商店';
+
+  @override
+  String get storePackagesTab => '套件管理';
+
+  @override
+  String get storeSearch => '搜尋模組、適配器…';
+
+  @override
+  String get storeTypeAll => '全部';
+
+  @override
+  String get storeTypeModule => '模組';
+
+  @override
+  String get storeTypeAdapter => '適配器';
+
+  @override
+  String get storeForceRefresh => '強制重新整理';
+
+  @override
+  String get storeInstalled => '已安裝';
+
+  @override
+  String get storeUpdateAvailable => '有更新';
+
+  @override
+  String get storeUpgrade => '升級';
+
+  @override
+  String get storeOfficial => '官方';
+
+  @override
+  String get storeDetail => '詳情';
+
+  @override
+  String get storeAuthor => '作者';
+
+  @override
+  String get storeLicense => '授權條款';
+
+  @override
+  String get storeHomepage => '首頁';
+
+  @override
+  String get storeRequires => '相依套件';
+
+  @override
+  String get storeVersions => '歷史版本';
+
+  @override
+  String get storeVersionInstall => '安裝此版本';
+
+  @override
+  String get storeEmpty => '商店為空';
+
+  @override
+  String get storeFilteredEmpty => '沒有符合的套件';
+
+  @override
+  String get storeMirror => 'pip 鏡像源（可選）';
+
+  @override
+  String get storeForce => '強制重裝';
+
+  @override
+  String get storeTaskRunning => '工作執行中…';
+
+  @override
+  String get storeTaskSuccess => '工作完成';
+
+  @override
+  String get storeTaskFailed => '工作失敗';
+
+  @override
+  String get storeCurrent => '目前';
+
+  @override
+  String get storeLatest => '最新';
+
+  @override
+  String get pkgInstalledTab => '已安裝';
+
+  @override
+  String get pkgUpdatesTab => '可更新';
+
+  @override
+  String get pkgInstallNewTab => '安裝新套件';
+
+  @override
+  String get pkgGitTab => 'Git 安裝';
+
+  @override
+  String get pkgUpgradeAll => '全部升級';
+
+  @override
+  String get pkgNoUpdates => '暫無可更新套件';
+
+  @override
+  String get pkgNoGit => '暫無 Git 套件';
 }

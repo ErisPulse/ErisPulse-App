@@ -6,7 +6,7 @@
 
 # ErisPulse-App
 
-**Android、Windows、Linux で ErisPulse を実行。マルチインスタンス、ネイティブ UI、常時稼働。**
+**Android、Windows、Linux、macOS で ErisPulse を実行。マルチインスタンス、ネイティブ UI、常時稼働。**
 
 [ErisPulse](https://github.com/ErisPulse/ErisPulse)（イベント駆動型マルチプラットフォーム bot フレームワーク）の公式マルチプラットフォームクライアント。完全なネイティブ UI で bot インスタンスを作成・実行・管理できます。PC もターミナルも設定手順も不要です。
 
@@ -30,7 +30,7 @@
 
 ### マルチプラットフォーム
 
-Android はリリース済み。Windows / Linux デスクトップ版は開発中。全プラットフォームで共通の Flutter コードベース。
+Android、Windows、Linux、macOS の全プラットフォーム向けインストーラーは [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) で公開済みです。全プラットフォームで共通の Flutter コードベース。
 
 </td>
 <td width="33%" align="center" valign="top">
@@ -99,7 +99,7 @@ GitHub Releases は地域によって遅い・到達不能なことがありま�
 - UI は `127.0.0.1:<port>/Dashboard/*` を通じて各インスタンスと通信します。Web Dashboard と同じ REST / WebSocket API です。
 - 各インスタンスは共有 rootfs 配下の作業ディレクトリで SDK を実行し、独自のポートとトークンを持ちます。
 
-### デスクトップ（Windows / Linux）
+### デスクトップ（Windows / Linux / macOS）
 
 ```
 ┌────────────────────────────────────────────────────┐
@@ -141,7 +141,7 @@ GitHub Releases は地域によって遅い・到達不能なことがありま�
 
 ### デスクトップ
 
-> Windows / Linux デスクトップ版は開発中です。
+> [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) からプラットフォームに合わせてダウンロード：Windows `setup.exe`（またはポータブル `zip`）、Linux `tar.gz`、macOS `zip`。
 
 1. インストールして起動します。
 2. ようこそ画面でインストールする ErisPulse SDK のバージョンを選択し（デフォルトで最新が選択済み）、インストールします。

@@ -6,7 +6,7 @@
 
 # ErisPulse-App
 
-**在 Android、Windows、Linux 上執行 ErisPulse。多實例、原生介面、背景常駐。**
+**在 Android、Windows、Linux、macOS 上執行 ErisPulse。多實例、原生介面、背景常駐。**
 
 [ErisPulse](https://github.com/ErisPulse/ErisPulse)（事件驅動的多平台機器人框架）的官方多平台客戶端。使用純原生介面建立、執行、管理機器人實例，無需電腦、無需終端、無需任何設定步驟。
 
@@ -30,7 +30,7 @@
 
 ### 多平台
 
-Android 已發佈；Windows / Linux 桌面版開發中。所有平台共享同一套 Flutter 程式碼庫。
+Android、Windows、Linux、macOS 全平台安裝包均已在 [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) 發佈。所有平台共享同一套 Flutter 程式碼庫。
 
 </td>
 <td width="33%" align="center" valign="top">
@@ -99,7 +99,7 @@ GitHub Releases 在部分網路環境緩慢或不可達——在設定頁一鍵�
 - UI 透過 `127.0.0.1:<port>/Dashboard/*` 與每個實例通訊——與 Web Dashboard 使用相同的 REST 與 WebSocket API。
 - 每個實例在共享 rootfs 下自己的工作目錄中執行 SDK，擁有獨立的連接埠與 token。
 
-### 桌面端（Windows / Linux）
+### 桌面端（Windows / Linux / macOS）
 
 ```
 ┌────────────────────────────────────────────────────┐
@@ -141,7 +141,7 @@ GitHub Releases 在部分網路環境緩慢或不可達——在設定頁一鍵�
 
 ### 桌面端
 
-> Windows / Linux 桌面版開發中。
+> 從 [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) 依平台選擇下載：Windows `setup.exe`（或免安裝 `zip`）、Linux `tar.gz`、macOS `zip`。
 
 1. 安裝並啟動。
 2. 在歡迎頁選擇要安裝的 ErisPulse SDK 版本（預設選中最新）並安裝。

@@ -1094,4 +1094,127 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventsBuilderSubmit => 'Submit event';
+
+  @override
+  String get navGroupOverview => 'Overview';
+
+  @override
+  String get navGroupEvents => 'Events';
+
+  @override
+  String get navGroupExtensions => 'Extensions';
+
+  @override
+  String get navGroupManagement => 'Management';
+
+  @override
+  String get navGroupOperations => 'Operations';
+
+  @override
+  String get detailTabStore => 'Module Store';
+
+  @override
+  String get detailTabMonitor => 'Monitor';
+
+  @override
+  String get storeBrowseTab => 'Store';
+
+  @override
+  String get storePackagesTab => 'Packages';
+
+  @override
+  String get storeSearch => 'Search modules, adapters…';
+
+  @override
+  String get storeTypeAll => 'All';
+
+  @override
+  String get storeTypeModule => 'Module';
+
+  @override
+  String get storeTypeAdapter => 'Adapter';
+
+  @override
+  String get storeForceRefresh => 'Force refresh';
+
+  @override
+  String get storeInstalled => 'Installed';
+
+  @override
+  String get storeUpdateAvailable => 'Update available';
+
+  @override
+  String get storeUpgrade => 'Upgrade';
+
+  @override
+  String get storeOfficial => 'Official';
+
+  @override
+  String get storeDetail => 'Details';
+
+  @override
+  String get storeAuthor => 'Author';
+
+  @override
+  String get storeLicense => 'License';
+
+  @override
+  String get storeHomepage => 'Homepage';
+
+  @override
+  String get storeRequires => 'Dependencies';
+
+  @override
+  String get storeVersions => 'Versions';
+
+  @override
+  String get storeVersionInstall => 'Install this version';
+
+  @override
+  String get storeEmpty => 'Store is empty';
+
+  @override
+  String get storeFilteredEmpty => 'No matching packages';
+
+  @override
+  String get storeMirror => 'pip index mirror (optional)';
+
+  @override
+  String get storeForce => 'Force reinstall';
+
+  @override
+  String get storeTaskRunning => 'Task running…';
+
+  @override
+  String get storeTaskSuccess => 'Task finished';
+
+  @override
+  String get storeTaskFailed => 'Task failed';
+
+  @override
+  String get storeCurrent => 'Current';
+
+  @override
+  String get storeLatest => 'Latest';
+
+  @override
+  String get pkgInstalledTab => 'Installed';
+
+  @override
+  String get pkgUpdatesTab => 'Updates';
+
+  @override
+  String get pkgInstallNewTab => 'Install new';
+
+  @override
+  String get pkgGitTab => 'Git';
+
+  @override
+  String get pkgUpgradeAll => 'Upgrade all';
+
+  @override
+  String get pkgNoUpdates => 'No updates available';
+
+  @override
+  String get pkgNoGit => 'No Git packages';
 }

@@ -1101,4 +1101,127 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get eventsBuilderSubmit => 'Отправить событие';
+
+  @override
+  String get navGroupOverview => 'Обзор';
+
+  @override
+  String get navGroupEvents => 'События';
+
+  @override
+  String get navGroupExtensions => 'Расширения';
+
+  @override
+  String get navGroupManagement => 'Управление';
+
+  @override
+  String get navGroupOperations => 'Эксплуатация';
+
+  @override
+  String get detailTabStore => 'Магазин модулей';
+
+  @override
+  String get detailTabMonitor => 'Мониторинг';
+
+  @override
+  String get storeBrowseTab => 'Магазин';
+
+  @override
+  String get storePackagesTab => 'Пакеты';
+
+  @override
+  String get storeSearch => 'Поиск модулей, адаптеров…';
+
+  @override
+  String get storeTypeAll => 'Все';
+
+  @override
+  String get storeTypeModule => 'Модуль';
+
+  @override
+  String get storeTypeAdapter => 'Адаптер';
+
+  @override
+  String get storeForceRefresh => 'Принудительно обновить';
+
+  @override
+  String get storeInstalled => 'Установлен';
+
+  @override
+  String get storeUpdateAvailable => 'Есть обновление';
+
+  @override
+  String get storeUpgrade => 'Обновить';
+
+  @override
+  String get storeOfficial => 'Официальный';
+
+  @override
+  String get storeDetail => 'Подробности';
+
+  @override
+  String get storeAuthor => 'Автор';
+
+  @override
+  String get storeLicense => 'Лицензия';
+
+  @override
+  String get storeHomepage => 'Главная страница';
+
+  @override
+  String get storeRequires => 'Зависимости';
+
+  @override
+  String get storeVersions => 'Версии';
+
+  @override
+  String get storeVersionInstall => 'Установить эту версию';
+
+  @override
+  String get storeEmpty => 'Магазин пуст';
+
+  @override
+  String get storeFilteredEmpty => 'Нет подходящих пакетов';
+
+  @override
+  String get storeMirror => 'pip-зеркало (опционально)';
+
+  @override
+  String get storeForce => 'Принудительная переустановка';
+
+  @override
+  String get storeTaskRunning => 'Задача выполняется…';
+
+  @override
+  String get storeTaskSuccess => 'Задача завершена';
+
+  @override
+  String get storeTaskFailed => 'Ошибка задачи';
+
+  @override
+  String get storeCurrent => 'Текущая';
+
+  @override
+  String get storeLatest => 'Последняя';
+
+  @override
+  String get pkgInstalledTab => 'Установленные';
+
+  @override
+  String get pkgUpdatesTab => 'Обновления';
+
+  @override
+  String get pkgInstallNewTab => 'Установить новый';
+
+  @override
+  String get pkgGitTab => 'Git';
+
+  @override
+  String get pkgUpgradeAll => 'Обновить все';
+
+  @override
+  String get pkgNoUpdates => 'Нет обновлений';
+
+  @override
+  String get pkgNoGit => 'Нет Git-пакетов';
 }

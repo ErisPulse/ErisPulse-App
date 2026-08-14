@@ -1072,4 +1072,127 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get eventsBuilderSubmit => 'イベントを送信';
+
+  @override
+  String get navGroupOverview => '概要';
+
+  @override
+  String get navGroupEvents => 'イベント';
+
+  @override
+  String get navGroupExtensions => '拡張';
+
+  @override
+  String get navGroupManagement => '管理';
+
+  @override
+  String get navGroupOperations => '運用';
+
+  @override
+  String get detailTabStore => 'モジュールストア';
+
+  @override
+  String get detailTabMonitor => 'モニター';
+
+  @override
+  String get storeBrowseTab => 'ストア';
+
+  @override
+  String get storePackagesTab => 'パッケージ管理';
+
+  @override
+  String get storeSearch => 'モジュール・アダプターを検索…';
+
+  @override
+  String get storeTypeAll => 'すべて';
+
+  @override
+  String get storeTypeModule => 'モジュール';
+
+  @override
+  String get storeTypeAdapter => 'アダプター';
+
+  @override
+  String get storeForceRefresh => '強制更新';
+
+  @override
+  String get storeInstalled => 'インストール済み';
+
+  @override
+  String get storeUpdateAvailable => '更新あり';
+
+  @override
+  String get storeUpgrade => 'アップグレード';
+
+  @override
+  String get storeOfficial => '公式';
+
+  @override
+  String get storeDetail => '詳細';
+
+  @override
+  String get storeAuthor => '作者';
+
+  @override
+  String get storeLicense => 'ライセンス';
+
+  @override
+  String get storeHomepage => 'ホームページ';
+
+  @override
+  String get storeRequires => '依存関係';
+
+  @override
+  String get storeVersions => 'バージョン履歴';
+
+  @override
+  String get storeVersionInstall => 'このバージョンをインストール';
+
+  @override
+  String get storeEmpty => 'ストアは空です';
+
+  @override
+  String get storeFilteredEmpty => '一致するパッケージがありません';
+
+  @override
+  String get storeMirror => 'pip ミラーソース（任意）';
+
+  @override
+  String get storeForce => '強制再インストール';
+
+  @override
+  String get storeTaskRunning => 'タスク実行中…';
+
+  @override
+  String get storeTaskSuccess => 'タスク完了';
+
+  @override
+  String get storeTaskFailed => 'タスク失敗';
+
+  @override
+  String get storeCurrent => '現在';
+
+  @override
+  String get storeLatest => '最新';
+
+  @override
+  String get pkgInstalledTab => 'インストール済み';
+
+  @override
+  String get pkgUpdatesTab => '更新';
+
+  @override
+  String get pkgInstallNewTab => '新規インストール';
+
+  @override
+  String get pkgGitTab => 'Git';
+
+  @override
+  String get pkgUpgradeAll => 'すべてアップグレード';
+
+  @override
+  String get pkgNoUpdates => '更新はありません';
+
+  @override
+  String get pkgNoGit => 'Git パッケージなし';
 }

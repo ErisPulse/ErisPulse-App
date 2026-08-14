@@ -2148,6 +2148,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submit event'**
   String get eventsBuilderSubmit;
+
+  /// No description provided for @navGroupOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get navGroupOverview;
+
+  /// No description provided for @navGroupEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get navGroupEvents;
+
+  /// No description provided for @navGroupExtensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions'**
+  String get navGroupExtensions;
+
+  /// No description provided for @navGroupManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Management'**
+  String get navGroupManagement;
+
+  /// No description provided for @navGroupOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get navGroupOperations;
+
+  /// No description provided for @detailTabStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Module Store'**
+  String get detailTabStore;
+
+  /// No description provided for @detailTabMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor'**
+  String get detailTabMonitor;
+
+  /// No description provided for @storeBrowseTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get storeBrowseTab;
+
+  /// No description provided for @storePackagesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Packages'**
+  String get storePackagesTab;
+
+  /// No description provided for @storeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search modules, adapters…'**
+  String get storeSearch;
+
+  /// No description provided for @storeTypeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get storeTypeAll;
+
+  /// No description provided for @storeTypeModule.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get storeTypeModule;
+
+  /// No description provided for @storeTypeAdapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapter'**
+  String get storeTypeAdapter;
+
+  /// No description provided for @storeForceRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Force refresh'**
+  String get storeForceRefresh;
+
+  /// No description provided for @storeInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get storeInstalled;
+
+  /// No description provided for @storeUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get storeUpdateAvailable;
+
+  /// No description provided for @storeUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get storeUpgrade;
+
+  /// No description provided for @storeOfficial.
+  ///
+  /// In en, this message translates to:
+  /// **'Official'**
+  String get storeOfficial;
+
+  /// No description provided for @storeDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get storeDetail;
+
+  /// No description provided for @storeAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get storeAuthor;
+
+  /// No description provided for @storeLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get storeLicense;
+
+  /// No description provided for @storeHomepage.
+  ///
+  /// In en, this message translates to:
+  /// **'Homepage'**
+  String get storeHomepage;
+
+  /// No description provided for @storeRequires.
+  ///
+  /// In en, this message translates to:
+  /// **'Dependencies'**
+  String get storeRequires;
+
+  /// No description provided for @storeVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'Versions'**
+  String get storeVersions;
+
+  /// No description provided for @storeVersionInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install this version'**
+  String get storeVersionInstall;
+
+  /// No description provided for @storeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Store is empty'**
+  String get storeEmpty;
+
+  /// No description provided for @storeFilteredEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching packages'**
+  String get storeFilteredEmpty;
+
+  /// No description provided for @storeMirror.
+  ///
+  /// In en, this message translates to:
+  /// **'pip index mirror (optional)'**
+  String get storeMirror;
+
+  /// No description provided for @storeForce.
+  ///
+  /// In en, this message translates to:
+  /// **'Force reinstall'**
+  String get storeForce;
+
+  /// No description provided for @storeTaskRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Task running…'**
+  String get storeTaskRunning;
+
+  /// No description provided for @storeTaskSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task finished'**
+  String get storeTaskSuccess;
+
+  /// No description provided for @storeTaskFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Task failed'**
+  String get storeTaskFailed;
+
+  /// No description provided for @storeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get storeCurrent;
+
+  /// No description provided for @storeLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest'**
+  String get storeLatest;
+
+  /// No description provided for @pkgInstalledTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get pkgInstalledTab;
+
+  /// No description provided for @pkgUpdatesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get pkgUpdatesTab;
+
+  /// No description provided for @pkgInstallNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Install new'**
+  String get pkgInstallNewTab;
+
+  /// No description provided for @pkgGitTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get pkgGitTab;
+
+  /// No description provided for @pkgUpgradeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade all'**
+  String get pkgUpgradeAll;
+
+  /// No description provided for @pkgNoUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'No updates available'**
+  String get pkgNoUpdates;
+
+  /// No description provided for @pkgNoGit.
+  ///
+  /// In en, this message translates to:
+  /// **'No Git packages'**
+  String get pkgNoGit;
 }
 
 class _AppLocalizationsDelegate
