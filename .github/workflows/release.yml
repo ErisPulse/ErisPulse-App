@@ -272,6 +272,9 @@ jobs:
             Invoke-WebRequest -Uri $url -OutFile $file
             New-Item -ItemType Directory -Path $dest -Force | Out-Null
             tar -xf $file -C $dest
+            # 官方 x64 存档内置 x64 dart-sdk，Linux 无模拟机制无法执行，
+            # 删除后由 flutter 按宿主架构（aarch64）自动重新下载
+            Remove-Item -Recurse -Force (Join-Path $dest "flutter" "bin" "cache" "dart-sdk") -ErrorAction SilentlyContinue
           } else {
             $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_${V}-stable.zip"
             $file = Join-Path $env:RUNNER_TEMP "flutter.zip"
