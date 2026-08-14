@@ -63,6 +63,12 @@
 - 桌面端产物：Windows / Linux 为 x64，macOS 为 arm64
   （Windows on ARM 用户可直接用 windows-x64 产物，x64 模拟层可运行）
 - Windows 新增 Inno Setup 安装器（x64，产 `*-setup.exe`），与 zip 一起发布
+- 内置 Python 由 3.15 降为 3.13：3.15 过新，pydantic-core 等核心包尚无
+  cp315 预编译 wheel，实例安装会触发源码编译（需 Rust）而失败；
+  CI 下载改为精确匹配标准（非 free-threaded）构建
+- Android CI 跳过阿里云 Maven 镜像（海外 runner 走官方仓库，规避 502）
+- 桌面端图标改用透明背景 logo（无底色）；Android 维持自适应图标
+  （系统要求背景层，完全透明会显示黑底）
 
 ### 变更
 
