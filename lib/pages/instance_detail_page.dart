@@ -4,9 +4,10 @@
 //   - 头部：Logo + 名称 + 状态 / 类型 / 健康
 //   - 信息卡：地址（本机 v4/v6 IP 可复制）、PID、访问令牌（可复制）
 //   - 事件卡：最近事件（轮询 Dashboard /api/events）
-//   - 操作：打开 Dashboard（WebView，包含全部管理能力）、查看日志、启停
+//   - 操作：打开 Dashboard（WebView，包含全部管理能力）、启停
 // 状态与健康每 3s 自动刷新，无需手动点击。
-// 其余管理（适配器/模块/配置/文件）全部在 Dashboard 内完成。
+// 其余管理（适配器/模块/配置/文件/日志/事件流/审计）由 DetailViewRegistry
+// 注册的原生视图承载：PC 宽屏左侧导航 + 内容区，移动端顶部 TabBar。
 
 import 'dart:async';
 import 'dart:io';
@@ -23,14 +24,14 @@ import '../models/module_info.dart';
 import '../models/system_info.dart';
 import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
-import '../services/log_stream.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
+import '../views/instance_view.dart';
 import '../widgets/status_indicators.dart';
 import 'dashboard_page.dart';
-import 'detail_management_tabs.dart';
-import 'files_tab.dart';
-import 'logs_page.dart';
+
+/// 宽屏阈值：超过则使用 PC 左侧导航布局
+const double _wideBreakpoint = 900;
 
 class InstanceDetailPage extends StatefulWidget {
   final String instanceId;
@@ -52,8 +53,11 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   /// 本机可达地址（v4 / v6）
   List<InternetAddress> _localAddrs = [];
 
-  /// Tab 数量（概览/模块/适配器/配置/文件/日志/包）
-  static const _tabCount = 7;
+  /// 当前选中视图索引（0 = 概览，1..n = 注册视图）
+  int _tabIndex = 0;
+
+  /// 宽屏（PC）已访问过的视图索引集合，用于 IndexedStack 懒实例化
+  final Set<int> _visited = {0};
 
   Instance? _lookup() =>
       context.read<InstanceManager>().findById(widget.instanceId);
@@ -199,16 +203,6 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     );
   }
 
-  void _openLogs() {
-    final inst = _lookup();
-    if (inst == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => LogsPage(instanceId: inst.id),
-      ),
-    );
-  }
-
   Future<void> _copyToken() async {
     final inst = _lookup();
     if (inst == null) return;
@@ -222,99 +216,169 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     return Consumer<InstanceManager>(
       builder: (context, mgr, _) {
         final inst = mgr.findById(widget.instanceId);
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(inst?.name ?? l10n.detailNotFound),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.copy_outlined),
+                tooltip: l10n.dashboardCopyTokenTooltip,
+                onPressed: _copyToken,
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: l10n.detailRefreshState,
+                onPressed: _refreshHealth,
+              ),
+              PopupMenuButton<String>(
+                onSelected: (v) {
+                  if (v == 'start') _start();
+                  if (v == 'stop') _stop();
+                  if (v == 'softRestart') _softRestart();
+                  if (v == 'restart') _restart();
+                },
+                itemBuilder: (_) {
+                  final running = inst != null &&
+                      (inst.status == InstanceStatus.running ||
+                          inst.status == InstanceStatus.starting);
+                  final startable = inst != null &&
+                      !inst.isRemote &&
+                      (inst.status == InstanceStatus.stopped ||
+                          inst.status == InstanceStatus.error);
+                  return [
+                    if (startable)
+                      PopupMenuItem(
+                        value: 'start',
+                        child: Text(l10n.commonStart),
+                      ),
+                    if (inst != null && !inst.isRemote && running) ...[
+                      PopupMenuItem(
+                        value: 'stop',
+                        child: Text(l10n.commonStop),
+                      ),
+                    ],
+                    if (running) ...[
+                      PopupMenuItem(
+                        value: 'softRestart',
+                        child: Text(l10n.commonSoftRestart),
+                      ),
+                    ],
+                    if (inst != null && !inst.isRemote && running) ...[
+                      PopupMenuItem(
+                        value: 'restart',
+                        child: Text(l10n.commonHardRestart),
+                      ),
+                    ],
+                  ];
+                },
+              ),
+            ],
+          ),
+          body: inst == null
+              ? Center(child: Text(l10n.detailNotFound))
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= _wideBreakpoint;
+                    return _buildBody(context, l10n, inst, isWide);
+                  },
+                ),
+        );
+      },
+    );
+  }
+
+  /// 布局：PC 宽屏左侧导航 + 内容区（IndexedStack 保留状态），
+  /// 移动端顶部 TabBar + TabBarView。视图列表来自 DetailViewRegistry。
+  Widget _buildBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    Instance inst,
+    bool isWide,
+  ) {
+    return Consumer<DetailViewRegistry>(
+      builder: (context, registry, _) {
+        final views = registry.views;
+        if (isWide) {
+          return Row(
+            children: [
+              _NavRail(
+                views: views,
+                selectedIndex: _tabIndex,
+                onSelect: (i) => setState(() {
+                  _tabIndex = i;
+                  _visited.add(i);
+                }),
+              ),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: IndexedStack(
+                  index: _tabIndex,
+                  children: [
+                    _buildOverview(inst, l10n, isWide),
+                    // 懒实例化：未访问过的视图暂不构建，避免启动即拉全部数据
+                    for (var i = 0; i < views.length; i++)
+                      _visited.contains(i + 1)
+                          ? views[i].builder(context, inst)
+                          : const SizedBox.shrink(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        // 移动端：顶部 TabBar（视图自带 keep-alive，切换保留状态）
         return DefaultTabController(
-          length: _tabCount,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(inst?.name ?? l10n.detailNotFound),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.copy_outlined),
-                  tooltip: l10n.dashboardCopyTokenTooltip,
-                  onPressed: _copyToken,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: l10n.detailRefreshState,
-                  onPressed: _refreshHealth,
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (v) {
-                    if (v == 'start') _start();
-                    if (v == 'stop') _stop();
-                    if (v == 'softRestart') _softRestart();
-                    if (v == 'restart') _restart();
-                  },
-                  itemBuilder: (_) {
-                    final running = inst != null &&
-                        (inst.status == InstanceStatus.running ||
-                            inst.status == InstanceStatus.starting);
-                    final startable = inst != null &&
-                        !inst.isRemote &&
-                        (inst.status == InstanceStatus.stopped ||
-                            inst.status == InstanceStatus.error);
-                    return [
-                      if (startable)
-                        PopupMenuItem(
-                          value: 'start',
-                          child: Text(l10n.commonStart),
-                        ),
-                      if (inst != null && !inst.isRemote && running) ...[
-                        PopupMenuItem(
-                          value: 'stop',
-                          child: Text(l10n.commonStop),
-                        ),
-                      ],
-                      if (running) ...[
-                        PopupMenuItem(
-                          value: 'softRestart',
-                          child: Text(l10n.commonSoftRestart),
-                        ),
-                      ],
-                      if (inst != null && !inst.isRemote && running) ...[
-                        PopupMenuItem(
-                          value: 'restart',
-                          child: Text(l10n.commonHardRestart),
-                        ),
-                      ],
-                    ];
-                  },
-                ),
-              ],
-              bottom: TabBar(
+          length: views.length + 1,
+          child: Column(
+            children: [
+              TabBar(
                 isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 tabs: [
                   Tab(text: l10n.detailTabOverview),
-                  Tab(text: l10n.detailTabModules),
-                  Tab(text: l10n.detailTabAdapters),
-                  Tab(text: l10n.detailTabConfig),
-                  Tab(text: l10n.detailTabFiles),
-                  Tab(text: l10n.detailTabLogs),
-                  Tab(text: l10n.detailTabPackages),
+                  for (final v in views) Tab(text: v.title(l10n)),
                 ],
               ),
-            ),
-            body: inst == null
-                ? Center(child: Text(l10n.detailNotFound))
-                : TabBarView(
-                    children: [
-                      _buildOverview(inst, l10n),
-                      ModulesTab(instance: inst),
-                      AdaptersTab(instance: inst),
-                      ConfigTab(instance: inst),
-                      FilesTab(instance: inst),
-                      _LogsTab(instanceId: widget.instanceId),
-                      PackagesTab(instance: inst),
-                    ],
-                  ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildOverview(inst, l10n, false),
+                    for (final v in views) v.builder(context, inst),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  /// 概览 Tab：头部 + 系统资源 + 事件 + 连接信息 + 操作
-  Widget _buildOverview(Instance inst, AppLocalizations l10n) {
+  /// 概览 Tab：头部 + 系统资源 + 事件 + 连接信息 + 操作。
+  /// 宽屏下资源 / 连接与事件卡片并排两列，避免单列长条。
+  Widget _buildOverview(
+    Instance inst,
+    AppLocalizations l10n,
+    bool isWide,
+  ) {
+    final running = inst.status == InstanceStatus.running ||
+        inst.status == InstanceStatus.starting;
+    final startable = !inst.isRemote &&
+        (inst.status == InstanceStatus.stopped ||
+            inst.status == InstanceStatus.error);
+    final overview = _OverviewCard(
+      loading: _loading,
+      modules: _modules,
+      adapters: _adapters,
+      sys: _sys,
+      error: _error,
+    );
+    final events = _EventCard(
+      loading: _loading,
+      events: _events,
+      error: _error,
+    );
+    final connect = _ConnectCard(instance: inst, localAddrs: _localAddrs);
     return RefreshIndicator(
       onRefresh: _refreshHealth,
       child: ListView(
@@ -322,28 +386,39 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         children: [
           _Header(instance: inst),
           const SizedBox(height: 12),
-          _OverviewCard(
-            loading: _loading,
-            modules: _modules,
-            adapters: _adapters,
-            sys: _sys,
-            error: _error,
-          ),
-          const SizedBox(height: 12),
-          _EventCard(
-            loading: _loading,
-            events: _events,
-            error: _error,
-          ),
-          const SizedBox(height: 12),
-          _ConnectCard(
-            instance: inst,
-            localAddrs: _localAddrs,
-          ),
+          if (isWide)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      overview,
+                      const SizedBox(height: 12),
+                      connect,
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: events),
+              ],
+            )
+          else ...[
+            overview,
+            const SizedBox(height: 12),
+            events,
+            const SizedBox(height: 12),
+            connect,
+          ],
           const SizedBox(height: 16),
           _ActionSection(
+            isWide: isWide,
             onOpenDashboard: _openDashboard,
-            onOpenLogs: _openLogs,
+            onStart: startable ? _start : null,
+            onStop: !inst.isRemote && running ? _stop : null,
+            onSoftRestart: running ? _softRestart : null,
+            onRestart: !inst.isRemote && running ? _restart : null,
           ),
         ],
       ),
@@ -1050,19 +1125,33 @@ class _EventLine extends StatelessWidget {
   }
 }
 
-/// 操作区：打开 Dashboard + 查看日志（启停 / 重启已移至右上角菜单）
+/// 操作区：打开 Dashboard 主按钮；PC 宽屏额外显示启停 / 重启按钮组
+/// （移动端启停走右上角菜单）。
 class _ActionSection extends StatelessWidget {
   const _ActionSection({
+    required this.isWide,
     required this.onOpenDashboard,
-    required this.onOpenLogs,
+    this.onStart,
+    this.onStop,
+    this.onSoftRestart,
+    this.onRestart,
   });
 
+  final bool isWide;
   final VoidCallback onOpenDashboard;
-  final VoidCallback onOpenLogs;
+  final VoidCallback? onStart;
+  final VoidCallback? onStop;
+  final VoidCallback? onSoftRestart;
+  final VoidCallback? onRestart;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final showActions = isWide &&
+        (onStart != null ||
+            onStop != null ||
+            onSoftRestart != null ||
+            onRestart != null);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1077,124 +1166,133 @@ class _ActionSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: onOpenLogs,
-          icon: const Icon(Icons.terminal_outlined),
-          label: Text(l10n.commonViewLogs),
-        ),
+        if (showActions) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (onStart != null)
+                FilledButton.tonalIcon(
+                  onPressed: onStart,
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(l10n.commonStart),
+                ),
+              if (onStop != null)
+                OutlinedButton.icon(
+                  onPressed: onStop,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  icon: const Icon(Icons.stop),
+                  label: Text(l10n.commonStop),
+                ),
+              if (onSoftRestart != null)
+                OutlinedButton.icon(
+                  onPressed: onSoftRestart,
+                  icon: const Icon(Icons.autorenew),
+                  label: Text(l10n.commonSoftRestart),
+                ),
+              if (onRestart != null)
+                OutlinedButton.icon(
+                  onPressed: onRestart,
+                  icon: const Icon(Icons.restart_alt),
+                  label: Text(l10n.commonHardRestart),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
 }
 
-/// 日志 Tab：实时流式显示实例调试日志（与 LogsPage 同源），可清空。
-class _LogsTab extends StatefulWidget {
-  final String instanceId;
-  const _LogsTab({required this.instanceId});
+/// PC 宽屏左侧导航：概览 + 注册视图列表
+class _NavRail extends StatelessWidget {
+  const _NavRail({
+    required this.views,
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  final List<InstanceView> views;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
 
   @override
-  State<_LogsTab> createState() => _LogsTabState();
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: SizedBox(
+        width: 208,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          children: [
+            _NavItem(
+              icon: Icons.space_dashboard_outlined,
+              title: l10n.detailTabOverview,
+              selected: selectedIndex == 0,
+              onTap: () => onSelect(0),
+            ),
+            for (var i = 0; i < views.length; i++)
+              _NavItem(
+                icon: views[i].icon,
+                title: views[i].title(l10n),
+                selected: selectedIndex == i + 1,
+                onTap: () => onSelect(i + 1),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _LogsTabState extends State<_LogsTab> {
-  final ScrollController _scroll = ScrollController();
-  LogStream? _stream;
+/// 单个导航项
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    final inst = context.read<InstanceManager>().findById(widget.instanceId);
-    if (inst != null) {
-      _stream = LogStream(inst);
-      _stream!.start();
-      _loadHistory(inst);
-    }
-  }
-
-  /// 打开时加载历史日志（/api/logs）
-  Future<void> _loadHistory(Instance inst) async {
-    try {
-      final logs = await DashboardApi(inst).getLogs(limit: 200);
-      if (mounted && _stream != null) _stream!.seed(logs);
-    } catch (_) {}
-  }
-
-  @override
-  void dispose() {
-    _stream?.stop();
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  Future<void> _clear() async {
-    final inst = context.read<InstanceManager>().findById(widget.instanceId);
-    if (inst != null) {
-      await DashboardApi(inst).clearLogs();
-      _stream?.clear();
-    }
-  }
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final stream = _stream;
-    if (stream == null) {
-      return Center(
-        child: Text(l10n.debugNoLogs, style: theme.textTheme.bodySmall),
-      );
-    }
-    return ListenableBuilder(
-      listenable: stream,
-      builder: (context, _) {
-        final entries = stream.entries;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scroll.hasClients) {
-            _scroll.jumpTo(_scroll.position.maxScrollExtent);
-          }
-        });
-        return Column(
+    final color = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        color: selected
+            ? theme.colorScheme.primary.withValues(alpha: 0.08)
+            : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
           children: [
-            Row(
-              children: [
-                const Spacer(),
-                TextButton.icon(
-                  icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                  label: Text(l10n.detailClearLogs),
-                  onPressed: _clear,
-                ),
-              ],
-            ),
-            const Divider(height: 1),
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 12),
             Expanded(
-              child: entries.isEmpty
-                  ? Center(
-                      child: Text(
-                        l10n.debugNoLogs,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scroll,
-                      padding: const EdgeInsets.all(12),
-                      itemCount: entries.length,
-                      itemBuilder: (context, i) {
-                        final e = entries[i];
-                        return Text(
-                          '${e.timestamp.toLocal().toString().substring(11, 19)} '
-                          '${e.message}',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                          ),
-                        );
-                      },
-                    ),
+              child: Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }

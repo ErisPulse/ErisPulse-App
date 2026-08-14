@@ -226,6 +226,7 @@ class RuntimeController extends ChangeNotifier {
     String? sdkVersion,
     String? indexUrl,
     void Function(String line)? onLog,
+    void Function(int done, int total)? onProgress,
   }) {
     if (_isDesktop) {
       if (mode == 'clone') {
@@ -233,6 +234,7 @@ class RuntimeController extends ChangeNotifier {
           sourceInstanceId: sourceInstanceId!,
           newInstanceId: instance.id,
           onLog: onLog ?? (_) {},
+          onProgress: onProgress,
         );
       }
       return DesktopSdk.prepareInstance(

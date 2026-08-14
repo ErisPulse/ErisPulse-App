@@ -303,10 +303,15 @@ class DesktopSdk {
   /// 基于源实例复制 venv 到新实例（继承其 SDK 版本与已装包）。
   /// venv 可移动（site-packages 相对 venv 目录），直接复制目录即可。
   /// 返回 0 表示成功。
+  /// 基于已有实例复制 venv（异步复制，不阻塞 UI）。
+  ///
+  /// 复制过程通过 [onLog] 定期输出文件进度，通过 [onProgress] 回调
+  /// 已复制/总数（供 UI 显示确定性进度条）。
   static Future<int> cloneInstanceEnv({
     required String sourceInstanceId,
     required String newInstanceId,
     required void Function(String line) onLog,
+    void Function(int done, int total)? onProgress,
   }) async {
     final src = await DesktopEnv.instanceVenvDir(sourceInstanceId);
     if (!src.existsSync()) {
@@ -314,10 +319,27 @@ class DesktopSdk {
       return 1;
     }
     final dst = await DesktopEnv.instanceVenvDir(newInstanceId);
-    if (dst.existsSync()) dst.deleteSync(recursive: true);
+    if (dst.existsSync()) {
+      await dst.delete(recursive: true);
+    }
     onLog('基于源实例环境复制 venv…');
     try {
-      _copyDirectorySync(src, dst);
+      // 先异步统计源文件总数，用于进度百分比
+      final total = await _countFilesAsync(src);
+      onLog('源环境共 $total 个文件，开始复制…');
+      var done = 0;
+      await _copyDirectoryAsync(
+        src,
+        dst,
+        onCopied: () {
+          done++;
+          // 每 200 个文件或收尾时输出一条进度日志，避免日志刷屏
+          if (done % 200 == 0 || done == total) {
+            onLog('已复制 $done / $total 个文件');
+          }
+          onProgress?.call(done, total);
+        },
+      );
     } catch (e) {
       onLog('复制失败: $e');
       return 1;
@@ -326,21 +348,38 @@ class DesktopSdk {
     return 0;
   }
 
-  /// 递归复制目录（保留符号链接，如 Unix venv 的 bin/python）
-  static void _copyDirectorySync(Directory from, Directory to) {
-    to.createSync(recursive: true);
-    for (final e in from.listSync(followLinks: false)) {
+  /// 异步统计文件总数（Directory.list 流式，不阻塞 UI）
+  static Future<int> _countFilesAsync(Directory dir) async {
+    var count = 0;
+    await for (final e in dir.list(recursive: true, followLinks: false)) {
+      if (e is File) count++;
+    }
+    return count;
+  }
+
+  /// 异步递归复制目录（保留符号链接，如 Unix venv 的 bin/python）。
+  /// 全部用异步 IO（File.copy / Directory.list 流式），不在主线程同步拷贝。
+  static Future<void> _copyDirectoryAsync(
+    Directory from,
+    Directory to, {
+    void Function()? onCopied,
+  }) async {
+    await to.create(recursive: true);
+    await for (final e in from.list(followLinks: false)) {
       final name =
           e.path.substring(e.path.lastIndexOf(Platform.pathSeparator) + 1);
       if (e is Directory) {
-        _copyDirectorySync(e, Directory('${to.path}/$name'));
+        await _copyDirectoryAsync(
+          e,
+          Directory('${to.path}/$name'),
+          onCopied: onCopied,
+        );
       } else if (e is File) {
-        final out = File('${to.path}/$name');
-        out.createSync(recursive: true);
-        out.writeAsBytesSync(e.readAsBytesSync());
+        await e.copy('${to.path}/$name');
+        onCopied?.call();
       } else if (e is Link) {
         try {
-          Link('${to.path}/$name').createSync(e.targetSync());
+          await Link('${to.path}/$name').create(e.targetSync());
         } catch (_) {}
       }
     }

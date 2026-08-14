@@ -32,8 +32,15 @@ class _LogsPageState extends State<LogsPage> {
   bool _paused = false;
   LogStream? _stream;
 
-  /// 等级过滤（null = 全部）
-  LogLevel? _levelFilter;
+  /// 等级过滤（勾选集合，精确级别匹配）。默认仅 INFO 及以上
+  /// （含自定义 EVENT=21），TRACE / DEBUG 默认隐藏。
+  final Set<LogLevel> _selectedLevels = {
+    LogLevel.info,
+    LogLevel.event,
+    LogLevel.warning,
+    LogLevel.error,
+    LogLevel.critical,
+  };
 
   @override
   void initState() {
@@ -66,7 +73,7 @@ class _LogsPageState extends State<LogsPage> {
     final text = entries
         .map(
           (e) => '${e.timestamp.toLocal().toString().substring(11, 19)} '
-              '[${e.level.name}] ${e.logger} ${e.message}',
+              '[${e.level.label}] ${e.logger} ${e.message}',
         )
         .join('\n');
     await Clipboard.setData(ClipboardData(text: text));
@@ -86,7 +93,7 @@ class _LogsPageState extends State<LogsPage> {
     final text = entries
         .map(
           (e) => '${e.timestamp.toLocal().toString().substring(11, 19)} '
-              '[${e.level.name}] ${e.logger} ${e.message}',
+              '[${e.level.label}] ${e.logger} ${e.message}',
         )
         .join('\n');
     final name =
@@ -137,9 +144,9 @@ class _LogsPageState extends State<LogsPage> {
               listenable: stream,
               builder: (context, _) {
                 final entries = stream.entries;
-                final visible = _levelFilter == null
-                    ? entries
-                    : entries.where((e) => e.level >= _levelFilter!).toList();
+                final visible = entries
+                    .where((e) => _selectedLevels.contains(e.level))
+                    .toList();
                 if (_autoScroll && !_paused) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_scroll.hasClients) {
@@ -164,61 +171,69 @@ class _LogsPageState extends State<LogsPage> {
     List<LogEntry> entries,
   ) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            icon: Icon(_paused ? Icons.play_arrow : Icons.pause),
-            tooltip: _paused ? l10n.logsResume : l10n.logsPause,
-            onPressed: () => setState(() => _paused = !_paused),
-          ),
-          IconButton(
-            icon: const Icon(Icons.vertical_align_bottom),
-            tooltip: l10n.logsAutoScroll,
-            onPressed: () => setState(() => _autoScroll = !_autoScroll),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: l10n.commonClear,
-            onPressed: () => _stream?.clear(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.copy_all_outlined),
-            tooltip: l10n.commonCopyAll,
-            onPressed: () => _copyAll(entries),
-          ),
-          PopupMenuButton<LogLevel?>(
-            icon: const Icon(Icons.filter_list),
-            tooltip: l10n.logsFilter,
-            onSelected: (v) => setState(() => _levelFilter = v),
-            itemBuilder: (_) => [
-              PopupMenuItem<LogLevel?>(
-                value: null,
-                child: Text(
-                  l10n.logsFilterAll + (_levelFilter == null ? ' ✓' : ''),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(_paused ? Icons.play_arrow : Icons.pause),
+                tooltip: _paused ? l10n.logsResume : l10n.logsPause,
+                onPressed: () => setState(() => _paused = !_paused),
+              ),
+              IconButton(
+                icon: const Icon(Icons.vertical_align_bottom),
+                tooltip: l10n.logsAutoScroll,
+                onPressed: () => setState(() => _autoScroll = !_autoScroll),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_sweep_outlined),
+                tooltip: l10n.commonClear,
+                onPressed: () => _stream?.clear(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_all_outlined),
+                tooltip: l10n.commonCopyAll,
+                onPressed: () => _copyAll(entries),
+              ),
+              IconButton(
+                icon: const Icon(Icons.download_outlined),
+                tooltip: l10n.logsDownload,
+                onPressed: () => _download(entries),
+              ),
+              const Spacer(),
+              Text(
+                l10n.logsLineCount(entries.length),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              for (final lv in LogLevel.values)
-                PopupMenuItem<LogLevel?>(
-                  value: lv,
-                  child: Text(
-                    lv.name.toUpperCase() + (_levelFilter == lv ? ' ✓' : ''),
-                  ),
-                ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            tooltip: l10n.logsDownload,
-            onPressed: () => _download(entries),
-          ),
-          const Spacer(),
-          Text(
-            l10n.logsLineCount(entries.length),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(height: 2),
+          // 等级过滤（勾选，精确级别集合）
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              for (final lv in LogLevel.values)
+                FilterChip(
+                  label: Text(lv.label, style: theme.textTheme.labelSmall),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  selected: _selectedLevels.contains(lv),
+                  onSelected: (sel) => setState(() {
+                    if (sel) {
+                      _selectedLevels.add(lv);
+                    } else {
+                      _selectedLevels.remove(lv);
+                    }
+                  }),
                 ),
+            ],
           ),
         ],
       ),
@@ -231,7 +246,9 @@ class _LogsPageState extends State<LogsPage> {
       return EmptyState(
         icon: Icons.terminal,
         title: l10n.logsEmptyTitle,
-        subtitle: l10n.logsEmptySubtitle,
+        subtitle: _selectedLevels.length != LogLevel.values.length
+            ? l10n.logsFilteredEmpty
+            : l10n.logsEmptySubtitle,
       );
     }
     return ListView.builder(
@@ -255,10 +272,12 @@ class _LogLine extends StatelessWidget {
         '${time.minute.toString().padLeft(2, '0')}:'
         '${time.second.toString().padLeft(2, '0')}';
     final levelColor = switch (entry.level) {
-      LogLevel.error || LogLevel.critical => const Color(0xFFF06292),
-      LogLevel.warning => const Color(0xFFFFB74D),
+      LogLevel.trace => const Color(0xFFB0BEC5),
       LogLevel.debug => const Color(0xFF90A4AE),
-      _ => const Color(0xFF9E9E9E),
+      LogLevel.info => const Color(0xFF9E9E9E),
+      LogLevel.event => const Color(0xFF4DB6AC),
+      LogLevel.warning => const Color(0xFFFFB74D),
+      LogLevel.error || LogLevel.critical => const Color(0xFFF06292),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -280,7 +299,7 @@ class _LogLine extends StatelessWidget {
           SizedBox(
             width: 52,
             child: Text(
-              entry.level.name.toUpperCase(),
+              entry.level.label,
               style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 10,

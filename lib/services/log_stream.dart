@@ -40,7 +40,7 @@ class LogStream extends ChangeNotifier {
   List<LogEntry> get entries {
     if (minLevel == null) return List.unmodifiable(_buffer);
     return List.unmodifiable(
-      _buffer.where((e) => e.level.index >= minLevel!.index),
+      _buffer.where((e) => e.level.num >= minLevel!.num),
     );
   }
 

@@ -2,6 +2,53 @@
 
 版本遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
 
+## [0.1.2] - 2026/08/14
+
+### 新增
+
+- 详情页视图注册机制（`DetailViewRegistry` + `InstanceView`）：内置视图统一由
+  注册表驱动，PC 宽屏改为左侧竖向导航 + 内容区（`IndexedStack` 保留各视图状态），
+  移动端保持顶部 TabBar（视图自带 keep-alive）；未来 SDK 动态注册视图经
+  `register()` 加入后自动出现在导航，无需改动详情页布局
+- 新增「事件流」原生视图（轮询 `/api/events`，类型过滤 + 自动刷新 + 清空），
+  替代 Dashboard 前端 event-stream 页
+- 新增「审计」原生视图（`/api/audit`，时间 / action / 详情 / IP + 清空），
+  替代 Dashboard 前端 audit-log 页
+- 日志 Tab 完整版：
+  - 软日志 / 进程日志双数据源切换（SegmentedButton）
+  - 软日志工具栏对齐 Dashboard 前端日志页：模块过滤、等级过滤、搜索（防抖）、
+    最新在底/顶排序、暂停滚动、自动滚动、行数计数、复制 / 导出 / 清空
+  - 进程日志为实例实时 stdout/stderr（`DebugLogBuffer` 按实例缓冲，实时非持久化）
+- Dashboard 内嵌页改为 App 侧 reload 完成 token 注入，避免前端
+  `location.reload()` 的 onLoadStop 事件链不一致
+
+### 修复
+
+- PC 详情页滚轮不再切到相邻 Tab：桌面端走左侧导航（TabBarView 仅移动端）
+- Dashboard 在 App 内一直转圈：token 注入后的刷新不置 loading 态 + 8s 加载超时兜底
+- 首页长按 / 右键菜单停止 / 重启后主动探活回写，列表状态不再滞后
+- 桌面停止实例改进程树终止（Windows `taskkill /F /T`、POSIX SIGTERM→SIGKILL），
+  避免子进程残留导致端口仍健康、"停止无效"
+- 全屏日志页等级过滤"无效果"：`level_num` 兜底解析缺失的 `level` 字段 +
+  工具栏显示当前过滤级别 chip + 过滤空态提示
+- 日志等级体系完整：SDK 自定义级别 `TRACE=5` / `EVENT=21` 正确解析并显示
+  （原先被误解析为 INFO，导致日志页"只有 INFO"）；等级过滤改**勾选**
+  （FilterChip 精确级别集合，含 TRACE/DEBUG/INFO/EVENT/WARNING/ERROR/CRITICAL），
+  默认仅显示 INFO 及以上
+- 概览页移除「查看日志」按钮（日志已是原生 Tab，与 Dashboard 入口保留）
+- PC 概览页启停 / 软重启 / 硬重启按钮直接可见（移动端仍走右上角菜单）
+- 概览卡片宽屏两列布局（资源+连接 / 事件），不再单列长条
+- 调试页不再显示 Android 设备行：按平台取设备信息（Android 走 device_info，
+  桌面显示操作系统版本）
+- 基于已有实例创建时不再"卡死"：venv 复制改异步 IO（原同步递归复制会冻结
+  UI），进度对话框显示确定性进度条 + 已复制文件数 + "请勿关闭窗口"提示
+
+### 内部
+
+- `DashboardApi` 新增 `getAuditLog` / `clearAuditLog`，`getEvents` 支持
+  `limit` / `type` 服务端过滤参数
+- i18n：新增事件流 / 审计 / 日志完整版相关键，同步 zh-CN / zh-TW / en / ja / ru
+
 ## [0.1.1] - 2026/08/14
 
 ### 新增

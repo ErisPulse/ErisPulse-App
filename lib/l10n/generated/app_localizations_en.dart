@@ -45,6 +45,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRefresh => 'Refresh';
 
   @override
+  String get commonLoading => 'Loading';
+
+  @override
   String get commonSettings => 'Settings';
 
   @override
@@ -326,6 +329,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createEnvFailed => 'Environment preparation failed';
 
   @override
+  String get createEnvCopying => 'Copying source instance environment (venv)…';
+
+  @override
+  String createEnvCopyProgress(Object done, Object total) {
+    return 'Copied $done / $total files';
+  }
+
+  @override
+  String get createEnvPleaseWait =>
+      'Preparing environment. This may take a moment. Please do not close the window.';
+
+  @override
   String get createPortLabel => 'Listen port *';
 
   @override
@@ -427,6 +442,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailTabPackages => 'Packages';
+
+  @override
+  String get detailTabEvents => 'Events';
+
+  @override
+  String get detailTabAudit => 'Audit';
+
+  @override
+  String get eventsFilterType => 'Type';
+
+  @override
+  String get auditTitle => 'Audit log';
+
+  @override
+  String get auditEmpty => 'No audit logs';
 
   @override
   String get detailTabEmpty => 'No items';
@@ -802,6 +832,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugAbi => 'ABI';
 
   @override
+  String get debugSystem => 'System';
+
+  @override
   String get debugNativeLib => 'native lib';
 
   @override
@@ -834,6 +867,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugProcessLogs => 'Process log';
+
+  @override
+  String get logsSoft => 'App logs';
+
+  @override
+  String get logsProcess => 'Process logs';
+
+  @override
+  String get logsSearch => 'Search';
+
+  @override
+  String get logsFilterModule => 'Module';
+
+  @override
+  String get logsFilteredEmpty => 'No logs match the current filters';
+
+  @override
+  String get logsProcessEmptyTitle => 'No process logs yet';
+
+  @override
+  String get logsProcessEmptySubtitle =>
+      'Raw process output (stdout/stderr) will appear here in real time';
+
+  @override
+  String get logsSortNewestTop => 'Newest on top';
+
+  @override
+  String get logsSortNewestBottom => 'Newest on bottom';
 
   @override
   String logsCopiedLines(Object count) {

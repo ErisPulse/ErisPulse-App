@@ -8,6 +8,8 @@
 //
 // 复制：AppBar "复制全部" 一次性输出 信息 + 日志；日志区可单独复制。
 
+import 'dart:io';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,7 +33,12 @@ class DebugPage extends StatefulWidget {
 class _DebugPageState extends State<DebugPage> {
   String _appVersion = '…';
   String _appBuild = '';
+
+  /// Android 设备信息（仅 Android 平台）
   AndroidDeviceInfo? _device;
+
+  /// 桌面 / iOS 系统版本（PC 不再显示 Android 设备行）
+  String _osVersion = '';
   String _nativeLibDir = '';
 
   @override
@@ -47,7 +54,15 @@ class _DebugPageState extends State<DebugPage> {
       _appBuild = info.buildNumber;
     } catch (_) {}
     try {
-      _device = await DeviceInfoPlugin().androidInfo;
+      if (Platform.isAndroid) {
+        _device = await DeviceInfoPlugin().androidInfo;
+      } else if (Platform.isIOS) {
+        _osVersion = 'iOS ${Platform.operatingSystemVersion}';
+      } else {
+        // 桌面（Windows / Linux / macOS）：显示操作系统版本
+        _osVersion =
+            '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+      }
     } catch (_) {}
     _nativeLibDir = await readNativeLibraryDir();
     if (mounted) setState(() {});
@@ -68,6 +83,10 @@ class _DebugPageState extends State<DebugPage> {
           '${l10n.debugAndroid}: ${d.version.release} (SDK ${d.version.sdkInt})',
         )
         ..writeln('${l10n.debugAbi}: ${d.supportedAbis.join(', ')}');
+    } else {
+      buf.writeln(
+        '${l10n.debugSystem}: ${_osVersion.isEmpty ? '-' : _osVersion}',
+      );
     }
     buf
       ..writeln('${l10n.debugNativeLib}: $_nativeLibDir')
@@ -144,14 +163,17 @@ class _DebugPageState extends State<DebugPage> {
                 child: _InfoSection(
                   rows: [
                     (l10n.debugAppVersion, '$_appVersion (build $_appBuild)'),
-                    (l10n.debugDeviceModel, _device?.model ?? '…'),
-                    (
-                      l10n.debugAndroid,
-                      _device == null
-                          ? '…'
-                          : '${_device!.version.release} (SDK ${_device!.version.sdkInt})'
-                    ),
-                    (l10n.debugAbi, _device?.supportedAbis.join(', ') ?? '…'),
+                    if (_device != null)
+                      (l10n.debugDeviceModel, _device!.model),
+                    if (_device != null)
+                      (
+                        l10n.debugAndroid,
+                        '${_device!.version.release} (SDK ${_device!.version.sdkInt})'
+                      ),
+                    if (_device != null)
+                      (l10n.debugAbi, _device!.supportedAbis.join(', ')),
+                    if (_device == null)
+                      (l10n.debugSystem, _osVersion.isEmpty ? '…' : _osVersion),
                     (
                       l10n.debugNativeLib,
                       _nativeLibDir.isEmpty ? '…' : _nativeLibDir

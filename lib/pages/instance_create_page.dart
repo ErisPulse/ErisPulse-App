@@ -479,6 +479,12 @@ class _EnvProgressDialogState extends State<_EnvProgressDialog> {
   int _exit = -1;
   final ScrollController _scroll = ScrollController();
 
+  /// 复制进度（0.0~1.0）；null = 无限进度（fresh 的 pip 阶段）
+  double? _progress;
+  int _progressDone = 0;
+  int _progressTotal = 0;
+  int _lastProgressTick = 0;
+
   @override
   void initState() {
     super.initState();
@@ -515,6 +521,20 @@ class _EnvProgressDialogState extends State<_EnvProgressDialog> {
     }
   }
 
+  /// 复制进度回调（节流：每 50 个文件或收尾才刷新，避免频繁重建）
+  void _onProgress(int done, int total) {
+    if (!mounted) return;
+    if (total > 0 && (done - _lastProgressTick).abs() < 50 && done != total) {
+      return;
+    }
+    _lastProgressTick = done;
+    setState(() {
+      _progressDone = done;
+      _progressTotal = total;
+      _progress = total <= 0 ? null : (done / total).clamp(0.0, 1.0);
+    });
+  }
+
   Future<void> _run() async {
     final runtime = context.read<RuntimeController>();
     final mgr = context.read<InstanceManager>();
@@ -536,6 +556,7 @@ class _EnvProgressDialogState extends State<_EnvProgressDialog> {
           sdkVersion: widget.sdkVersion,
           indexUrl: widget.indexUrl,
           onLog: _append,
+          onProgress: _onProgress,
         );
       }
       // 基于已有实例：继承源实例的 SDK 版本记录
@@ -587,8 +608,42 @@ class _EnvProgressDialogState extends State<_EnvProgressDialog> {
                 ],
               )
             : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const LinearProgressIndicator(),
+                  if (_progress != null)
+                    LinearProgressIndicator(value: _progress)
+                  else
+                    const LinearProgressIndicator(),
+                  // 基于已有实例：明确展示"正在复制环境 + 文件进度"，
+                  // 避免同步复制（旧版）让用户误以为卡死
+                  if (widget.mode == _EnvMode.clone && !_done) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.createEnvCopying,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    if (_progressTotal > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.createEnvCopyProgress(
+                          _progressDone,
+                          _progressTotal,
+                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.createEnvPleaseWait,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Expanded(
                     child: Container(

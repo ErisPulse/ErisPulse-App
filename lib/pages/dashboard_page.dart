@@ -8,6 +8,7 @@
 // localStorage（key `__ep_tk__`，dash.js 启动时读取并 POST /api/auth 验证），
 // 实现免手动登录；AppBar 提供可见的"访问密钥"复制按钮 / 刷新 / 外部浏览器。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,13 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _loading = true;
   bool _tokenInjected = false;
   String? _error;
+  Timer? _loadingTimer;
+
+  @override
+  void dispose() {
+    _loadingTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _copyToken() async {
     await Clipboard.setData(ClipboardData(text: widget.instance.token));
@@ -57,8 +65,9 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /// 首次加载完成后把访问密钥注入 Dashboard 前端（localStorage `__ep_tk__`），
-  /// 刷新后 dash.js 自动登录，免手动输入。
+  /// 首次加载完成后把访问密钥写入 Dashboard 前端（localStorage `__ep_tk__`），
+  /// 再由 App 侧 reload（避免 JS location.reload 的 onLoadStop 事件链不一致
+  /// 导致 loading 卡住）。刷新后 dash.js 自动登录，免手动输入。
   void _maybeInjectToken(InAppWebViewController controller, WebUri? url) {
     if (_tokenInjected) return;
     final token = widget.instance.token;
@@ -69,19 +78,20 @@ class _DashboardPageState extends State<DashboardPage> {
     if (page == null || page.origin != base.origin) return;
     _tokenInjected = true;
     final jsToken = jsonEncode(token);
-    // 已存在相同 token 则不刷新，避免刷新循环
     controller.evaluateJavascript(
       source: '''
       (function() {
         try {
           if (localStorage.getItem("__ep_tk__") !== $jsToken) {
             localStorage.setItem("__ep_tk__", $jsToken);
-            location.reload();
           }
         } catch (e) {}
       })();
       ''',
-    );
+    ).then((_) {
+      // 注入完成后 App 侧 reload，页面带上 token 自动登录
+      if (mounted) controller.reload();
+    });
   }
 
   @override
@@ -131,9 +141,18 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   onWebViewCreated: (controller) => _controller = controller,
                   onLoadStart: (controller, url) {
-                    if (mounted) setState(() => _loading = true);
+                    if (!mounted) return;
+                    // token 注入后的刷新不再显示转圈；首次加载显示并加超时兜底
+                    if (!_tokenInjected) {
+                      setState(() => _loading = true);
+                      _loadingTimer?.cancel();
+                      _loadingTimer = Timer(const Duration(seconds: 8), () {
+                        if (mounted) setState(() => _loading = false);
+                      });
+                    }
                   },
                   onLoadStop: (controller, url) {
+                    _loadingTimer?.cancel();
                     if (mounted) setState(() => _loading = false);
                     _maybeInjectToken(controller, url);
                   },

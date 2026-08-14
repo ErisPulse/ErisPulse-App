@@ -209,7 +209,7 @@ class DesktopRuntime {
       );
       return;
     }
-    _kill(tracker.process);
+    await _kill(tracker.process);
     await _closeLogFile(id);
     onEvent(
       ProcessEvent(
@@ -238,7 +238,7 @@ class DesktopRuntime {
   /// App 退出时调用：终止全部实例进程
   Future<void> dispose() async {
     for (final t in _procs.values.toList()) {
-      _kill(t.process);
+      await _kill(t.process);
     }
     _procs.clear();
     for (final s in _logFiles.values) {
@@ -358,14 +358,17 @@ class DesktopRuntime {
     await startInstance(tracker.data);
   }
 
-  void _kill(Process p) {
+  /// 终止进程树：Windows 用 taskkill /F /T（连子进程一起清，避免端口残留
+  /// 导致"停止无效"）；POSIX 先 SIGTERM 再 SIGKILL 兜底。
+  Future<void> _kill(Process p) async {
     try {
+      if (Platform.isWindows) {
+        await Process.run('taskkill', ['/F', '/T', '/PID', '${p.pid}']);
+        return;
+      }
       p.kill(ProcessSignal.sigterm);
-      Timer(const Duration(seconds: 2), () {
-        try {
-          p.kill(ProcessSignal.sigkill);
-        } catch (_) {}
-      });
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      p.kill(ProcessSignal.sigkill);
     } catch (_) {}
   }
 }

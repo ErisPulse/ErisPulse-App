@@ -186,11 +186,16 @@ class DashboardApi {
 
   // 生命周期 / 事件
 
-  /// 最近事件列表
+  /// 最近事件列表（支持服务端类型/平台过滤，对齐后端 /events 查询参数）
   Future<List<Map<String, dynamic>>> getEvents({
     int limit = 100,
+    String? type,
   }) async {
-    final json = await _getJson('/events');
+    final q = StringBuffer('/events?limit=$limit');
+    if (type != null && type.isNotEmpty) {
+      q.write('&type=${Uri.encodeQueryComponent(type)}');
+    }
+    final json = await _getJson(q.toString());
     final list = json['events'] as List? ?? [];
     return list
         .map((e) => e is Map<String, dynamic> ? e : null)
@@ -199,6 +204,18 @@ class DashboardApi {
   }
 
   Future<void> clearEvents() => _postJson('/events/clear');
+
+  /// 审计日志列表（对齐后端 /audit，`{timestamp, action, detail, ip}`）
+  Future<List<Map<String, dynamic>>> getAuditLog({int limit = 200}) async {
+    final json = await _getJson('/audit?limit=$limit');
+    final list = json['logs'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<void> clearAuditLog() => _postJson('/audit/clear');
 
   // 模块
 
@@ -361,7 +378,7 @@ class DashboardApi {
     final list = json['logs'] as List? ?? [];
     var entries = LogEntry.fromList(list);
     if (minLevel != null) {
-      entries = entries.where((e) => e.level.index >= minLevel.index).toList();
+      entries = entries.where((e) => e.level.num >= minLevel.num).toList();
     }
     if (entries.length > limit) {
       entries = entries.sublist(entries.length - limit);

@@ -45,6 +45,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonRefresh => '更新';
 
   @override
+  String get commonLoading => '読み込み中';
+
+  @override
   String get commonSettings => '設定';
 
   @override
@@ -316,6 +319,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get createEnvFailed => '環境の準備に失敗しました';
 
   @override
+  String get createEnvCopying => '元インスタンスの環境（venv）をコピー中…';
+
+  @override
+  String createEnvCopyProgress(Object done, Object total) {
+    return '$done / $total ファイルをコピーしました';
+  }
+
+  @override
+  String get createEnvPleaseWait =>
+      '環境を準備しています。少し時間がかかる場合があります。ウィンドウを閉じないでください。';
+
+  @override
   String get createPortLabel => '待受ポート *';
 
   @override
@@ -414,6 +429,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get detailTabPackages => 'パッケージ';
+
+  @override
+  String get detailTabEvents => 'イベント';
+
+  @override
+  String get detailTabAudit => '監査';
+
+  @override
+  String get eventsFilterType => 'タイプ';
+
+  @override
+  String get auditTitle => '監査ログ';
+
+  @override
+  String get auditEmpty => '監査ログはありません';
 
   @override
   String get detailTabEmpty => '項目なし';
@@ -781,6 +811,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get debugAbi => 'ABI';
 
   @override
+  String get debugSystem => 'システム';
+
+  @override
   String get debugNativeLib => 'native lib';
 
   @override
@@ -813,6 +846,34 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get debugProcessLogs => 'プロセスログ';
+
+  @override
+  String get logsSoft => 'アプリログ';
+
+  @override
+  String get logsProcess => 'プロセスログ';
+
+  @override
+  String get logsSearch => '検索';
+
+  @override
+  String get logsFilterModule => 'モジュール';
+
+  @override
+  String get logsFilteredEmpty => '現在のフィルターに一致するログはありません';
+
+  @override
+  String get logsProcessEmptyTitle => 'プロセスログはまだありません';
+
+  @override
+  String get logsProcessEmptySubtitle =>
+      'プロセスの生の出力（stdout/stderr）がリアルタイムでここに表示されます';
+
+  @override
+  String get logsSortNewestTop => '最新を上に';
+
+  @override
+  String get logsSortNewestBottom => '最新を下に';
 
   @override
   String logsCopiedLines(Object count) {

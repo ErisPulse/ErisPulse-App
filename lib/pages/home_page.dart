@@ -510,6 +510,7 @@ class _InstanceTile extends StatelessWidget {
 
   void _restart(BuildContext context) {
     context.read<RuntimeController>().restartInstance(_toData(instance));
+    unawaited(_refreshHealth(context));
   }
 
   /// 软重启：调用 Dashboard API restartSdk（保留进程）
@@ -580,10 +581,22 @@ class _InstanceTile extends StatelessWidget {
       clearError: true,
     );
     runtime.startInstance(_toData(instance));
+    unawaited(_refreshHealth(context));
   }
 
   void _stop(BuildContext context) {
     context.read<RuntimeController>().stopInstance(instance.id);
+    unawaited(_refreshHealth(context));
+  }
+
+  /// 操作后主动探活并回写实例健康，避免列表状态滞后
+  Future<void> _refreshHealth(BuildContext context) async {
+    final health = await DashboardApi.ping(instance);
+    if (context.mounted) {
+      context
+          .read<InstanceManager>()
+          .setRuntimeState(instance.id, health: health);
+    }
   }
 
   static InstanceData _toData(Instance inst) => InstanceData(

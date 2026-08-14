@@ -45,6 +45,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get commonRefresh => 'Обновить';
 
   @override
+  String get commonLoading => 'Загрузка';
+
+  @override
   String get commonSettings => 'Настройки';
 
   @override
@@ -327,6 +330,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createEnvFailed => 'Не удалось подготовить окружение';
 
   @override
+  String get createEnvCopying =>
+      'Копирование окружения исходного экземпляра (venv)…';
+
+  @override
+  String createEnvCopyProgress(Object done, Object total) {
+    return 'Скопировано файлов: $done / $total';
+  }
+
+  @override
+  String get createEnvPleaseWait =>
+      'Подготовка окружения. Это может занять некоторое время. Не закрывайте окно.';
+
+  @override
   String get createPortLabel => 'Порт прослушивания *';
 
   @override
@@ -428,6 +444,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get detailTabPackages => 'Пакеты';
+
+  @override
+  String get detailTabEvents => 'События';
+
+  @override
+  String get detailTabAudit => 'Аудит';
+
+  @override
+  String get eventsFilterType => 'Тип';
+
+  @override
+  String get auditTitle => 'Журнал аудита';
+
+  @override
+  String get auditEmpty => 'Журнал аудита пуст';
 
   @override
   String get detailTabEmpty => 'Нет элементов';
@@ -805,6 +836,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get debugAbi => 'ABI';
 
   @override
+  String get debugSystem => 'Система';
+
+  @override
   String get debugNativeLib => 'native lib';
 
   @override
@@ -837,6 +871,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get debugProcessLogs => 'Журнал процесса';
+
+  @override
+  String get logsSoft => 'Логи приложения';
+
+  @override
+  String get logsProcess => 'Журнал процесса';
+
+  @override
+  String get logsSearch => 'Поиск';
+
+  @override
+  String get logsFilterModule => 'Модуль';
+
+  @override
+  String get logsFilteredEmpty =>
+      'Нет журналов, соответствующих текущим фильтрам';
+
+  @override
+  String get logsProcessEmptyTitle => 'Журнал процесса пока пуст';
+
+  @override
+  String get logsProcessEmptySubtitle =>
+      'Необработанный вывод процесса (stdout/stderr) появится здесь в реальном времени';
+
+  @override
+  String get logsSortNewestTop => 'Новые сверху';
+
+  @override
+  String get logsSortNewestBottom => 'Новые снизу';
 
   @override
   String logsCopiedLines(Object count) {

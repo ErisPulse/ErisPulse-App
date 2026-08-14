@@ -45,6 +45,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonRefresh => '刷新';
 
   @override
+  String get commonLoading => '加载中';
+
+  @override
   String get commonSettings => '设置';
 
   @override
@@ -314,6 +317,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createEnvFailed => '环境准备失败';
 
   @override
+  String get createEnvCopying => '正在复制源实例环境（venv）…';
+
+  @override
+  String createEnvCopyProgress(Object done, Object total) {
+    return '已复制 $done / $total 个文件';
+  }
+
+  @override
+  String get createEnvPleaseWait => '环境准备中，可能需要一点时间，请勿关闭窗口';
+
+  @override
   String get createPortLabel => '监听端口 *';
 
   @override
@@ -410,6 +424,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get detailTabPackages => '包';
+
+  @override
+  String get detailTabEvents => '事件流';
+
+  @override
+  String get detailTabAudit => '审计';
+
+  @override
+  String get eventsFilterType => '类型';
+
+  @override
+  String get auditTitle => '审计日志';
+
+  @override
+  String get auditEmpty => '暂无审计日志';
 
   @override
   String get detailTabEmpty => '暂无内容';
@@ -777,6 +806,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugAbi => 'ABI';
 
   @override
+  String get debugSystem => '系统';
+
+  @override
   String get debugNativeLib => 'native lib';
 
   @override
@@ -808,6 +840,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get debugProcessLogs => '进程日志';
+
+  @override
+  String get logsSoft => '软日志';
+
+  @override
+  String get logsProcess => '进程日志';
+
+  @override
+  String get logsSearch => '搜索';
+
+  @override
+  String get logsFilterModule => '模块';
+
+  @override
+  String get logsFilteredEmpty => '没有符合当前过滤条件的日志';
+
+  @override
+  String get logsProcessEmptyTitle => '暂无进程日志';
+
+  @override
+  String get logsProcessEmptySubtitle => '实例运行时的原始输出（stdout/stderr）将实时显示在这里';
+
+  @override
+  String get logsSortNewestTop => '最新在顶';
+
+  @override
+  String get logsSortNewestBottom => '最新在底';
 
   @override
   String logsCopiedLines(Object count) {
@@ -888,6 +947,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get commonRefresh => '重新整理';
+
+  @override
+  String get commonLoading => '載入中';
 
   @override
   String get commonSettings => '設定';
@@ -1159,6 +1221,17 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get createEnvFailed => '環境準備失敗';
 
   @override
+  String get createEnvCopying => '正在複製來源實例環境（venv）…';
+
+  @override
+  String createEnvCopyProgress(Object done, Object total) {
+    return '已複製 $done / $total 個檔案';
+  }
+
+  @override
+  String get createEnvPleaseWait => '環境準備中，可能需要一點時間，請勿關閉視窗';
+
+  @override
   String get createPortLabel => '監聽連接埠 *';
 
   @override
@@ -1255,6 +1328,21 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get detailTabPackages => '套件';
+
+  @override
+  String get detailTabEvents => '事件流';
+
+  @override
+  String get detailTabAudit => '稽核';
+
+  @override
+  String get eventsFilterType => '類型';
+
+  @override
+  String get auditTitle => '稽核日誌';
+
+  @override
+  String get auditEmpty => '暫無稽核日誌';
 
   @override
   String get detailTabEmpty => '暫無內容';
@@ -1622,6 +1710,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get debugAbi => 'ABI';
 
   @override
+  String get debugSystem => '系統';
+
+  @override
   String get debugNativeLib => 'native lib';
 
   @override
@@ -1653,6 +1744,33 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get debugProcessLogs => '程序日誌';
+
+  @override
+  String get logsSoft => '軟日誌';
+
+  @override
+  String get logsProcess => '程序日誌';
+
+  @override
+  String get logsSearch => '搜尋';
+
+  @override
+  String get logsFilterModule => '模組';
+
+  @override
+  String get logsFilteredEmpty => '沒有符合目前篩選條件的日誌';
+
+  @override
+  String get logsProcessEmptyTitle => '暫無程序日誌';
+
+  @override
+  String get logsProcessEmptySubtitle => '實例執行時的原始輸出（stdout/stderr）將即時顯示在這裡';
+
+  @override
+  String get logsSortNewestTop => '最新在頂';
+
+  @override
+  String get logsSortNewestBottom => '最新在底';
 
   @override
   String logsCopiedLines(Object count) {

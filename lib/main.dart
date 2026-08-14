@@ -26,6 +26,8 @@ import 'services/instance_manager.dart';
 import 'services/runtime/background_service.dart';
 import 'services/runtime/native_lib.dart';
 import 'services/runtime/runtime_controller.dart';
+import 'views/builtin_views.dart';
+import 'views/instance_view.dart';
 import 'l10n/generated/app_localizations.dart';
 
 Future<void> main() async {
@@ -78,12 +80,17 @@ Future<void> main() async {
   final runtime = RuntimeController(instanceManager: instanceManager);
   await runtime.init();
 
+  // 详情页视图注册表 + 内置视图注册（未来动态视图经 register() 加入）
+  final detailViewRegistry = DetailViewRegistry();
+  registerBuiltinViews(detailViewRegistry);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: instanceManager),
         ChangeNotifierProvider.value(value: runtime),
         ChangeNotifierProvider.value(value: appSettings),
+        ChangeNotifierProvider.value(value: detailViewRegistry),
       ],
       child: const ErisPulseApp(),
     ),

@@ -175,6 +175,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get commonRefresh;
 
+  /// No description provided for @commonLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get commonLoading;
+
   /// No description provided for @commonSettings.
   ///
   /// In en, this message translates to:
@@ -697,6 +703,24 @@ abstract class AppLocalizations {
   /// **'Environment preparation failed'**
   String get createEnvFailed;
 
+  /// No description provided for @createEnvCopying.
+  ///
+  /// In en, this message translates to:
+  /// **'Copying source instance environment (venv)…'**
+  String get createEnvCopying;
+
+  /// No description provided for @createEnvCopyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {done} / {total} files'**
+  String createEnvCopyProgress(Object done, Object total);
+
+  /// No description provided for @createEnvPleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing environment. This may take a moment. Please do not close the window.'**
+  String get createEnvPleaseWait;
+
   /// No description provided for @createPortLabel.
   ///
   /// In en, this message translates to:
@@ -888,6 +912,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Packages'**
   String get detailTabPackages;
+
+  /// No description provided for @detailTabEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get detailTabEvents;
+
+  /// No description provided for @detailTabAudit.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit'**
+  String get detailTabAudit;
+
+  /// No description provided for @eventsFilterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get eventsFilterType;
+
+  /// No description provided for @auditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit log'**
+  String get auditTitle;
+
+  /// No description provided for @auditEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit logs'**
+  String get auditEmpty;
 
   /// No description provided for @detailTabEmpty.
   ///
@@ -1585,6 +1639,12 @@ abstract class AppLocalizations {
   /// **'ABI'**
   String get debugAbi;
 
+  /// No description provided for @debugSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get debugSystem;
+
   /// No description provided for @debugNativeLib.
   ///
   /// In en, this message translates to:
@@ -1650,6 +1710,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Process log'**
   String get debugProcessLogs;
+
+  /// No description provided for @logsSoft.
+  ///
+  /// In en, this message translates to:
+  /// **'App logs'**
+  String get logsSoft;
+
+  /// No description provided for @logsProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Process logs'**
+  String get logsProcess;
+
+  /// No description provided for @logsSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get logsSearch;
+
+  /// No description provided for @logsFilterModule.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get logsFilterModule;
+
+  /// No description provided for @logsFilteredEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs match the current filters'**
+  String get logsFilteredEmpty;
+
+  /// No description provided for @logsProcessEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No process logs yet'**
+  String get logsProcessEmptyTitle;
+
+  /// No description provided for @logsProcessEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw process output (stdout/stderr) will appear here in real time'**
+  String get logsProcessEmptySubtitle;
+
+  /// No description provided for @logsSortNewestTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest on top'**
+  String get logsSortNewestTop;
+
+  /// No description provided for @logsSortNewestBottom.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest on bottom'**
+  String get logsSortNewestBottom;
 
   /// No description provided for @logsCopiedLines.
   ///
