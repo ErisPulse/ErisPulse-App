@@ -59,22 +59,19 @@ class _AdapterConfigPageState extends State<AdapterConfigPage> {
   Future<void> _load() async {
     try {
       final data = await _api.getAdapterConfig(widget.platform);
-      final schemaFields =
-          ((data['schema'] as Map?)?['fields'] as Map? ?? {})
-              .cast<String, dynamic>();
+      final schemaFields = ((data['schema'] as Map?)?['fields'] as Map? ?? {})
+          .cast<String, dynamic>();
       final accountSchemaFields =
           ((data['account_schema'] as Map?)?['fields'] as Map? ?? {})
               .cast<String, dynamic>();
-      final accounts =
-          (data['accounts'] as Map? ?? {}).cast<String, dynamic>();
+      final accounts = (data['accounts'] as Map? ?? {}).cast<String, dynamic>();
       if (!mounted) return;
       setState(() {
         _hasConfig = data['has_config'] as bool? ?? schemaFields.isNotEmpty;
         _hasAccounts =
             data['has_accounts'] as bool? ?? accountSchemaFields.isNotEmpty;
         _globalFields = schemaFields;
-        _globalValues =
-            (data['values'] as Map? ?? {}).cast<String, dynamic>();
+        _globalValues = (data['values'] as Map? ?? {}).cast<String, dynamic>();
         _accountFields = accountSchemaFields;
         _accounts = accounts;
         _accountFormKeys.clear();
@@ -222,7 +219,8 @@ class _AdapterConfigPageState extends State<AdapterConfigPage> {
       ..remove('name')
       ..remove('enabled');
     final formValues = <String, dynamic>{
-      for (final k in formFields.keys) if (acc.containsKey(k)) k: acc[k],
+      for (final k in formFields.keys)
+        if (acc.containsKey(k)) k: acc[k],
     };
     final enabled = _accountEnabled[name] ?? false;
     return Card(
@@ -230,9 +228,8 @@ class _AdapterConfigPageState extends State<AdapterConfigPage> {
       child: ExpansionTile(
         leading: Switch(
           value: enabled,
-          onChanged: _saving
-              ? null
-              : (v) => setState(() => _accountEnabled[name] = v),
+          onChanged:
+              _saving ? null : (v) => setState(() => _accountEnabled[name] = v),
         ),
         title: Text(name),
         subtitle: Text(
@@ -263,8 +260,7 @@ class _AdapterConfigPageState extends State<AdapterConfigPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  onPressed:
-                      _saving ? null : () => _deleteAccount(name),
+                  onPressed: _saving ? null : () => _deleteAccount(name),
                   icon: const Icon(Icons.delete_outline),
                   label: Text(l10n.adapterConfigAccountDelete),
                   style: TextButton.styleFrom(

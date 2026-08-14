@@ -51,9 +51,8 @@ class _SchemaConfigPageState extends State<SchemaConfigPage> {
   Future<void> _init() async {
     try {
       final data = await widget.load();
-      final schemaFields =
-          ((data['schema'] as Map?)?['fields'] as Map? ?? {})
-              .cast<String, dynamic>();
+      final schemaFields = ((data['schema'] as Map?)?['fields'] as Map? ?? {})
+          .cast<String, dynamic>();
       final values = (data['values'] as Map? ?? {}).cast<String, dynamic>();
       if (!mounted) return;
       setState(() {
