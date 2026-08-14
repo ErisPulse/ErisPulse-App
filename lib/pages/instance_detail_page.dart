@@ -15,6 +15,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -53,6 +54,15 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
 
   /// 消息统计（/api/message-stats）
   Map<String, dynamic>? _stats;
+
+  /// 事件总数（进程启动以来，/api/events 的 total_count）
+  int _totalEvents = 0;
+
+  /// 在线机器人数量（/api/bots）
+  int _onlineBots = 0;
+
+  /// 框架信息（/api/status framework：version / python_version / platform）
+  Map<String, dynamic>? _frameworkInfo;
 
   /// 本机可达地址（v4 / v6）
   List<InternetAddress> _localAddrs = [];
@@ -115,13 +125,31 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         api.getEvents(limit: 30),
         api.getMessageStats(),
       ]);
+      // 在线机器人 / 框架版本（失败不阻塞主概览，如旧版本无端点）
+      int onlineBots = 0;
+      Map<String, dynamic>? fwInfo;
+      try {
+        final bots = await api.getBots();
+        onlineBots =
+            bots.where((b) => b['status']?.toString() == 'online').length;
+      } catch (_) {}
+      try {
+        final st = await api.getStatus();
+        final fw = st['framework'];
+        if (fw is Map) fwInfo = Map<String, dynamic>.from(fw);
+      } catch (_) {}
       if (!mounted) return;
+      final evt =
+          results[3] as ({List<Map<String, dynamic>> events, int totalCount});
       setState(() {
         _modules = (results[0] as List<ModuleInfo>);
         _adapters = (results[1] as List<AdapterInfo>);
         _sys = results[2] as SystemInfo;
-        _events = (results[3] as List<Map<String, dynamic>>);
+        _events = evt.events;
+        _totalEvents = evt.totalCount;
         _stats = results[4] as Map<String, dynamic>?;
+        _onlineBots = onlineBots;
+        _frameworkInfo = fwInfo;
         _loading = false;
         _error = null;
       });
@@ -135,6 +163,147 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     final health = await DashboardApi.ping(inst);
     if (!mounted) return;
     context.read<InstanceManager>().setRuntimeState(inst.id, health: health);
+    // 模块动态视窗同步（装卸模块后导航自动增减入口）
+    await _syncModuleViews(api);
+  }
+
+  // 模块动态视窗（/api/views → ext-<id> 导航入口）
+  //
+  // 视窗内容不在 App 内渲染：入口点击直接跳转 Dashboard 对应页面
+  // （前端全局 go('p-ext-<id>')），对齐 Dashboard 的页面切换行为。
+
+  /// 与后端 /api/views 对齐注册 ext- 视图；集合变化时回概览防索引错位。
+  Future<void> _syncModuleViews(DashboardApi api) async {
+    List<Map<String, dynamic>> views;
+    try {
+      views = await api.getViews();
+    } catch (_) {
+      return; // 端点不存在（旧版本）等，静默
+    }
+    if (!mounted) return;
+    final registry = context.read<DetailViewRegistry>();
+    final fresh = <String>{};
+    for (final v in views) {
+      final id = v['id']?.toString() ?? '';
+      if (id.isNotEmpty) fresh.add(id);
+    }
+    final existing = registry.views
+        .map((v) => v.id)
+        .where((id) => id.startsWith('ext-'))
+        .map((id) => id.substring(4))
+        .toSet();
+    if (fresh.length == existing.length && fresh.containsAll(existing)) {
+      return; // 无变化，避免每轮 poll 触发重建
+    }
+    for (final id in existing.difference(fresh)) {
+      registry.unregister('ext-$id');
+    }
+    for (final v in views) {
+      final id = v['id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      registry.insertBefore(
+        _anchorFor(v['group']?.toString() ?? ''),
+        _buildExtView(Map<String, dynamic>.from(v)),
+      );
+    }
+    // 视图集合变化：回概览并清空懒加载索引
+    setState(() {
+      _tabIndex = 0;
+      _visited
+        ..clear()
+        ..add(0);
+    });
+  }
+
+  /// 动态视窗插入锚点：内置分组复用同名组（插到下一组首项之前），
+  /// system / tools / 自定义分组追加到导航末尾（空 anchor = 末尾）。
+  static String _anchorFor(String group) => switch (group) {
+        'group_overview' => 'events',
+        'group_events' => 'modules',
+        'group_extensions' => 'adapters',
+        'group_management' => 'monitor',
+        'group_operations' => 'files',
+        _ => '',
+      };
+
+  InstanceView _buildExtView(Map<String, dynamic> v) {
+    final id = v['id']!.toString();
+    return InstanceView(
+      id: 'ext-$id',
+      icon: Icons.extension_outlined,
+      iconSvg: v['icon_svg']?.toString(),
+      title: (l10n) => _extTitle(l10n, v),
+      group: (l10n) => _extGroup(l10n, v),
+      builder: (_, inst) =>
+          _ModuleViewEntry(instance: inst, page: 'p-ext-$id', data: v),
+    );
+  }
+
+  /// App localeName（zh / zh_Hant / …）→ Dashboard titles 字典键（zh-TW）
+  static String? _extLocaleKey(String localeName) => switch (localeName) {
+        'zh' => 'zh',
+        'zh_Hant' => 'zh-TW',
+        'en' => 'en',
+        'ja' => 'ja',
+        'ru' => 'ru',
+        _ => null,
+      };
+
+  static String _extTitle(AppLocalizations l10n, Map<String, dynamic> v) {
+    final titles = (v['titles'] as Map?)?.cast<String, dynamic>();
+    final key = _extLocaleKey(l10n.localeName);
+    final byLocale = key == null ? null : titles?[key]?.toString();
+    return byLocale ??
+        v['title']?.toString() ??
+        v['title_en']?.toString() ??
+        v['id'].toString();
+  }
+
+  /// 分组标题：内置组用本地文案；自定义组优先 group_titles[lang]，
+  /// 回退 group_title_en / group_title。
+  static String _extGroup(AppLocalizations l10n, Map<String, dynamic> v) {
+    switch (v['group']?.toString() ?? '') {
+      case 'group_overview':
+        return l10n.navGroupOverview;
+      case 'group_events':
+        return l10n.navGroupEvents;
+      case 'group_extensions':
+        return l10n.navGroupExtensions;
+      case 'group_management':
+        return l10n.navGroupManagement;
+      case 'group_operations':
+        return l10n.navGroupOperations;
+      case 'group_system':
+        return l10n.navGroupSystem;
+      case 'group_tools':
+        return l10n.navGroupTools;
+    }
+    final titles = (v['group_titles'] as Map?)?.cast<String, dynamic>();
+    final key = _extLocaleKey(l10n.localeName);
+    final byLocale = key == null ? null : titles?[key]?.toString();
+    if (byLocale != null && byLocale.isNotEmpty) return byLocale;
+    final en = v['group_title_en']?.toString() ?? '';
+    if (en.isNotEmpty) return en;
+    return v['group_title']?.toString() ?? v['id'].toString();
+  }
+
+  /// 跳转 Dashboard 指定页面（go() 定位）
+  void _openDashboardPage(Instance inst, String page) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DashboardPage(instance: inst, initialPage: page),
+      ),
+    );
+  }
+
+  /// 概览大数字卡跳转到对应注册视图
+  void _gotoView(String viewId) {
+    final idx = context.read<DetailViewRegistry>().indexOf(viewId);
+    if (idx < 0) return;
+    setState(() {
+      _tabIndex = idx + 1;
+      _visited.add(idx + 1);
+    });
   }
 
   Future<void> _refreshHealth() async {
@@ -310,10 +479,20 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
               _NavRail(
                 views: views,
                 selectedIndex: _tabIndex,
-                onSelect: (i) => setState(() {
-                  _tabIndex = i;
-                  _visited.add(i);
-                }),
+                onSelect: (i) {
+                  // 模块动态视窗：点击直接跳 Dashboard 对应页面
+                  if (i > 0 && views[i - 1].id.startsWith('ext-')) {
+                    _openDashboardPage(
+                      inst,
+                      'p-ext-${views[i - 1].id.substring(4)}',
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _tabIndex = i;
+                    _visited.add(i);
+                  });
+                },
               ),
               const VerticalDivider(width: 1, thickness: 1),
               Expanded(
@@ -378,6 +557,10 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
       adapters: _adapters,
       sys: _sys,
       error: _error,
+      onlineBots: _onlineBots,
+      totalEvents: _totalEvents,
+      frameworkInfo: _frameworkInfo,
+      onTileTap: _gotoView,
     );
     final stats = _MessageStatsCard(
       loading: _loading,
@@ -606,7 +789,9 @@ class _Tag extends StatelessWidget {
   }
 }
 
-/// Dashboard 运行概览卡：模块数 / 适配器数 / 系统资源（CPU/内存/运行时长）
+/// Dashboard 运行概览卡：
+/// 顶部大数字统计 4 格（适配器 / 模块 / 在线机器人 / 事件总数，可点击跳转）
+/// + 版本行（ErisPulse · Python）+ 系统资源（CPU/内存告警变色 + 运行时长）
 class _OverviewCard extends StatelessWidget {
   const _OverviewCard({
     required this.loading,
@@ -614,6 +799,10 @@ class _OverviewCard extends StatelessWidget {
     required this.adapters,
     required this.sys,
     required this.error,
+    required this.onlineBots,
+    required this.totalEvents,
+    required this.frameworkInfo,
+    required this.onTileTap,
   });
 
   final bool loading;
@@ -621,6 +810,17 @@ class _OverviewCard extends StatelessWidget {
   final List<AdapterInfo> adapters;
   final SystemInfo? sys;
   final String? error;
+  final int onlineBots;
+  final int totalEvents;
+  final Map<String, dynamic>? frameworkInfo;
+  final ValueChanged<String> onTileTap;
+
+  /// CPU / 内存告警变色（对齐 Dashboard：>60% 橙 / >85% 红）
+  static Color _levelColor(int percent, Color base) {
+    if (percent > 85) return Colors.red;
+    if (percent > 60) return Colors.orange;
+    return base;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -668,21 +868,87 @@ class _OverviewCard extends StatelessWidget {
                 ),
               )
             else ...[
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                children: [
-                  _ResourceValue(
-                    label: l10n.detailModules,
-                    value: '${modules.length}',
-                    subtitle: l10n.detailEnabledCount(enabledModules),
+              // 大数字统计 4 格（宽屏 1 行，窄屏 2x2），点击跳转对应视图
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 420;
+                  final tiles = <Widget>[
+                    _StatTile(
+                      icon: Icons.devices_outlined,
+                      value: '${adapters.length}',
+                      label: l10n.detailAdapters,
+                      subtitle: l10n.detailRunningCount(runningAdapters),
+                      onTap: () => onTileTap('adapters'),
+                    ),
+                    _StatTile(
+                      icon: Icons.extension_outlined,
+                      value: '${modules.length}',
+                      label: l10n.detailModules,
+                      subtitle: l10n.detailEnabledCount(enabledModules),
+                      onTap: () => onTileTap('modules'),
+                    ),
+                    _StatTile(
+                      icon: Icons.smart_toy_outlined,
+                      value: '$onlineBots',
+                      label: l10n.detailOnlineBots,
+                      onTap: () => onTileTap('bots'),
+                    ),
+                    _StatTile(
+                      icon: Icons.event_note_outlined,
+                      value: '$totalEvents',
+                      label: l10n.detailTotalEvents,
+                      onTap: () => onTileTap('events'),
+                    ),
+                  ];
+                  if (wide) {
+                    return Row(
+                      children: [
+                        for (var i = 0; i < tiles.length; i++) ...[
+                          Expanded(child: tiles[i]),
+                          if (i < tiles.length - 1)
+                            const VerticalDivider(width: 1),
+                        ],
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      Row(children: [tiles[0], tiles[1]]),
+                      const Divider(height: 8),
+                      Row(children: [tiles[2], tiles[3]]),
+                    ],
+                  );
+                },
+              ),
+              if (frameworkInfo != null) ...[
+                const Divider(height: 16),
+                Text(
+                  'ErisPulse v${frameworkInfo!['version'] ?? '?'}'
+                  ' · Python ${frameworkInfo!['python_version'] ?? '?'}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontFamily: 'monospace',
                   ),
-                  _ResourceValue(
-                    label: l10n.detailAdapters,
-                    value: '${adapters.length}',
-                    subtitle: l10n.detailRunningCount(runningAdapters),
-                  ),
-                  if (sys != null) ...[
+                ),
+              ],
+              if (sys != null) ...[
+                const SizedBox(height: 12),
+                _ResourceBar(
+                  label: 'CPU',
+                  percent: sys!.cpuPercentInt,
+                  color: _levelColor(sys!.cpuPercentInt, Colors.blue),
+                ),
+                const SizedBox(height: 10),
+                _ResourceBar(
+                  label: '${l10n.detailMemory} (${sys!.memoryReadable})',
+                  percent: sys!.memoryPercentInt,
+                  color: _levelColor(sys!.memoryPercentInt, Colors.green),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
                     _ResourceValue(
                       label: l10n.detailUptime,
                       value: sys!.uptimeReadable,
@@ -696,23 +962,70 @@ class _OverviewCard extends StatelessWidget {
                       value: '${sys!.threadCount ?? '-'}',
                     ),
                   ],
-                ],
-              ),
-              if (sys != null) ...[
-                const SizedBox(height: 12),
-                _ResourceBar(
-                  label: 'CPU',
-                  percent: sys!.cpuPercentInt,
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 10),
-                _ResourceBar(
-                  label: '${l10n.detailMemory} (${sys!.memoryReadable})',
-                  percent: sys!.memoryPercentInt,
-                  color: Colors.green,
                 ),
               ],
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 大数字统计格（对齐 Dashboard statCard：图标 + 大数字 + 标签 + 副文本）
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+    this.subtitle,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Column(
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 15, color: theme.colorScheme.primary),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+              ),
           ],
         ),
       ),
@@ -776,14 +1089,9 @@ class _ResourceBar extends StatelessWidget {
 
 /// 资源文本值
 class _ResourceValue extends StatelessWidget {
-  const _ResourceValue({
-    required this.label,
-    required this.value,
-    this.subtitle,
-  });
+  const _ResourceValue({required this.label, required this.value});
   final String label;
   final String value;
-  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -804,15 +1112,6 @@ class _ResourceValue extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 1),
-          Text(
-            subtitle!,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -1440,32 +1739,41 @@ class _NavRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // 分组去重：仅当视图声明的分组与当前分组不同才渲染新标题，
+    // 避免固定概览项与 bots 视图（同属概览组）出现两个"概览"
+    String? currentGroup = l10n.navGroupOverview;
+    final navItems = <Widget>[
+      _NavGroupHeader(currentGroup),
+      _NavItem(
+        icon: Icons.space_dashboard_outlined,
+        title: l10n.detailTabOverview,
+        selected: selectedIndex == 0,
+        onTap: () => onSelect(0),
+      ),
+    ];
+    for (var i = 0; i < views.length; i++) {
+      final g = views[i].group?.call(l10n);
+      if (g != null && g != currentGroup) {
+        navItems.add(_NavGroupHeader(g));
+        currentGroup = g;
+      }
+      navItems.add(
+        _NavItem(
+          icon: views[i].icon,
+          iconSvg: views[i].iconSvg,
+          title: views[i].title(l10n),
+          selected: selectedIndex == i + 1,
+          onTap: () => onSelect(i + 1),
+        ),
+      );
+    }
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       child: SizedBox(
         width: 208,
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          children: [
-            // 概览为固定第一项，与首个注册视图（机器人）同属"概览"分组
-            _NavGroupHeader(l10n.navGroupOverview),
-            _NavItem(
-              icon: Icons.space_dashboard_outlined,
-              title: l10n.detailTabOverview,
-              selected: selectedIndex == 0,
-              onTap: () => onSelect(0),
-            ),
-            for (var i = 0; i < views.length; i++) ...[
-              if (views[i].group != null)
-                _NavGroupHeader(views[i].group!(l10n)),
-              _NavItem(
-                icon: views[i].icon,
-                title: views[i].title(l10n),
-                selected: selectedIndex == i + 1,
-                onTap: () => onSelect(i + 1),
-              ),
-            ],
-          ],
+          children: navItems,
         ),
       ),
     );
@@ -1500,9 +1808,14 @@ class _NavItem extends StatelessWidget {
     required this.title,
     required this.selected,
     required this.onTap,
+    this.iconSvg,
   });
 
   final IconData icon;
+
+  /// 模块视窗注册的 SVG 图标（非空时优先渲染）
+  final String? iconSvg;
+
   final String title;
   final bool selected;
   final VoidCallback onTap;
@@ -1522,7 +1835,15 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color),
+            if (iconSvg != null && iconSvg!.isNotEmpty)
+              SvgPicture.string(
+                iconSvg!,
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+              )
+            else
+              Icon(icon, size: 20, color: color),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -1533,6 +1854,71 @@ class _NavItem extends StatelessWidget {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 模块动态视窗入口（移动端 TabBar 内容）。
+///
+/// 桌面端点击导航项已直接跳转 Dashboard；移动端 Tab 无法拦截点击，
+/// 显示中转页由用户点按钮打开（视窗内容由 Dashboard 渲染）。
+class _ModuleViewEntry extends StatelessWidget {
+  const _ModuleViewEntry({
+    required this.instance,
+    required this.page,
+    required this.data,
+  });
+
+  final Instance instance;
+  final String page;
+  final Map<String, dynamic> data;
+
+  void _open(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DashboardPage(instance: instance, initialPage: page),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.extension_outlined,
+              size: 56,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              data['title']?.toString() ?? data['id'].toString(),
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.moduleViewOpenHint,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => _open(context),
+              icon: const Icon(Icons.open_in_new),
+              label: Text(l10n.moduleViewOpenButton),
             ),
           ],
         ),

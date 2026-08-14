@@ -66,7 +66,8 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
   Future<void> _load() async {
     final api = DashboardApi(widget.instance);
     try {
-      final events = await api.getEvents(limit: 200);
+      final result = await api.getEvents(limit: 200);
+      final events = result.events;
       if (!mounted) return;
       final types = <String>[];
       for (final e in events) {

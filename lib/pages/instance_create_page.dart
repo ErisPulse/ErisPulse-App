@@ -100,234 +100,319 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
       appBar: AppBar(title: Text(l10n.commonCreateInstance)),
       body: Form(
         key: _formKey,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const _CreateHeader(),
-                const SizedBox(height: 20),
-                SegmentedButton<_InstanceType>(
-                  segments: [
-                    ButtonSegment(
-                      value: _InstanceType.local,
-                      label: Text(l10n.commonLocal),
-                      icon: Icon(
-                        !Platform.isAndroid && !Platform.isIOS
-                            ? Icons.desktop_windows
-                            : Icons.phone_android,
-                      ),
-                    ),
-                    ButtonSegment(
-                      value: _InstanceType.remote,
-                      label: Text(l10n.commonRemote),
-                      icon: const Icon(Icons.cloud_outlined),
-                    ),
-                  ],
-                  selected: {_type},
-                  onSelectionChanged: (sel) =>
-                      setState(() => _type = sel.first),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _nameCtrl,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.createNameLabel,
-                    hintText: l10n.createNameHint,
-                    helperText: l10n.createNameHelper,
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.badge_outlined),
-                  ),
-                  validator: (v) {
-                    final s = v?.trim() ?? '';
-                    if (s.isEmpty) return l10n.createNameRequired;
-                    if (s.length > 24) return l10n.createNameTooLong;
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (isRemote) ...[
-                  TextFormField(
-                    controller: _urlCtrl,
-                    keyboardType: TextInputType.url,
-                    decoration: InputDecoration(
-                      labelText: l10n.createUrlLabel,
-                      hintText: 'http://192.168.1.10:8000',
-                      helperText: l10n.createUrlHelper,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.link),
-                    ),
-                    validator: (v) {
-                      final s = v?.trim() ?? '';
-                      if (s.isEmpty) return l10n.createUrlRequired;
-                      if (!s.startsWith('http://') &&
-                          !s.startsWith('https://')) {
-                        return l10n.createUrlScheme;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _tokenCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.createTokenLabel,
-                      helperText: l10n.createTokenHelper,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.key_outlined),
-                    ),
-                    obscureText: true,
-                  ),
-                ] else ...[
-                  TextFormField(
-                    controller: _portCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.createPortLabel,
-                      helperText: l10n.createPortHelper,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.dns_outlined),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(5),
-                    ],
-                    validator: (v) {
-                      final s = v?.trim() ?? '';
-                      if (s.isEmpty) return l10n.createPortRequired;
-                      final port = int.tryParse(s);
-                      if (port == null || port < 1024 || port > 65535) {
-                        return l10n.createPortRange;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.createEnvTitle,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  // 环境来源（本地实例，两端）
-                  SegmentedButton<_EnvMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: _EnvMode.fresh,
-                        label: Text(l10n.createEnvFresh),
-                        icon: const Icon(Icons.add_box_outlined, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: _EnvMode.clone,
-                        label: Text(l10n.createEnvClone),
-                        icon: const Icon(Icons.copy_all_outlined, size: 18),
-                      ),
-                    ],
-                    selected: {_envMode},
-                    onSelectionChanged: (s) =>
-                        setState(() => _envMode = s.first),
-                    showSelectedIcon: false,
-                  ),
-                  if (_envMode == _EnvMode.fresh) ...[
-                    const SizedBox(height: 4),
-                    if (_versionsLoading)
-                      const ListTile(
-                        leading: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        title: Text('加载 SDK 版本…'),
-                      )
-                    else if (_versions.isEmpty)
-                      const ListTile(
-                        leading: Icon(Icons.cloud_off_outlined),
-                        title: Text('无法获取版本列表，将使用默认版本'),
-                      )
-                    else
-                      DropdownButtonFormField<String>(
-                        initialValue: _sdkVersion ?? _versions.first.version,
-                        decoration: InputDecoration(
-                          labelText: l10n.createSdkVersionLabel,
-                          helperText: l10n.createSdkVersionHelper,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.inventory_2_outlined),
-                        ),
-                        items: [
-                          for (final v in _versions)
-                            DropdownMenuItem(
-                              value: v.version,
-                              child: Text(
-                                v.version +
-                                    (v.preRelease
-                                        ? ' (${l10n.commonPreRelease})'
-                                        : ''),
-                              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 680;
+            if (wide) {
+              // PC：两栏铺满（左：引导/类型/名称；右：连接或环境 + 创建）
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const _CreateHeader(),
+                                const SizedBox(height: 20),
+                                _typeSelector(l10n),
+                                const SizedBox(height: 16),
+                                _nameField(l10n),
+                              ],
                             ),
-                        ],
-                        onChanged: (v) => setState(() => _sdkVersion = v),
-                      ),
-                  ] else ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 4),
-                      child: Text(
-                        l10n.createEnvCloneDesc,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                    ),
-                    if (_envMode == _EnvMode.clone) ...[
-                      const SizedBox(height: 4),
-                      DropdownButtonFormField<String>(
-                        initialValue: _sourceInstanceId,
-                        decoration: InputDecoration(
-                          labelText: l10n.createEnvCloneSource,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.copy_all_outlined),
+                          ),
                         ),
-                        items: [
-                          for (final inst in localInstances)
-                            DropdownMenuItem(
-                              value: inst.id,
-                              child: Text(
-                                '${inst.name}'
-                                '${inst.runtimeVersion != null ? ' · v${inst.runtimeVersion}' : ''}',
-                              ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (isRemote)
+                                  ..._remoteFields(l10n)
+                                else
+                                  ..._localFields(l10n, localInstances),
+                              ],
                             ),
-                        ],
-                        onChanged: (v) => setState(() => _sourceInstanceId = v),
-                      ),
-                    ],
-                  ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _submitSection(l10n, isRemote),
+                      ],
+                    ),
+                  ),
                 ],
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: _submitting ? null : _submit,
-                  icon: _submitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check),
-                  label: Text(l10n.commonCreate),
+              );
+            }
+            // 移动端：单列
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    const _CreateHeader(),
+                    const SizedBox(height: 20),
+                    _typeSelector(l10n),
+                    const SizedBox(height: 16),
+                    _nameField(l10n),
+                    const SizedBox(height: 16),
+                    if (isRemote)
+                      ..._remoteFields(l10n)
+                    else
+                      ..._localFields(l10n, localInstances),
+                    const SizedBox(height: 32),
+                    _submitSection(l10n, isRemote),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  isRemote ? l10n.createRemoteNote : l10n.createLocalNote,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _typeSelector(AppLocalizations l10n) {
+    return SegmentedButton<_InstanceType>(
+      segments: [
+        ButtonSegment(
+          value: _InstanceType.local,
+          label: Text(l10n.commonLocal),
+          icon: Icon(
+            !Platform.isAndroid && !Platform.isIOS
+                ? Icons.desktop_windows
+                : Icons.phone_android,
+          ),
+        ),
+        ButtonSegment(
+          value: _InstanceType.remote,
+          label: Text(l10n.commonRemote),
+          icon: const Icon(Icons.cloud_outlined),
+        ),
+      ],
+      selected: {_type},
+      onSelectionChanged: (sel) => setState(() => _type = sel.first),
+    );
+  }
+
+  Widget _nameField(AppLocalizations l10n) {
+    return TextFormField(
+      controller: _nameCtrl,
+      autofocus: true,
+      decoration: InputDecoration(
+        labelText: l10n.createNameLabel,
+        hintText: l10n.createNameHint,
+        helperText: l10n.createNameHelper,
+        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.badge_outlined),
+      ),
+      validator: (v) {
+        final s = v?.trim() ?? '';
+        if (s.isEmpty) return l10n.createNameRequired;
+        if (s.length > 24) return l10n.createNameTooLong;
+        return null;
+      },
+    );
+  }
+
+  /// 远程实例字段：Dashboard 地址 + 访问令牌
+  List<Widget> _remoteFields(AppLocalizations l10n) {
+    return [
+      TextFormField(
+        controller: _urlCtrl,
+        keyboardType: TextInputType.url,
+        decoration: InputDecoration(
+          labelText: l10n.createUrlLabel,
+          hintText: 'http://192.168.1.10:8000',
+          helperText: l10n.createUrlHelper,
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.link),
+        ),
+        validator: (v) {
+          final s = v?.trim() ?? '';
+          if (s.isEmpty) return l10n.createUrlRequired;
+          if (!s.startsWith('http://') && !s.startsWith('https://')) {
+            return l10n.createUrlScheme;
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _tokenCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.createTokenLabel,
+          helperText: l10n.createTokenHelper,
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.key_outlined),
+        ),
+        obscureText: true,
+      ),
+    ];
+  }
+
+  /// 本地实例字段：端口 + 环境来源（全新 / 基于已有实例）
+  List<Widget> _localFields(
+    AppLocalizations l10n,
+    List<Instance> localInstances,
+  ) {
+    return [
+      TextFormField(
+        controller: _portCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.createPortLabel,
+          helperText: l10n.createPortHelper,
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.dns_outlined),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(5),
+        ],
+        validator: (v) {
+          final s = v?.trim() ?? '';
+          if (s.isEmpty) return l10n.createPortRequired;
+          final port = int.tryParse(s);
+          if (port == null || port < 1024 || port > 65535) {
+            return l10n.createPortRange;
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 12),
+      Text(
+        l10n.createEnvTitle,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+      ),
+      const SizedBox(height: 8),
+      SegmentedButton<_EnvMode>(
+        segments: [
+          ButtonSegment(
+            value: _EnvMode.fresh,
+            label: Text(l10n.createEnvFresh),
+            icon: const Icon(Icons.add_box_outlined, size: 18),
+          ),
+          ButtonSegment(
+            value: _EnvMode.clone,
+            label: Text(l10n.createEnvClone),
+            icon: const Icon(Icons.copy_all_outlined, size: 18),
+          ),
+        ],
+        selected: {_envMode},
+        onSelectionChanged: (s) => setState(() => _envMode = s.first),
+        showSelectedIcon: false,
+      ),
+      if (_envMode == _EnvMode.fresh) ...[
+        const SizedBox(height: 4),
+        if (_versionsLoading)
+          const ListTile(
+            leading: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            title: Text('加载 SDK 版本…'),
+          )
+        else if (_versions.isEmpty)
+          const ListTile(
+            leading: Icon(Icons.cloud_off_outlined),
+            title: Text('无法获取版本列表，将使用默认版本'),
+          )
+        else
+          DropdownButtonFormField<String>(
+            initialValue: _sdkVersion ?? _versions.first.version,
+            menuMaxHeight: 360,
+            decoration: InputDecoration(
+              labelText: l10n.createSdkVersionLabel,
+              helperText: l10n.createSdkVersionHelper,
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.inventory_2_outlined),
+            ),
+            items: [
+              for (final v in _versions)
+                DropdownMenuItem(
+                  value: v.version,
+                  child: Text(
+                    v.version +
+                        (v.preRelease ? ' (${l10n.commonPreRelease})' : ''),
+                  ),
+                ),
+            ],
+            onChanged: (v) => setState(() => _sdkVersion = v),
+          ),
+      ] else ...[
+        Padding(
+          padding: const EdgeInsets.only(left: 16, top: 4),
+          child: Text(
+            l10n.createEnvCloneDesc,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        DropdownButtonFormField<String>(
+          initialValue: _sourceInstanceId,
+          menuMaxHeight: 360,
+          decoration: InputDecoration(
+            labelText: l10n.createEnvCloneSource,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.copy_all_outlined),
+          ),
+          items: [
+            for (final inst in localInstances)
+              DropdownMenuItem(
+                value: inst.id,
+                child: Text(
+                  '${inst.name}'
+                  '${inst.runtimeVersion != null ? ' · v${inst.runtimeVersion}' : ''}',
+                ),
+              ),
+          ],
+          onChanged: (v) => setState(() => _sourceInstanceId = v),
+        ),
+      ],
+    ];
+  }
+
+  Widget _submitSection(AppLocalizations l10n, bool isRemote) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          onPressed: _submitting ? null : _submit,
+          icon: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.check),
+          label: Text(l10n.commonCreate),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          isRemote ? l10n.createRemoteNote : l10n.createLocalNote,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
     );
   }
 
@@ -422,7 +507,7 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
   }
 }
 
-/// 顶部引导图标区
+/// 顶部引导图标区（副标题按平台区分：桌面=本机运行，手机=手机内运行）
 class _CreateHeader extends StatelessWidget {
   const _CreateHeader();
 
@@ -430,6 +515,7 @@ class _CreateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final desktop = !Platform.isAndroid && !Platform.isIOS;
     return Column(
       children: [
         Icon(
@@ -441,7 +527,7 @@ class _CreateHeader extends StatelessWidget {
         Text(l10n.createTitle, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         Text(
-          l10n.createSubtitle,
+          desktop ? l10n.createSubtitleDesktop : l10n.createSubtitle,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,

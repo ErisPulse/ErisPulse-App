@@ -20,8 +20,15 @@ import '../l10n/generated/app_localizations.dart';
 import '../models/instance.dart';
 
 class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key, required this.instance, this.initialPage});
+
   final Instance instance;
-  const DashboardPage({super.key, required this.instance});
+
+  /// 登录后跳转的目标页面 id（如模块视窗 `p-ext-<id>`，或任意 `p-xxx`）。
+  ///
+  /// 由 Dashboard 前端全局 go() 完成；模块视窗 DOM 在登录后异步渲染，
+  /// 跳转脚本带就绪重试。
+  final String? initialPage;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -31,6 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
   InAppWebViewController? _controller;
   bool _loading = true;
   bool _tokenInjected = false;
+  bool _pageJumped = false;
   String? _error;
   Timer? _loadingTimer;
 
@@ -94,6 +102,36 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
+  /// 登录完成（token 注入后的 reload）后跳转到 [DashboardPage.initialPage]。
+  ///
+  /// 模块视窗页面（p-ext-<id>）由 dash.js 登录后异步渲染，脚本轮询
+  /// DOM 就绪再调用全局 go()，最多重试 10 秒。
+  void _maybeJumpToPage(InAppWebViewController controller, WebUri? url) {
+    final page = widget.initialPage;
+    if (_pageJumped || page == null || !_tokenInjected) return;
+    final origin = Uri.tryParse(url?.toString() ?? '');
+    if (origin == null || origin.origin != widget.instance.baseUrl.origin) {
+      return;
+    }
+    _pageJumped = true;
+    final jsPage = jsonEncode(page);
+    controller.evaluateJavascript(
+      source: '''
+      (function() {
+        var target = $jsPage, n = 0;
+        function t() {
+          if (typeof go === 'function' && document.getElementById(target)) {
+            go(target);
+          } else if (n++ < 40) {
+            setTimeout(t, 250);
+          }
+        }
+        t();
+      })();
+      ''',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -155,6 +193,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     _loadingTimer?.cancel();
                     if (mounted) setState(() => _loading = false);
                     _maybeInjectToken(controller, url);
+                    _maybeJumpToPage(controller, url);
                   },
                   onReceivedError: (controller, request, error) {
                     if (!mounted) return;

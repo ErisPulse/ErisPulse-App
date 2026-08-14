@@ -1224,4 +1224,38 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pkgNoGit => 'Нет Git-пакетов';
+
+  @override
+  String get navGroupSystem => 'Система';
+
+  @override
+  String get navGroupTools => 'Инструменты';
+
+  @override
+  String get moduleViewOpenHint =>
+      'Это окно предоставляет модуль; оно открывается в Dashboard.';
+
+  @override
+  String get moduleViewOpenButton => 'Открыть в Dashboard';
+
+  @override
+  String get storeTagFilter => 'Теги';
+
+  @override
+  String storeTagFilterCount(Object n) {
+    return 'Теги ($n)';
+  }
+
+  @override
+  String get storeTagClear => 'Очистить';
+
+  @override
+  String get createSubtitleDesktop =>
+      'Локальный экземпляр работает на этом компьютере;\nудалённый подключается к экземпляру, развёрнутому на другом хосте.';
+
+  @override
+  String get detailOnlineBots => 'Боты онлайн';
+
+  @override
+  String get detailTotalEvents => 'Всего событий';
 }

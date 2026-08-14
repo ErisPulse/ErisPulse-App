@@ -186,8 +186,14 @@ class DashboardApi {
 
   // 生命周期 / 事件
 
-  /// 最近事件列表（支持服务端类型/平台过滤，对齐后端 /events 查询参数）
-  Future<List<Map<String, dynamic>>> getEvents({
+  /// 最近事件列表（支持服务端类型/平台过滤，对齐后端 /events 查询参数）。
+  ///
+  /// 返回 events 列表与 total_count（进程启动以来的事件总数，概览大数字用）。
+  Future<
+      ({
+        List<Map<String, dynamic>> events,
+        int totalCount,
+      })> getEvents({
     int limit = 100,
     String? type,
   }) async {
@@ -196,11 +202,12 @@ class DashboardApi {
       q.write('&type=${Uri.encodeQueryComponent(type)}');
     }
     final json = await _getJson(q.toString());
-    final list = json['events'] as List? ?? [];
-    return list
+    final list = (json['events'] as List? ?? [])
         .map((e) => e is Map<String, dynamic> ? e : null)
         .whereType<Map<String, dynamic>>()
         .toList();
+    final total = (json['total_count'] as num?)?.toInt() ?? list.length;
+    return (events: list, totalCount: total);
   }
 
   Future<void> clearEvents() => _postJson('/events/clear');
@@ -612,4 +619,20 @@ class DashboardApi {
     Map<String, dynamic> event,
   ) =>
       _postJson('/builder/submit', body: event);
+
+  // 动态模块视窗（/views）
+
+  /// 模块注册的动态视窗列表。
+  ///
+  /// 返回项含 id / title / title_en / titles（5 语言）/ icon_svg /
+  /// html_content / js_content / css_content / iframe_url / loader /
+  /// group / group_title / group_titles。
+  Future<List<Map<String, dynamic>>> getViews() async {
+    final json = await _getJson('/views');
+    final list = json['views'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
 }

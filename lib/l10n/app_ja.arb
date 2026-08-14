@@ -389,5 +389,15 @@
   "pkgGitTab": "Git",
   "pkgUpgradeAll": "すべてアップグレード",
   "pkgNoUpdates": "更新はありません",
-  "pkgNoGit": "Git パッケージなし"
+  "pkgNoGit": "Git パッケージなし",
+  "navGroupSystem": "システム",
+  "navGroupTools": "ツール",
+  "moduleViewOpenHint": "このビューはモジュールが提供し、Dashboard で開きます。",
+  "moduleViewOpenButton": "Dashboard で開く",
+  "storeTagFilter": "タグ",
+  "storeTagFilterCount": "タグ ({n})",
+  "storeTagClear": "クリア",
+  "createSubtitleDesktop": "ローカルインスタンスはこのPC上で独立して実行されます；\nリモートインスタンスは他のホストにデプロイされたインスタンスに接続します。",
+  "detailOnlineBots": "オンラインボット",
+  "detailTotalEvents": "総イベント数"
 }

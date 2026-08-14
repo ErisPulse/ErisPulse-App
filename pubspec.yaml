@@ -1,7 +1,7 @@
 name: erispulse_app
 description: "ErisPulse 多端管理客户端 — 一个 App 管理多个本地 ErisPulse 实例。"
 publish_to: "none"
-version: 0.2.1+1
+version: 0.2.2+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -62,6 +62,7 @@ dependencies:
   package_info_plus: ^8.0.0
   archive: ^4.0.9
   flutter_inappwebview: ^6.1.5
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:

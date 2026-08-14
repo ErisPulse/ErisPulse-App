@@ -1188,6 +1188,38 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pkgNoGit => '暂无 Git 包';
+
+  @override
+  String get navGroupSystem => '系统';
+
+  @override
+  String get navGroupTools => '工具';
+
+  @override
+  String get moduleViewOpenHint => '该视窗由模块提供，在 Dashboard 中打开渲染。';
+
+  @override
+  String get moduleViewOpenButton => '打开模块视窗';
+
+  @override
+  String get storeTagFilter => '标签筛选';
+
+  @override
+  String storeTagFilterCount(Object n) {
+    return '标签筛选 ($n)';
+  }
+
+  @override
+  String get storeTagClear => '清除';
+
+  @override
+  String get createSubtitleDesktop => '本地实例在本机创建并独立运行；\n远程实例连接到你部署在其它主机的实例。';
+
+  @override
+  String get detailOnlineBots => '在线机器人';
+
+  @override
+  String get detailTotalEvents => '事件总数';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2374,4 +2406,36 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get pkgNoGit => '暫無 Git 套件';
+
+  @override
+  String get navGroupSystem => '系統';
+
+  @override
+  String get navGroupTools => '工具';
+
+  @override
+  String get moduleViewOpenHint => '該視窗由模組提供，在 Dashboard 中開啟渲染。';
+
+  @override
+  String get moduleViewOpenButton => '開啟模組視窗';
+
+  @override
+  String get storeTagFilter => '標籤篩選';
+
+  @override
+  String storeTagFilterCount(Object n) {
+    return '標籤篩選 ($n)';
+  }
+
+  @override
+  String get storeTagClear => '清除';
+
+  @override
+  String get createSubtitleDesktop => '本機實例在本機建立並獨立執行；\n遠端實例連線到你部署在其他主機的實例。';
+
+  @override
+  String get detailOnlineBots => '線上機器人';
+
+  @override
+  String get detailTotalEvents => '事件總數';
 }

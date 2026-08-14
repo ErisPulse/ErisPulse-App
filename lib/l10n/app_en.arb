@@ -392,5 +392,15 @@
   "pkgGitTab": "Git",
   "pkgUpgradeAll": "Upgrade all",
   "pkgNoUpdates": "No updates available",
-  "pkgNoGit": "No Git packages"
+  "pkgNoGit": "No Git packages",
+  "navGroupSystem": "System",
+  "navGroupTools": "Tools",
+  "moduleViewOpenHint": "This view is provided by a module and opens in Dashboard.",
+  "moduleViewOpenButton": "Open in Dashboard",
+  "storeTagFilter": "Tags",
+  "storeTagFilterCount": "Tags ({n})",
+  "storeTagClear": "Clear",
+  "createSubtitleDesktop": "A local instance runs on this computer;\na remote instance connects to an instance deployed on another host.",
+  "detailOnlineBots": "Online bots",
+  "detailTotalEvents": "Total events"
 }

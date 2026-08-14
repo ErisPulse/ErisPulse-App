@@ -389,5 +389,15 @@
   "pkgGitTab": "Git 安裝",
   "pkgUpgradeAll": "全部升級",
   "pkgNoUpdates": "暫無可更新套件",
-  "pkgNoGit": "暫無 Git 套件"
+  "pkgNoGit": "暫無 Git 套件",
+  "navGroupSystem": "系統",
+  "navGroupTools": "工具",
+  "moduleViewOpenHint": "該視窗由模組提供，在 Dashboard 中開啟渲染。",
+  "moduleViewOpenButton": "開啟模組視窗",
+  "storeTagFilter": "標籤篩選",
+  "storeTagFilterCount": "標籤篩選 ({n})",
+  "storeTagClear": "清除",
+  "createSubtitleDesktop": "本機實例在本機建立並獨立執行；\n遠端實例連線到你部署在其他主機的實例。",
+  "detailOnlineBots": "線上機器人",
+  "detailTotalEvents": "事件總數"
 }

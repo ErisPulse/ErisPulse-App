@@ -389,5 +389,15 @@
   "pkgGitTab": "Git",
   "pkgUpgradeAll": "Обновить все",
   "pkgNoUpdates": "Нет обновлений",
-  "pkgNoGit": "Нет Git-пакетов"
+  "pkgNoGit": "Нет Git-пакетов",
+  "navGroupSystem": "Система",
+  "navGroupTools": "Инструменты",
+  "moduleViewOpenHint": "Это окно предоставляет модуль; оно открывается в Dashboard.",
+  "moduleViewOpenButton": "Открыть в Dashboard",
+  "storeTagFilter": "Теги",
+  "storeTagFilterCount": "Теги ({n})",
+  "storeTagClear": "Очистить",
+  "createSubtitleDesktop": "Локальный экземпляр работает на этом компьютере;\nудалённый подключается к экземпляру, развёрнутому на другом хосте.",
+  "detailOnlineBots": "Боты онлайн",
+  "detailTotalEvents": "Всего событий"
 }

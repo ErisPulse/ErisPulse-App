@@ -1217,4 +1217,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pkgNoGit => 'No Git packages';
+
+  @override
+  String get navGroupSystem => 'System';
+
+  @override
+  String get navGroupTools => 'Tools';
+
+  @override
+  String get moduleViewOpenHint =>
+      'This view is provided by a module and opens in Dashboard.';
+
+  @override
+  String get moduleViewOpenButton => 'Open in Dashboard';
+
+  @override
+  String get storeTagFilter => 'Tags';
+
+  @override
+  String storeTagFilterCount(Object n) {
+    return 'Tags ($n)';
+  }
+
+  @override
+  String get storeTagClear => 'Clear';
+
+  @override
+  String get createSubtitleDesktop =>
+      'A local instance runs on this computer;\na remote instance connects to an instance deployed on another host.';
+
+  @override
+  String get detailOnlineBots => 'Online bots';
+
+  @override
+  String get detailTotalEvents => 'Total events';
 }

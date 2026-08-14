@@ -389,5 +389,15 @@
   "pkgGitTab": "Git 安装",
   "pkgUpgradeAll": "全部升级",
   "pkgNoUpdates": "暂无可更新包",
-  "pkgNoGit": "暂无 Git 包"
+  "pkgNoGit": "暂无 Git 包",
+  "navGroupSystem": "系统",
+  "navGroupTools": "工具",
+  "moduleViewOpenHint": "该视窗由模块提供，在 Dashboard 中打开渲染。",
+  "moduleViewOpenButton": "打开模块视窗",
+  "storeTagFilter": "标签筛选",
+  "storeTagFilterCount": "标签筛选 ({n})",
+  "storeTagClear": "清除",
+  "createSubtitleDesktop": "本地实例在本机创建并独立运行；\n远程实例连接到你部署在其它主机的实例。",
+  "detailOnlineBots": "在线机器人",
+  "detailTotalEvents": "事件总数"
 }

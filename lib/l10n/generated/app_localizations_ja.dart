@@ -1195,4 +1195,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get pkgNoGit => 'Git パッケージなし';
+
+  @override
+  String get navGroupSystem => 'システム';
+
+  @override
+  String get navGroupTools => 'ツール';
+
+  @override
+  String get moduleViewOpenHint => 'このビューはモジュールが提供し、Dashboard で開きます。';
+
+  @override
+  String get moduleViewOpenButton => 'Dashboard で開く';
+
+  @override
+  String get storeTagFilter => 'タグ';
+
+  @override
+  String storeTagFilterCount(Object n) {
+    return 'タグ ($n)';
+  }
+
+  @override
+  String get storeTagClear => 'クリア';
+
+  @override
+  String get createSubtitleDesktop =>
+      'ローカルインスタンスはこのPC上で独立して実行されます；\nリモートインスタンスは他のホストにデプロイされたインスタンスに接続します。';
+
+  @override
+  String get detailOnlineBots => 'オンラインボット';
+
+  @override
+  String get detailTotalEvents => '総イベント数';
 }

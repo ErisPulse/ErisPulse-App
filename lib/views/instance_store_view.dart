@@ -364,6 +364,9 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
   String _type = 'all';
   final Set<String> _selectedTags = {};
 
+  /// 标签区展开状态（默认折叠；已选标签在折叠态也可见可逐个移除）
+  bool _tagsExpanded = false;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -559,16 +562,72 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
         if (_allTags.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-            child: Wrap(
-              spacing: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final t in _allTags)
-                  FilterChip(
-                    label: Text(t, style: theme.textTheme.labelSmall),
-                    selected: _selectedTags.contains(t),
-                    onSelected: (sel) => setState(() {
-                      sel ? _selectedTags.add(t) : _selectedTags.remove(t);
-                    }),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () =>
+                          setState(() => _tagsExpanded = !_tagsExpanded),
+                      icon: Icon(
+                        _tagsExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _selectedTags.isEmpty
+                            ? l10n.storeTagFilter
+                            : l10n.storeTagFilterCount(_selectedTags.length),
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                    if (_selectedTags.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            for (final t in _selectedTags)
+                              InputChip(
+                                label: Text(
+                                  t,
+                                  style: theme.textTheme.labelSmall,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                onDeleted: () =>
+                                    setState(() => _selectedTags.remove(t)),
+                              ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => _selectedTags.clear()),
+                        child: Text(l10n.storeTagClear),
+                      ),
+                    ],
+                  ],
+                ),
+                if (_tagsExpanded)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Wrap(
+                      spacing: 6,
+                      children: [
+                        for (final t in _allTags)
+                          FilterChip(
+                            label: Text(t, style: theme.textTheme.labelSmall),
+                            selected: _selectedTags.contains(t),
+                            onSelected: (sel) => setState(() {
+                              sel
+                                  ? _selectedTags.add(t)
+                                  : _selectedTags.remove(t);
+                            }),
+                          ),
+                      ],
+                    ),
                   ),
               ],
             ),

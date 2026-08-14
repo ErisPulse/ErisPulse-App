@@ -2394,6 +2394,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Git packages'**
   String get pkgNoGit;
+
+  /// No description provided for @navGroupSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get navGroupSystem;
+
+  /// No description provided for @navGroupTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get navGroupTools;
+
+  /// No description provided for @moduleViewOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This view is provided by a module and opens in Dashboard.'**
+  String get moduleViewOpenHint;
+
+  /// No description provided for @moduleViewOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Dashboard'**
+  String get moduleViewOpenButton;
+
+  /// No description provided for @storeTagFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get storeTagFilter;
+
+  /// No description provided for @storeTagFilterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags ({n})'**
+  String storeTagFilterCount(Object n);
+
+  /// No description provided for @storeTagClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get storeTagClear;
+
+  /// No description provided for @createSubtitleDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'A local instance runs on this computer;\na remote instance connects to an instance deployed on another host.'**
+  String get createSubtitleDesktop;
+
+  /// No description provided for @detailOnlineBots.
+  ///
+  /// In en, this message translates to:
+  /// **'Online bots'**
+  String get detailOnlineBots;
+
+  /// No description provided for @detailTotalEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Total events'**
+  String get detailTotalEvents;
 }
 
 class _AppLocalizationsDelegate

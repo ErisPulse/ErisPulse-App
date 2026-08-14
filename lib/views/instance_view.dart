@@ -39,12 +39,18 @@ class InstanceView {
   /// 桌面端左侧导航会渲染小节标题；为 null 时沿用上一个分组。
   final String Function(AppLocalizations l10n)? group;
 
+  /// 导航图标为 SVG 字符串（模块视窗 icon_svg）。
+  ///
+  /// 非空时优先于 [icon] 渲染（flutter_svg 光栅化）。
+  final String? iconSvg;
+
   const InstanceView({
     required this.id,
     required this.icon,
     required this.title,
     required this.builder,
     this.group,
+    this.iconSvg,
   });
 }
 
@@ -73,6 +79,26 @@ class DetailViewRegistry extends ChangeNotifier {
       _views[idx] = view;
     } else {
       _views.add(view);
+    }
+    notifyListeners();
+  }
+
+  /// 在指定 id 之前插入视图（已存在则原位覆盖）。
+  ///
+  /// 动态模块视窗用它插进内置分组尾部：如 group_events 组的视图
+  /// 插在 `commands`（该组最后一个内置视图）之前。
+  void insertBefore(String anchorId, InstanceView view) {
+    final idx = _views.indexWhere((v) => v.id == view.id);
+    if (idx >= 0) {
+      _views[idx] = view;
+      notifyListeners();
+      return;
+    }
+    final anchor = _views.indexWhere((v) => v.id == anchorId);
+    if (anchor < 0) {
+      _views.add(view);
+    } else {
+      _views.insert(anchor, view);
     }
     notifyListeners();
   }
