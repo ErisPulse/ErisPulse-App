@@ -11,10 +11,12 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
-        // Aliyun 镜像优先（规避国内访问 maven.google.com / plugins.gradle.org 慢）
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/public")
-        maven("https://maven.aliyun.com/repository/gradle-plugin")
+        // Aliyun 镜像优先（国内加速）；CI 设置 USE_ALIYUN_MIRROR=false 走官方仓库
+        if (System.getenv("USE_ALIYUN_MIRROR") != "false") {
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/public")
+            maven("https://maven.aliyun.com/repository/gradle-plugin")
+        }
         google()
         mavenCentral()
         gradlePluginPortal()

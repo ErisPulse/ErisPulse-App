@@ -1,9 +1,12 @@
 allprojects {
     repositories {
-        // Aliyun 镜像优先（规避国内访问 maven.google.com 慢）
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/public")
-        maven("https://maven.aliyun.com/repository/central")
+        // Aliyun 镜像优先（规避国内访问 maven.google.com 慢）；
+        // CI（海外 runner）设置 USE_ALIYUN_MIRROR=false 跳过，走官方仓库
+        if (System.getenv("USE_ALIYUN_MIRROR") != "false") {
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/public")
+            maven("https://maven.aliyun.com/repository/central")
+        }
         google()
         mavenCentral()
     }

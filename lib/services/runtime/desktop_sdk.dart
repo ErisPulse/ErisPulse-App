@@ -34,8 +34,10 @@ class DesktopSdk {
   /// 默认推荐 SDK 版本（PyPI 查询失败时兜底）
   static const String kDefaultVersion = '2.7.1';
 
-  /// 内置 Python 版本（python-build-standalone）
-  static const String kBundledPython = '3.15';
+  /// 内置 Python 版本（python-build-standalone）。
+  /// 选 3.13（较新但生态成熟）：3.15 太新，部分核心包（如 pydantic-core）
+  /// 尚无 cp315 预编译 wheel，会触发源码编译（需 Rust）导致实例安装失败。
+  static const String kBundledPython = '3.13';
 
   // ── 版本列表（PyPI）────────────────────────────────
 
@@ -87,7 +89,7 @@ class DesktopSdk {
     return await bundledPythonPath() != null;
   }
 
-  /// 内置 Python 版本号（如 `3.15.0`）；未就绪返回 null
+  /// 内置 Python 版本号（如 `3.13.0`）；未就绪返回 null
   static Future<String?> bundledPythonVersion() async {
     final p = await bundledPythonPath();
     if (p == null) return null;

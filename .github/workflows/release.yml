@@ -144,6 +144,8 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # 海外 runner 跳过阿里云 Maven 镜像（502 曾导致构建失败），走官方仓库
+      USE_ALIYUN_MIRROR: "false"
     strategy:
       fail-fast: false
       matrix:
@@ -283,8 +285,10 @@ jobs:
             echo "$RESP" | head -c 500
             exit 1
           }
+          # 精确匹配标准（非 freethreaded）构建：`-install_only` 紧跟 triple，
+          # 避免选中 `-freethreaded-install_only`（free-threaded 生态无 wheel）
           ASSET=$(echo "$RESP" | jq -r --arg t "$TRIPLE" \
-            '[.assets[] | select(.name | test("cpython-3\\.15\\..*" + $t + ".*install_only\\.tar\\.gz$"))][0].browser_download_url')
+            '[.assets[] | select(.name | test("^cpython-3\\.13\\..*" + $t + "-install_only\\.tar\\.gz$"))][0].browser_download_url')
           if [ -z "$ASSET" ] || [ "$ASSET" = "null" ]; then
             echo "::error::No bundled Python asset for ${{ matrix.platform_arch }} ($TRIPLE)"
             exit 1
