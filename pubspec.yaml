@@ -81,16 +81,17 @@ flutter_launcher_icons:
   image_path: "assets/images/logo_square.png"
   adaptive_icon_background: "#E3F2FD"
   adaptive_icon_foreground: "assets/images/logo_foreground.png"
+  # 桌面端使用透明背景 logo（无底色）；logo_square 带底色仅用于 Android 兜底图标
   windows:
     generate: true
-    image_path: "assets/images/logo_square.png"
+    image_path: "assets/images/logo_foreground.png"
     icon_size: 256
   macos:
     generate: true
-    image_path: "assets/images/logo_square.png"
+    image_path: "assets/images/logo_foreground.png"
   linux:
     generate: true
-    image_path: "assets/images/logo_square.png"
+    image_path: "assets/images/logo_foreground.png"
     icon_size: 256
 
 flutter:
