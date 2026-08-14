@@ -563,6 +563,12 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get dashboardAccessKey => 'アクセスキー';
+
+  @override
+  String get dashboardAccessKeyCopied => 'アクセスキーをコピーしました';
+
+  @override
   String get dashboardTokenCopied => 'アクセストークンをコピーしました。ログインページに貼り付けてください';
 
   @override

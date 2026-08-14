@@ -184,6 +184,8 @@
   "detailEnabledCount": "已啟用 {count}",
   "detailRunningCount": "執行 {count}",
   "dashboardLoadFailed": "載入失敗（{code}）",
+  "dashboardAccessKey": "存取金鑰",
+  "dashboardAccessKeyCopied": "存取金鑰已複製",
   "dashboardTokenCopied": "存取權杖已複製，可貼上到登入頁",
   "dashboardExternalFailed": "無法開啟外部瀏覽器",
   "dashboardCopyTokenTooltip": "複製存取權杖",

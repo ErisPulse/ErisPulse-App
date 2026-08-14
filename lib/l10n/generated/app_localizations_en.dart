@@ -580,6 +580,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardAccessKey => 'Access Key';
+
+  @override
+  String get dashboardAccessKeyCopied => 'Access key copied';
+
+  @override
   String get dashboardTokenCopied =>
       'Access token copied; paste it into the login page';
 

@@ -581,6 +581,12 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get dashboardAccessKey => 'Ключ доступа';
+
+  @override
+  String get dashboardAccessKeyCopied => 'Ключ доступа скопирован';
+
+  @override
   String get dashboardTokenCopied =>
       'Токен доступа скопирован; вставьте его на страницу входа';
 

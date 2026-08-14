@@ -3,7 +3,12 @@
 // 使用 flutter_inappwebview 实现跨平台内嵌（Android/iOS/macOS WKWebView、
 // Windows WebView2、Linux WebKitGTK）。本地实例加载
 // http://127.0.0.1:<port>/Dashboard，远程实例加载其 remoteUrl/Dashboard。
-// AppBar 提供"复制令牌 / 刷新 / 在外部浏览器打开"。
+//
+// 访问密钥：进入页面后自动把实例 token 写入 Dashboard 前端的
+// localStorage（key `__ep_tk__`，dash.js 启动时读取并 POST /api/auth 验证），
+// 实现免手动登录；AppBar 提供可见的"访问密钥"复制按钮 / 刷新 / 外部浏览器。
+
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +29,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   InAppWebViewController? _controller;
   bool _loading = true;
+  bool _tokenInjected = false;
   String? _error;
 
   Future<void> _copyToken() async {
@@ -31,7 +37,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).dashboardTokenCopied),
+          content: Text(AppLocalizations.of(context).dashboardAccessKeyCopied),
         ),
       );
     }
@@ -51,17 +57,52 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  /// 首次加载完成后把访问密钥注入 Dashboard 前端（localStorage `__ep_tk__`），
+  /// 刷新后 dash.js 自动登录，免手动输入。
+  void _maybeInjectToken(InAppWebViewController controller, WebUri? url) {
+    if (_tokenInjected) return;
+    final token = widget.instance.token;
+    if (token.isEmpty) return;
+    // 仅注入到本实例 Dashboard 页面（按 origin 匹配），避免向第三方页面写入凭据
+    final page = Uri.tryParse(url?.toString() ?? '');
+    final base = widget.instance.baseUrl;
+    if (page == null || page.origin != base.origin) return;
+    _tokenInjected = true;
+    final jsToken = jsonEncode(token);
+    // 已存在相同 token 则不刷新，避免刷新循环
+    controller.evaluateJavascript(
+      source: '''
+      (function() {
+        try {
+          if (localStorage.getItem("__ep_tk__") !== $jsToken) {
+            localStorage.setItem("__ep_tk__", $jsToken);
+            location.reload();
+          }
+        } catch (e) {}
+      })();
+      ''',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.instance.name} · Dashboard'),
+        title: Text(
+          '${widget.instance.name} · Dashboard',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.copy_outlined),
-            tooltip: l10n.dashboardCopyTokenTooltip,
+          TextButton.icon(
             onPressed: _copyToken,
+            icon: const Icon(Icons.key, size: 18),
+            label: Text(l10n.dashboardAccessKey),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -85,6 +126,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   initialSettings: InAppWebViewSettings(
                     javaScriptEnabled: true,
+                    domStorageEnabled: true,
                     transparentBackground: true,
                   ),
                   onWebViewCreated: (controller) => _controller = controller,
@@ -93,6 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   },
                   onLoadStop: (controller, url) {
                     if (mounted) setState(() => _loading = false);
+                    _maybeInjectToken(controller, url);
                   },
                   onReceivedError: (controller, request, error) {
                     if (!mounted) return;

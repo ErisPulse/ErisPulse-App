@@ -184,6 +184,8 @@
   "detailEnabledCount": "включено: {count}",
   "detailRunningCount": "работает: {count}",
   "dashboardLoadFailed": "Не удалось загрузить ({code})",
+  "dashboardAccessKey": "Ключ доступа",
+  "dashboardAccessKeyCopied": "Ключ доступа скопирован",
   "dashboardTokenCopied": "Токен доступа скопирован; вставьте его на страницу входа",
   "dashboardExternalFailed": "Не удалось открыть внешний браузер",
   "dashboardCopyTokenTooltip": "Скопировать токен доступа",

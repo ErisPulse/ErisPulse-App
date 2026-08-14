@@ -187,6 +187,8 @@
   "detailEnabledCount": "{count} enabled",
   "detailRunningCount": "{count} running",
   "dashboardLoadFailed": "Load failed ({code})",
+  "dashboardAccessKey": "Access Key",
+  "dashboardAccessKeyCopied": "Access key copied",
   "dashboardTokenCopied": "Access token copied; paste it into the login page",
   "dashboardExternalFailed": "Cannot open external browser",
   "dashboardCopyTokenTooltip": "Copy access token",

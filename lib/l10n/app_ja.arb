@@ -184,6 +184,8 @@
   "detailEnabledCount": "有効 {count}",
   "detailRunningCount": "稼働 {count}",
   "dashboardLoadFailed": "読み込みに失敗しました（{code}）",
+  "dashboardAccessKey": "アクセスキー",
+  "dashboardAccessKeyCopied": "アクセスキーをコピーしました",
   "dashboardTokenCopied": "アクセストークンをコピーしました。ログインページに貼り付けてください",
   "dashboardExternalFailed": "外部ブラウザを開けません",
   "dashboardCopyTokenTooltip": "アクセストークンをコピー",

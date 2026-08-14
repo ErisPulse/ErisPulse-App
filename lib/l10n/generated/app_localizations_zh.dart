@@ -559,6 +559,12 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get dashboardAccessKey => '访问密钥';
+
+  @override
+  String get dashboardAccessKeyCopied => '访问密钥已复制';
+
+  @override
   String get dashboardTokenCopied => '访问令牌已复制，可粘贴到登录页';
 
   @override
@@ -1396,6 +1402,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String dashboardLoadFailed(Object code) {
     return '載入失敗（$code）';
   }
+
+  @override
+  String get dashboardAccessKey => '存取金鑰';
+
+  @override
+  String get dashboardAccessKeyCopied => '存取金鑰已複製';
 
   @override
   String get dashboardTokenCopied => '存取權杖已複製，可貼上到登入頁';

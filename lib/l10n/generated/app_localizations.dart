@@ -1159,6 +1159,18 @@ abstract class AppLocalizations {
   /// **'Load failed ({code})'**
   String dashboardLoadFailed(Object code);
 
+  /// No description provided for @dashboardAccessKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Key'**
+  String get dashboardAccessKey;
+
+  /// No description provided for @dashboardAccessKeyCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key copied'**
+  String get dashboardAccessKeyCopied;
+
   /// No description provided for @dashboardTokenCopied.
   ///
   /// In en, this message translates to:
