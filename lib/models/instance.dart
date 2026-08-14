@@ -88,6 +88,8 @@ class Instance {
       remoteUrl: json['remoteUrl'] as String?,
       lastStartedAt: json['lastStartedAt'] as String?,
       runtimeVersion: json['runtimeVersion'] as String?,
+      // 桌面端持久化的进程 PID（重启后用于识别仍在运行的实例，避免重复启动）
+      pid: (json['pid'] as num?)?.toInt(),
     );
   }
 
@@ -101,6 +103,7 @@ class Instance {
         if (remoteUrl != null) 'remoteUrl': remoteUrl,
         if (lastStartedAt != null) 'lastStartedAt': lastStartedAt,
         if (runtimeVersion != null) 'runtimeVersion': runtimeVersion,
+        if (pid != null) 'pid': pid,
       };
 
   /// Dashboard 基址（本地回环或远程地址）

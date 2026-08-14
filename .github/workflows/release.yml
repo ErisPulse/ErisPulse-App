@@ -356,7 +356,7 @@ jobs:
           elif [ "${{ runner.os }}" = "Linux" ]; then
             DIR="build/linux/${{ matrix.build_arch }}/release/bundle/data/flutter_assets/assets/python"
           else
-            DIR="build/macos/Build/Products/Release/erispulse_app.app/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/python"
+            DIR="build/macos/Build/Products/Release/ErisPulseApp.app/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/python"
           fi
           ls -lh "$DIR" || { echo "::error::bundled Python 未进入 flutter_assets ($DIR)"; exit 1; }
 
@@ -373,9 +373,9 @@ jobs:
         run: |
           V="${{ steps.version.outputs.version }}"
           mkdir -p out
-          # macOS app 名来自 AppInfo.xcconfig 的 PRODUCT_NAME（erispulse_app）
+          # macOS app 名来自 AppInfo.xcconfig 的 PRODUCT_NAME（ErisPulseApp）
           ditto -c -k --keepParent \
-            "build/macos/Build/Products/Release/erispulse_app.app" \
+            "build/macos/Build/Products/Release/ErisPulseApp.app" \
             "out/ErisPulse-App-${V}-macos-${{ matrix.build_arch }}.zip"
 
       - name: Upload desktop artifact

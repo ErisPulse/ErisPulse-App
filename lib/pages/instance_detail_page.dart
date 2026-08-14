@@ -122,7 +122,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         api.getModules(),
         api.getAdapters(),
         api.getSystemInfo(),
-        api.getEvents(limit: 30),
+        api.getEvents(limit: 10),
         api.getMessageStats(),
       ]);
       // 在线机器人 / 框架版本（失败不阻塞主概览，如旧版本无端点）
@@ -170,7 +170,8 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   // 模块动态视窗（/api/views → ext-<id> 导航入口）
   //
   // 视窗内容不在 App 内渲染：入口点击直接跳转 Dashboard 对应页面
-  // （前端全局 go('p-ext-<id>')），对齐 Dashboard 的页面切换行为。
+  // （前端全局 go('ext-<id>')，其内部按 p-ext-<id> 查找页面），
+  // 对齐 Dashboard 的页面切换行为。
 
   /// 与后端 /api/views 对齐注册 ext- 视图；集合变化时回概览防索引错位。
   Future<void> _syncModuleViews(DashboardApi api) async {
@@ -235,7 +236,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
       title: (l10n) => _extTitle(l10n, v),
       group: (l10n) => _extGroup(l10n, v),
       builder: (_, inst) =>
-          _ModuleViewEntry(instance: inst, page: 'p-ext-$id', data: v),
+          _ModuleViewEntry(instance: inst, page: 'ext-$id', data: v),
     );
   }
 
@@ -484,7 +485,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                   if (i > 0 && views[i - 1].id.startsWith('ext-')) {
                     _openDashboardPage(
                       inst,
-                      'p-ext-${views[i - 1].id.substring(4)}',
+                      'ext-${views[i - 1].id.substring(4)}',
                     );
                     return;
                   }
@@ -591,13 +592,20 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                       overview,
                       const SizedBox(height: 12),
                       stats,
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      events,
                       const SizedBox(height: 12),
                       connect,
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: events),
               ],
             )
           else ...[
@@ -905,8 +913,7 @@ class _OverviewCard extends StatelessWidget {
                       children: [
                         for (var i = 0; i < tiles.length; i++) ...[
                           Expanded(child: tiles[i]),
-                          if (i < tiles.length - 1)
-                            const VerticalDivider(width: 1),
+                          if (i < tiles.length - 1) const SizedBox(width: 8),
                         ],
                       ],
                     );
@@ -914,7 +921,7 @@ class _OverviewCard extends StatelessWidget {
                   return Column(
                     children: [
                       Row(children: [tiles[0], tiles[1]]),
-                      const Divider(height: 8),
+                      const SizedBox(height: 4),
                       Row(children: [tiles[2], tiles[3]]),
                     ],
                   );
@@ -940,7 +947,8 @@ class _OverviewCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _ResourceBar(
-                  label: '${l10n.detailMemory} (${sys!.memoryReadable})',
+                  label:
+                      '${l10n.detailMemory} (${sys!.memoryOfSystemReadable})',
                   percent: sys!.memoryPercentInt,
                   color: _levelColor(sys!.memoryPercentInt, Colors.green),
                 ),
@@ -991,41 +999,54 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final c = theme.colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Column(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+        child: Row(
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 15, color: theme.colorScheme.primary),
-              ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: c.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: c.primary),
             ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: c.onSurfaceVariant,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: c.onSurfaceVariant,
+                        fontSize: 10,
+                      ),
+                    ),
+                ],
               ),
             ),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (subtitle != null)
-              Text(
-                subtitle!,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                ),
-              ),
           ],
         ),
       ),
@@ -1048,38 +1069,41 @@ class _ResourceBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
+    // label 占整行（左侧名称/右侧百分比），进度条独占下一整行：
+    // 内存 label 较长（如 `内存 (85.5 MB / 15 GB)`），窄列布局会换行
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 40,
-          child: Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Text(
+              '$percent%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percent / 100,
-              minHeight: 8,
-              backgroundColor: color.withValues(alpha: 0.12),
-              valueColor: AlwaysStoppedAnimation(color),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 36,
-          child: Text(
-            '$percent%',
-            textAlign: TextAlign.right,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              fontWeight: FontWeight.bold,
-            ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: percent / 100,
+            minHeight: 8,
+            backgroundColor: color.withValues(alpha: 0.12),
+            valueColor: AlwaysStoppedAnimation(color),
           ),
         ),
       ],
@@ -1330,7 +1354,9 @@ class _EventCard extends StatelessWidget {
                 ),
               )
             else
-              for (final e in events) _EventLine(event: e, maxLines: 3),
+              // 概览最多 10 条、每条至多 2 行，控制卡片高度
+              for (final e in events.take(10))
+                _EventLine(event: e, maxLines: 2),
           ],
         ),
       ),

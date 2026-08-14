@@ -14,6 +14,7 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,9 @@ import 'services/runtime/runtime_controller.dart';
 import 'views/builtin_views.dart';
 import 'views/instance_view.dart';
 import 'l10n/generated/app_localizations.dart';
+
+/// 根导航 Key：窗口关闭确认对话框需要在 MaterialApp 之上弹出
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,6 +111,7 @@ class ErisPulseApp extends StatelessWidget {
         builder: (lightDynamic, darkDynamic) {
           return _ExitHandler(
             child: MaterialApp(
+              navigatorKey: rootNavigatorKey,
               title: 'ErisPulse',
               debugShowCheckedModeBanner: false,
               theme: ThemeData(
@@ -146,7 +151,14 @@ class ErisPulseApp extends StatelessWidget {
   }
 }
 
-/// 桌面平台退出钩子：App 关闭时终止全部实例进程，避免 python 残留。
+/// 桌面平台退出处理。
+///
+/// Windows：原生层拦截窗口关闭（WM_CLOSE）与托盘退出，经
+/// `erispulse/window` 通道回调本组件——
+///   - `onCloseRequest`（点 X / Alt+F4）：按用户设置直接最小化到托盘或
+///     停止全部实例并退出；未设置时弹窗询问（可记住选择）
+///   - `onExitRequest`（托盘菜单退出）：直接停止全部实例并退出
+/// 其它桌面：保持 App 退出时终止全部实例进程，避免 python 残留。
 class _ExitHandler extends StatefulWidget {
   const _ExitHandler({required this.child});
   final Widget child;
@@ -156,12 +168,24 @@ class _ExitHandler extends StatefulWidget {
 }
 
 class _ExitHandlerState extends State<_ExitHandler> {
+  static const _windowChannel = MethodChannel('erispulse/window');
   AppLifecycleListener? _listener;
+  bool _closing = false;
 
   @override
   void initState() {
     super.initState();
-    // 仅桌面：App 退出（关闭窗口）时杀全部实例进程；
+    if (Platform.isWindows) {
+      _windowChannel.setMethodCallHandler((call) async {
+        switch (call.method) {
+          case 'onCloseRequest':
+            await _handleCloseRequest();
+          case 'onExitRequest':
+            await _exitApp();
+        }
+      });
+    }
+    // 桌面：Dart 侧主动退出（exitApplication）时杀全部实例进程；
     // 移动端实例由 FGS 保活，退出 UI 不清进程
     if (!Platform.isAndroid && !Platform.isIOS) {
       _listener = AppLifecycleListener(
@@ -177,6 +201,88 @@ class _ExitHandlerState extends State<_ExitHandler> {
   void dispose() {
     _listener?.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleCloseRequest() async {
+    if (_closing) return;
+    final settings = context.read<AppSettings>();
+    var action = settings.closeAction; // ask / tray / exit
+    if (action == 'ask') {
+      final (choice, remember) = await _askCloseAction();
+      if (choice == null) return; // 对话框被取消：保持窗口打开
+      if (remember) {
+        await settings.setCloseAction(choice);
+      }
+      action = choice;
+    }
+    if (action == 'tray') {
+      await _invoke('hideToTray');
+    } else if (action == 'exit') {
+      await _exitApp();
+    }
+  }
+
+  /// 停止全部实例后真正退出（通知原生销毁窗口）
+  Future<void> _exitApp() async {
+    if (_closing) return;
+    _closing = true;
+    try {
+      await context.read<RuntimeController>().stopAll();
+    } finally {
+      await _invoke('quit');
+      _closing = false;
+    }
+  }
+
+  Future<void> _invoke(String method) async {
+    try {
+      await _windowChannel.invokeMethod(method);
+    } catch (_) {
+      // 原生侧不可用（非 Windows 运行等）：忽略
+    }
+  }
+
+  /// 关闭行为询问对话框：返回 (选择, 是否记住)。取消返回 (null, false)。
+  Future<(String?, bool)> _askCloseAction() {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null) return Future.value((null, false));
+    final l10n = AppLocalizations.of(ctx);
+    var remember = false;
+    final choice = showDialog<String>(
+      context: ctx,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setState) => AlertDialog(
+          title: Text(l10n.closePromptTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.closePromptMessage),
+              const SizedBox(height: 4),
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: remember,
+                onChanged: (v) => setState(() => remember = v ?? false),
+                title: Text(l10n.closeRemember),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, 'exit'),
+              child: Text(l10n.closeStopExit),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogCtx, 'tray'),
+              child: Text(l10n.closeMinimizeTray),
+            ),
+          ],
+        ),
+      ),
+    );
+    return choice.then((c) => (c, remember));
   }
 
   @override

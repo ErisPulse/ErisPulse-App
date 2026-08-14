@@ -30,10 +30,16 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTT
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 
+# 源码含 UTF-8 中文字符串（托盘菜单），MSVC 需显式按 UTF-8 解析，
+# 否则在 GBK 代码页系统上编译失败（C4819/C2001）。
+target_compile_options(${BINARY_NAME} PRIVATE "/utf-8")
+
 # Add dependency libraries and include directories. Add any application-specific
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
+# Shell_NotifyIconW（系统托盘）
+target_link_libraries(${BINARY_NAME} PRIVATE "Shell32.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

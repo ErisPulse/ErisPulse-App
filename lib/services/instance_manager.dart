@@ -195,13 +195,18 @@ class InstanceManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 标记实例已启动（持久化 lastStartedAt）
+  /// 标记实例已启动（持久化 lastStartedAt 与 pid，桌面端重启后识别存活实例）
   Future<void> markStarted(String id, {required int pid}) async {
     await _update(
       id,
       lastStartedAt: DateTime.now().toUtc().toIso8601String(),
       pid: pid,
     );
+  }
+
+  /// 标记实例已不再运行（清除持久化 pid）
+  Future<void> markNotRunning(String id) async {
+    await _update(id, clearPid: true);
   }
 
   /// 通过 id 查询

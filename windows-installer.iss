@@ -22,7 +22,7 @@ AppPublisher=ErisPulse
 AppPublisherURL=https://github.com/ErisPulse/ErisPulse-App
 DefaultDirName={autopf}\ErisPulse App
 DefaultGroupName=ErisPulse App
-UninstallDisplayIcon={app}\erispulse_app.exe
+UninstallDisplayIcon={app}\ErisPulseApp.exe
 OutputDir=out
 OutputBaseFilename=ErisPulse-App-{#Version}-windows-{#Arch}-setup
 Compression=lzma2
@@ -48,8 +48,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#SrcDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\ErisPulse App"; Filename: "{app}\erispulse_app.exe"
-Name: "{autodesktop}\ErisPulse App"; Filename: "{app}\erispulse_app.exe"; Tasks: desktopicon
+Name: "{group}\ErisPulse App"; Filename: "{app}\ErisPulseApp.exe"
+Name: "{autodesktop}\ErisPulse App"; Filename: "{app}\ErisPulseApp.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\erispulse_app.exe"; Description: "{cm:LaunchProgram,ErisPulse App}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\ErisPulseApp.exe"; Description: "{cm:LaunchProgram,ErisPulse App}"; Flags: nowait postinstall skipifsilent

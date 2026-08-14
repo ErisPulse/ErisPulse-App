@@ -1220,6 +1220,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get detailTotalEvents => '事件总数';
+
+  @override
+  String get dashboardLoadTimeout => '加载超时：页面未能完成加载，请重试或用浏览器打开';
+
+  @override
+  String get closePromptTitle => '关闭 ErisPulse';
+
+  @override
+  String get closePromptMessage =>
+      '还有实例在运行时可以最小化到托盘让它们继续在后台运行；停止全部实例并退出会中断机器人服务。';
+
+  @override
+  String get closeMinimizeTray => '最小化到托盘';
+
+  @override
+  String get closeStopExit => '停止全部实例并退出';
+
+  @override
+  String get closeRemember => '记住我的选择';
+
+  @override
+  String get settingsCloseBehavior => '关闭窗口行为';
+
+  @override
+  String get closeActionAsk => '每次询问';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2438,4 +2463,29 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get detailTotalEvents => '事件總數';
+
+  @override
+  String get dashboardLoadTimeout => '載入逾時：頁面未能完成載入，請重試或用瀏覽器開啟';
+
+  @override
+  String get closePromptTitle => '關閉 ErisPulse';
+
+  @override
+  String get closePromptMessage =>
+      '還有實例在執行時可以最小化到系統匣讓它們繼續在背景執行；停止全部實例並退出會中斷機器人服務。';
+
+  @override
+  String get closeMinimizeTray => '最小化到系統匣';
+
+  @override
+  String get closeStopExit => '停止全部實例並退出';
+
+  @override
+  String get closeRemember => '記住我的選擇';
+
+  @override
+  String get settingsCloseBehavior => '關閉視窗行為';
+
+  @override
+  String get closeActionAsk => '每次詢問';
 }

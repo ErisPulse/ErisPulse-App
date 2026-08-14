@@ -1251,4 +1251,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailTotalEvents => 'Total events';
+
+  @override
+  String get dashboardLoadTimeout =>
+      'Load timed out: the page could not finish loading. Retry or open in a browser.';
+
+  @override
+  String get closePromptTitle => 'Close ErisPulse';
+
+  @override
+  String get closePromptMessage =>
+      'Minimize to tray to keep running instances in the background; stopping all instances and exiting will interrupt your bots.';
+
+  @override
+  String get closeMinimizeTray => 'Minimize to tray';
+
+  @override
+  String get closeStopExit => 'Stop all instances and exit';
+
+  @override
+  String get closeRemember => 'Remember my choice';
+
+  @override
+  String get settingsCloseBehavior => 'On window close';
+
+  @override
+  String get closeActionAsk => 'Ask every time';
 }

@@ -64,6 +64,7 @@ class RuntimeController extends ChangeNotifier {
       _desktop = DesktopRuntime(onEvent: _handleBackendEvent);
       _desktop!.autoRestart = autoRestart;
       await _refreshBundledPython();
+      await _adoptRunningInstances();
       return;
     }
 
@@ -162,6 +163,47 @@ class RuntimeController extends ChangeNotifier {
       clearPid: clearPid,
       clearError: clearError,
     );
+
+    // 桌面：把 pid 持久化（重启后识别仍在运行的实例，避免重复启动）
+    if (_isDesktop) {
+      final status = _mapStatus(statusName);
+      if (status == InstanceStatus.running && pid != null) {
+        instanceManager.markStarted(id, pid: pid);
+      } else if (status == InstanceStatus.stopped ||
+          status == InstanceStatus.error) {
+        instanceManager.markNotRunning(id);
+      }
+    }
+  }
+
+  /// 桌面：App 重启后识别仍在运行的实例（上次退出未停止 / 最小化托盘期间）。
+  ///
+  /// 探测实例端口有响应则说明进程仍活着：优先用持久化 PID（校验存活），
+  /// 失效则按端口反查真实 PID，然后收养进 DesktopRuntime（避免 UI 显示
+  /// "已停止"导致用户再启动造成双实例）。端口无响应则清除过期的持久化 PID。
+  Future<void> _adoptRunningInstances() async {
+    for (final inst in instanceManager.instances.where((i) => !i.isRemote)) {
+      final alive = await DesktopRuntime.probeInstance(inst.port);
+      if (!alive) {
+        if (inst.pid != null) await instanceManager.markNotRunning(inst.id);
+        continue;
+      }
+      var pid = inst.pid;
+      if (pid == null || !DesktopRuntime.pidAlive(pid)) {
+        pid = await DesktopRuntime.resolvePidByPort(inst.port);
+        if (pid != null && !DesktopRuntime.pidAlive(pid)) pid = null;
+      }
+      _desktop?.adoptInstance(
+        InstanceData(
+          id: inst.id,
+          name: inst.name,
+          port: inst.port,
+          token: inst.token,
+          workingDir: inst.workingDir,
+        ),
+        pid,
+      );
+    }
   }
 
   static InstanceStatus? _mapStatus(String? s) {

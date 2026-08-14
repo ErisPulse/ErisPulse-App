@@ -402,5 +402,13 @@
   "storeTagClear": "Clear",
   "createSubtitleDesktop": "A local instance runs on this computer;\na remote instance connects to an instance deployed on another host.",
   "detailOnlineBots": "Online bots",
-  "detailTotalEvents": "Total events"
+  "detailTotalEvents": "Total events",
+  "dashboardLoadTimeout": "Load timed out: the page could not finish loading. Retry or open in a browser.",
+  "closePromptTitle": "Close ErisPulse",
+  "closePromptMessage": "Minimize to tray to keep running instances in the background; stopping all instances and exiting will interrupt your bots.",
+  "closeMinimizeTray": "Minimize to tray",
+  "closeStopExit": "Stop all instances and exit",
+  "closeRemember": "Remember my choice",
+  "settingsCloseBehavior": "On window close",
+  "closeActionAsk": "Ask every time"
 }

@@ -399,5 +399,13 @@
   "storeTagClear": "清除",
   "createSubtitleDesktop": "本地实例在本机创建并独立运行；\n远程实例连接到你部署在其它主机的实例。",
   "detailOnlineBots": "在线机器人",
-  "detailTotalEvents": "事件总数"
+  "detailTotalEvents": "事件总数",
+  "dashboardLoadTimeout": "加载超时：页面未能完成加载，请重试或用浏览器打开",
+  "closePromptTitle": "关闭 ErisPulse",
+  "closePromptMessage": "还有实例在运行时可以最小化到托盘让它们继续在后台运行；停止全部实例并退出会中断机器人服务。",
+  "closeMinimizeTray": "最小化到托盘",
+  "closeStopExit": "停止全部实例并退出",
+  "closeRemember": "记住我的选择",
+  "settingsCloseBehavior": "关闭窗口行为",
+  "closeActionAsk": "每次询问"
 }

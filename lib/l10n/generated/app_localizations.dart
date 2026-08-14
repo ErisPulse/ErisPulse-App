@@ -2454,6 +2454,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total events'**
   String get detailTotalEvents;
+
+  /// No description provided for @dashboardLoadTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Load timed out: the page could not finish loading. Retry or open in a browser.'**
+  String get dashboardLoadTimeout;
+
+  /// No description provided for @closePromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close ErisPulse'**
+  String get closePromptTitle;
+
+  /// No description provided for @closePromptMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize to tray to keep running instances in the background; stopping all instances and exiting will interrupt your bots.'**
+  String get closePromptMessage;
+
+  /// No description provided for @closeMinimizeTray.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize to tray'**
+  String get closeMinimizeTray;
+
+  /// No description provided for @closeStopExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop all instances and exit'**
+  String get closeStopExit;
+
+  /// No description provided for @closeRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember my choice'**
+  String get closeRemember;
+
+  /// No description provided for @settingsCloseBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'On window close'**
+  String get settingsCloseBehavior;
+
+  /// No description provided for @closeActionAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask every time'**
+  String get closeActionAsk;
 }
 
 class _AppLocalizationsDelegate

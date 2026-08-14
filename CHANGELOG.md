@@ -2,6 +2,47 @@
 
 版本遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
 
+## [0.2.3] - 2026/08/15
+
+### 新增
+
+- 设置页（Windows）新增「关闭窗口行为」：每次询问 / 最小化到托盘 /
+  停止全部实例并退出（与关闭确认弹窗的"记住我的选择"联动）
+- Windows 窗口生命周期管理（原生 runner + `erispulse/window` 通道）：
+  - 系统托盘图标：左键点击恢复窗口，右键菜单（打开 / 退出）
+  - 关闭窗口（X / Alt+F4）弹出确认：最小化到托盘（实例继续后台运行）
+    或停止全部实例并退出，支持"记住我的选择"（设置持久化，不再询问）
+  - 单实例限制：重复启动时恢复并激活已有窗口（包括托盘隐藏状态），
+    不再开出第二个进程
+- 桌面实例进程收养（App 重启后恢复管理）：
+  - 实例 PID 持久化；启动时探测实例端口存活——仍运行则收养进运行时
+    （优先持久化 PID，失效按 `netstat`/`ss` 反查真实 PID），UI 显示
+    运行中、可正常停止，不再出现"显示已停止实际在跑、再启动变双实例"
+  - 端口无响应则清除过期的持久化 PID
+
+### 修复
+
+- Windows 安装版（setup.exe）打开 Dashboard 永久转圈：WebView2 默认把
+  user data folder 放在 exe 同目录，安装到 Program Files（只读）后环境
+  创建失败。现显式指定到应用数据目录（%APPDATA%\<app>\WebView2），
+  环境进程级共享复用
+- Dashboard 自动登录失效（Windows 表现明显）：token 注入从
+  "加载完成后 evaluateJavascript 写 localStorage 再 reload"改为
+  **UserScript（AT_DOCUMENT_START）**预注入——页面 JS 执行前写入
+  `localStorage.__ep_tk__`（带 origin 校验），dash.js 启动即读到并登录，
+  消除对 evaluateJavascript 时序的依赖；模块视窗 go() 跳转不再被注入
+  状态门槛拦截，DOM 就绪重试延长到 15 秒
+- Dashboard 加载 8 秒超时后不再白屏/永久转圈：显式报错并支持整体重建
+  WebView 重试（不再仅 reload）
+- 首次进入 Dashboard 等待 WebView2 环境就绪期间显示加载态，环境创建
+  失败自动回退默认路径
+
+### 优化
+
+- PC 概览页：大数字统计格改为横向布局（主题色图标气泡 + 大数字 +
+  标签），去除竖分隔线；宽屏两列顺序调整为左（概览 / 消息统计）+
+  右（事件 / 连接信息），高度更均衡
+
 ## [0.2.2] - 2026/08/15
 
 ### 新增
@@ -28,6 +69,10 @@
 
 ### 变更
 
+- 桌面产物命名规范化：二进制 `erispulse_app` → `ErisPulseApp`
+  （Windows exe / Linux 可执行 / macOS .app 及版本资源 ProductName），
+  窗口标题统一为 `ErisPulse App`；安装器快捷方式与 CI 打包路径同步。
+  Android applicationId 保持不变（老用户可正常覆盖升级）
 - 创建实例页 PC 布局重构：宽屏两栏铺满（左：引导 / 类型 / 名称；
   右：端口或远程地址 / 环境来源 + 创建），移动端保持单列
 - 创建实例副标题按平台区分文案（桌面=本机运行，手机=手机内独立运行）

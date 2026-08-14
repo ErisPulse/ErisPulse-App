@@ -399,5 +399,13 @@
   "storeTagClear": "清除",
   "createSubtitleDesktop": "本機實例在本機建立並獨立執行；\n遠端實例連線到你部署在其他主機的實例。",
   "detailOnlineBots": "線上機器人",
-  "detailTotalEvents": "事件總數"
+  "detailTotalEvents": "事件總數",
+  "dashboardLoadTimeout": "載入逾時：頁面未能完成載入，請重試或用瀏覽器開啟",
+  "closePromptTitle": "關閉 ErisPulse",
+  "closePromptMessage": "還有實例在執行時可以最小化到系統匣讓它們繼續在背景執行；停止全部實例並退出會中斷機器人服務。",
+  "closeMinimizeTray": "最小化到系統匣",
+  "closeStopExit": "停止全部實例並退出",
+  "closeRemember": "記住我的選擇",
+  "settingsCloseBehavior": "關閉視窗行為",
+  "closeActionAsk": "每次詢問"
 }

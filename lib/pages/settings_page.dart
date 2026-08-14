@@ -3,6 +3,7 @@
 // 运行时管理：
 //   - 运行环境（Android: rootfs；桌面: Python + ErisPulse SDK）状态 / 初始化
 //   - 崩溃自动重启开关
+//   - 窗口关闭行为（Windows：托盘 / 退出 / 每次询问）
 //   - 停止所有实例
 // 数据：
 //   - 清空调试日志
@@ -303,6 +304,41 @@ class _SettingsPageState extends State<SettingsPage> {
                   value: runtime.autoRestart,
                   onChanged: runtime.setAutoRestart,
                 ),
+                const Divider(height: 1),
+                // Windows：窗口关闭行为（托盘 / 退出 / 每次询问）
+                if (Platform.isWindows)
+                  ListTile(
+                    leading: const Icon(Icons.close_fullscreen_outlined),
+                    title: Text(l10n.settingsCloseBehavior),
+                    subtitle: Text(
+                      switch (settings.closeAction) {
+                        'tray' => l10n.closeMinimizeTray,
+                        'exit' => l10n.closeStopExit,
+                        _ => l10n.closeActionAsk,
+                      },
+                    ),
+                    trailing: DropdownButton<String>(
+                      value: settings.closeAction,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'ask',
+                          child: Text(l10n.closeActionAsk),
+                        ),
+                        DropdownMenuItem(
+                          value: 'tray',
+                          child: Text(l10n.closeMinimizeTray),
+                        ),
+                        DropdownMenuItem(
+                          value: 'exit',
+                          child: Text(l10n.closeStopExit),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) settings.setCloseAction(v);
+                      },
+                    ),
+                  ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.stop_circle_outlined),

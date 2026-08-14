@@ -1258,4 +1258,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get detailTotalEvents => 'Всего событий';
+
+  @override
+  String get dashboardLoadTimeout =>
+      'Тайм-аут загрузки: страница не загрузилась. Повторите попытку или откройте в браузере.';
+
+  @override
+  String get closePromptTitle => 'Закрыть ErisPulse';
+
+  @override
+  String get closePromptMessage =>
+      'Сверните в трей, чтобы запущенные экземпляры продолжали работать в фоне; остановка всех экземпляров прервёт работу ботов.';
+
+  @override
+  String get closeMinimizeTray => 'Свернуть в трей';
+
+  @override
+  String get closeStopExit => 'Остановить все экземпляры и выйти';
+
+  @override
+  String get closeRemember => 'Запомнить выбор';
+
+  @override
+  String get settingsCloseBehavior => 'При закрытии окна';
+
+  @override
+  String get closeActionAsk => 'Спрашивать каждый раз';
 }

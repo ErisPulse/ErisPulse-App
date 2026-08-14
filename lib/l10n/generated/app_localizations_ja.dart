@@ -1228,4 +1228,30 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get detailTotalEvents => '総イベント数';
+
+  @override
+  String get dashboardLoadTimeout =>
+      '読み込みタイムアウト：ページの読み込みが完了しませんでした。再試行するかブラウザで開いてください。';
+
+  @override
+  String get closePromptTitle => 'ErisPulse を終了';
+
+  @override
+  String get closePromptMessage =>
+      'トレイに最小化すると実行中のインスタンスはバックグラウンドで動作し続けます。全インスタンスを停止して終了するとボットは中断されます。';
+
+  @override
+  String get closeMinimizeTray => 'トレイに最小化';
+
+  @override
+  String get closeStopExit => '全インスタンスを停止して終了';
+
+  @override
+  String get closeRemember => '選択を記憶する';
+
+  @override
+  String get settingsCloseBehavior => 'ウィンドウを閉じたとき';
+
+  @override
+  String get closeActionAsk => '毎回確認する';
 }

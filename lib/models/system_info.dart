@@ -21,11 +21,18 @@ class SystemInfo {
   /// 进程 CPU 占用百分比（0-100）
   final double cpuPercent;
 
-  /// 进程常驻内存（MB）
+  /// 进程常驻内存（MB，RSS）
   final double memoryMb;
 
-  /// 系统内存占用百分比（0-100）
+  /// 系统总物理内存（MB；后端未提供时为 0）
+  final double systemTotalMb;
+
+  /// 进程 RSS 占系统总内存的百分比（0-100，对齐 Dashboard 仪表盘算法：
+  /// rss_mb / system_total_gb × 1024 × 100）
   final double memoryPercent;
+
+  /// 整机内存占用百分比（0-100，psutil virtual_memory().percent）
+  final double systemMemoryPercent;
 
   /// CPU 核心数（后端未提供时默认 1）
   final int cpuCount;
@@ -43,7 +50,9 @@ class SystemInfo {
   SystemInfo({
     required this.cpuPercent,
     required this.memoryMb,
+    required this.systemTotalMb,
     required this.memoryPercent,
+    required this.systemMemoryPercent,
     required this.cpuCount,
     required this.uptime,
     this.uptimeHuman,
@@ -59,15 +68,25 @@ class SystemInfo {
     final cpuPercent = (memory['cpu_percent'] as num?)?.toDouble() ??
         (memory['system_cpu_percent'] as num?)?.toDouble() ??
         0;
-    final memUsedMb = (memory['rss_mb'] as num?)?.toDouble() ?? 0;
-    final memPercent = (memory['system_percent'] as num?)?.toDouble() ?? 0;
+    final rssMb = (memory['rss_mb'] as num?)?.toDouble() ?? 0;
+    final totalGb = (memory['system_total_gb'] as num?)?.toDouble() ?? 0;
+    final totalMb = totalGb > 0 ? totalGb * 1024 : 0.0;
+    // 内存百分比 = 进程 RSS / 系统总内存（与 Dashboard 仪表盘一致，
+    // 整机占用另存 systemMemoryPercent）
+    final rssPercent = totalMb > 0
+        ? (rssMb / totalMb * 100).clamp(0.0, 100.0).toDouble()
+        : 0.0;
     final uptimeSec = (json['uptime_seconds'] as num?)?.toInt() ??
         (json['uptime'] as num?)?.toInt() ??
         0;
     return SystemInfo(
       cpuPercent: cpuPercent.clamp(0, 100).toDouble(),
-      memoryMb: memUsedMb.clamp(0, double.infinity).toDouble(),
-      memoryPercent: memPercent.clamp(0, 100).toDouble(),
+      memoryMb: rssMb.clamp(0, double.infinity).toDouble(),
+      systemTotalMb: totalMb,
+      memoryPercent: rssPercent,
+      systemMemoryPercent: ((memory['system_percent'] as num?)?.toDouble() ?? 0)
+          .clamp(0, 100)
+          .toDouble(),
       cpuCount: (json['cpu_count'] as num?)?.toInt() ?? 1,
       uptime: Duration(seconds: uptimeSec),
       uptimeHuman: json['uptime_human'] as String?,
@@ -76,13 +95,22 @@ class SystemInfo {
     );
   }
 
-  /// 内存占用的人类可读字符串
+  /// 进程 RSS 的人类可读字符串
   String get memoryReadable {
     final mb = memoryMb;
     if (mb < 1) return '${(mb * 1024).toStringAsFixed(0)} KB';
     if (mb < 1024) return '${mb.toStringAsFixed(1)} MB';
     return '${(mb / 1024).toStringAsFixed(2)} GB';
   }
+
+  /// "RSS / 系统总量" 的人类可读字符串（如 `120 MB / 16 GB`）
+  String get memoryOfSystemReadable {
+    if (systemTotalMb <= 0) return memoryReadable;
+    return '$memoryReadable / ${_gbReadable(systemTotalMb / 1024)}';
+  }
+
+  static String _gbReadable(double gb) =>
+      gb >= 10 ? '${gb.toStringAsFixed(0)} GB' : '${gb.toStringAsFixed(1)} GB';
 
   /// 运行时长的人类可读字符串（优先后端提供的格式化串）
   String get uptimeReadable {

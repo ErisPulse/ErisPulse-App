@@ -9,11 +9,13 @@ class AppSettings extends ChangeNotifier {
   static const _kLocale = 'erispulse.locale';
   static const _kDownloadSource = 'erispulse.download_source';
   static const _kPypiSource = 'erispulse.pypi_source';
+  static const _kCloseAction = 'erispulse.close_action';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
   String _downloadSource = 'github';
   String _pypiSource = 'pypi';
+  String _closeAction = 'ask';
 
   ThemeMode get themeMode => _themeMode;
 
@@ -25,6 +27,10 @@ class AppSettings extends ChangeNotifier {
 
   /// PyPI 镜像源（pypi / tsinghua / aliyun，桌面端 pip 用）
   String get pypiSource => _pypiSource;
+
+  /// 窗口关闭行为（Windows 托盘）：ask 每次询问 / tray 最小化到托盘 /
+  /// exit 停止全部实例并退出
+  String get closeAction => _closeAction;
 
   /// 从本地存储加载
   Future<void> load() async {
@@ -39,6 +45,11 @@ class AppSettings extends ChangeNotifier {
       _locale = _localeFromCode(prefs.getString(_kLocale));
       _downloadSource = prefs.getString(_kDownloadSource) ?? 'github';
       _pypiSource = prefs.getString(_kPypiSource) ?? 'pypi';
+      final close = prefs.getString(_kCloseAction);
+      _closeAction = switch (close) {
+        'tray' || 'exit' => close!,
+        _ => 'ask',
+      };
     } catch (_) {}
     notifyListeners();
   }
@@ -101,6 +112,17 @@ class AppSettings extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kPypiSource, source);
+    } catch (_) {}
+  }
+
+  /// 设置窗口关闭行为（ask / tray / exit，Windows 托盘关闭确认用）
+  Future<void> setCloseAction(String action) async {
+    if (_closeAction == action) return;
+    _closeAction = action;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kCloseAction, action);
     } catch (_) {}
   }
 }

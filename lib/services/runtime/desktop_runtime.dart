@@ -137,9 +137,24 @@ class DesktopRuntime {
         for (final e in _procs.entries)
           e.key: {
             'status': e.value.status.name,
-            'pid': e.value.process.pid,
+            'pid': e.value.pid,
           },
       };
+
+  /// 收养外部启动的存活实例（App 重启后恢复对已有进程的管理）。
+  ///
+  /// [pid] 为该实例 python 进程 PID（无法取得时传 null：状态标记为运行，
+  /// 但停止时需按端口反查 PID）。收养的进程无 stdout 句柄，仅可停止/重启。
+  void adoptInstance(InstanceData data, int? pid) {
+    if (_procs.containsKey(data.id)) return;
+    final tracker = _DesktopProc(data, pid: pid);
+    tracker.status = _RunStatus.running;
+    _procs[data.id] = tracker;
+    _manuallyStopped.remove(data.id);
+    onEvent(
+      ProcessEvent(id: data.id, status: 'running', pid: pid).toJson(),
+    );
+  }
 
   /// 启动实例
   Future<bool> startInstance(InstanceData data) async {
@@ -175,7 +190,7 @@ class DesktopRuntime {
           'VIRTUAL_ENV': venvDir.path,
         },
       );
-      final tracker = _DesktopProc(data, proc);
+      final tracker = _DesktopProc(data, process: proc);
       _procs[data.id] = tracker;
 
       unawaited(proc.exitCode.then((code) => _handleExit(tracker, code)));
@@ -209,7 +224,17 @@ class DesktopRuntime {
       );
       return;
     }
-    await _kill(tracker.process);
+    // 收养的实例可能没有 PID（App 意外退出后按端口反查恢复失败），
+    // 停止前先补查一次
+    var tracker2 = tracker;
+    if (tracker2.pid == null) {
+      tracker2 = _DesktopProc(
+        tracker2.data,
+        pid: await resolvePidByPort(tracker2.data.port),
+        process: tracker2.process,
+      );
+    }
+    await _kill(tracker2);
     await _closeLogFile(id);
     onEvent(
       ProcessEvent(
@@ -238,7 +263,15 @@ class DesktopRuntime {
   /// App 退出时调用：终止全部实例进程
   Future<void> dispose() async {
     for (final t in _procs.values.toList()) {
-      await _kill(t.process);
+      var tracker = t;
+      if (tracker.pid == null) {
+        tracker = _DesktopProc(
+          tracker.data,
+          pid: await resolvePidByPort(tracker.data.port),
+          process: tracker.process,
+        );
+      }
+      await _kill(tracker);
     }
     _procs.clear();
     for (final s in _logFiles.values) {
@@ -312,7 +345,7 @@ class DesktopRuntime {
             ProcessEvent(
               id: data.id,
               status: 'running',
-              pid: tracker.process.pid,
+              pid: tracker.pid,
             ).toJson(),
           );
           return;
@@ -325,7 +358,7 @@ class DesktopRuntime {
         ProcessEvent(
           id: data.id,
           status: 'running',
-          pid: tracker.process.pid,
+          pid: tracker.pid,
           error: 'Dashboard 就绪超时，但进程仍在运行',
         ).toJson(),
       );
@@ -360,16 +393,96 @@ class DesktopRuntime {
 
   /// 终止进程树：Windows 用 taskkill /F /T（连子进程一起清，避免端口残留
   /// 导致"停止无效"）；POSIX 先 SIGTERM 再 SIGKILL 兜底。
-  Future<void> _kill(Process p) async {
+  /// 收养实例无 Process 句柄时按 PID 终止。
+  Future<void> _kill(_DesktopProc tracker) async {
     try {
+      final pid = tracker.pid;
+      if (pid == null) return;
       if (Platform.isWindows) {
-        await Process.run('taskkill', ['/F', '/T', '/PID', '${p.pid}']);
+        await Process.run('taskkill', ['/F', '/T', '/PID', '$pid']);
         return;
       }
-      p.kill(ProcessSignal.sigterm);
+      final proc = tracker.process;
+      if (proc != null) {
+        proc.kill(ProcessSignal.sigterm);
+      } else {
+        Process.runSync('kill', ['TERM', '$pid']);
+      }
       await Future<void>.delayed(const Duration(milliseconds: 300));
-      p.kill(ProcessSignal.sigkill);
+      if (proc != null) {
+        proc.kill(ProcessSignal.sigkill);
+      } else {
+        Process.runSync('kill', ['KILL', '$pid']);
+      }
     } catch (_) {}
+  }
+
+  // ── 进程探测工具（App 重启后恢复对存活实例的管理）──
+
+  /// 探测实例 Dashboard 端口是否在服务（无 token 探测：200/401 都算活着）
+  static Future<bool> probeInstance(int port) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('http://127.0.0.1:$port/Dashboard/api/auth/status'))
+          .timeout(const Duration(milliseconds: 900));
+      return resp.statusCode == 200 || resp.statusCode == 401;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// PID 是否仍存活（Windows: tasklist；POSIX: kill -0）
+  static bool pidAlive(int pid) {
+    try {
+      if (Platform.isWindows) {
+        final r = Process.runSync(
+          'tasklist',
+          ['/FI', 'PID eq $pid', '/FO', 'CSV', '/NH'],
+        );
+        final out = r.stdout.toString();
+        return r.exitCode == 0 && out.contains('"$pid"');
+      }
+      return Process.runSync('kill', ['-0', '$pid']).exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 按监听端口反查进程 PID。
+  ///
+  /// Windows: `netstat -ano`（本地地址以 `:port` 结尾且 LISTENING）；
+  /// POSIX: `ss -ltnp`（LISTEN 且 local 为 `*:port`/`0.0.0.0:port`，
+  /// 从 users:(...pid=N...) 提取）。查不到返回 null。
+  static Future<int?> resolvePidByPort(int port) async {
+    try {
+      if (Platform.isWindows) {
+        final r = await Process.run('netstat', ['-ano', '-p', 'tcp']);
+        for (final line in (r.stdout.toString().split('\n'))) {
+          final parts = line.trim().split(RegExp(r'\s+'));
+          if (parts.length >= 5 &&
+              parts[3].toUpperCase() == 'LISTENING' &&
+              (parts[1].endsWith(':$port'))) {
+            return int.tryParse(parts[4]);
+          }
+        }
+        return null;
+      }
+      final r = await Process.run('ss', ['-ltnp']);
+      for (final line in (r.stdout.toString().split('\n'))) {
+        final parts = line.trim().split(RegExp(r'\s+'));
+        if (parts.length >= 4 &&
+            parts[0] == 'LISTEN' &&
+            (parts[3] == '*:$port' ||
+                parts[3] == '0.0.0.0:$port' ||
+                parts[3].endsWith(':$port'))) {
+          final m = RegExp(r'pid=(\d+)').firstMatch(line);
+          if (m != null) return int.tryParse(m.group(1)!);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -377,8 +490,15 @@ enum _RunStatus { starting, running }
 
 class _DesktopProc {
   final InstanceData data;
-  final Process process;
+
+  /// 进程 PID（收养实例若无法确定则为 null）
+  final int? pid;
+
+  /// 新启动实例的进程句柄（收养实例为 null）
+  final Process? process;
+
   _RunStatus status;
 
-  _DesktopProc(this.data, this.process) : status = _RunStatus.starting;
+  _DesktopProc(this.data, {this.pid, this.process})
+      : status = _RunStatus.starting;
 }
