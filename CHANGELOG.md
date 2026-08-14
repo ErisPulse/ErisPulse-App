@@ -60,9 +60,9 @@
 - 修复桌面端"内置 Python 释放失败"：内置 Python 资产命名不一致（CI 打
   `python-windows-x64.tar.gz`，App 按 `python-windows-amd64` 加载），
   统一为 `x64`，Windows / Linux 首次启动可正常释放 Python
-- 桌面端新增构建产物：linux-arm64 / windows-arm64
-- Windows 新增 Inno Setup 安装器（x64 / arm64 各产 `*-setup.exe`），
-  与 zip 一起发布
+- 桌面端产物：Windows / Linux 为 x64，macOS 为 arm64
+  （Windows on ARM 用户可直接用 windows-x64 产物，x64 模拟层可运行）
+- Windows 新增 Inno Setup 安装器（x64，产 `*-setup.exe`），与 zip 一起发布
 
 ### 变更
 

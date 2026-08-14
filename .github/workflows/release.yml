@@ -215,8 +215,9 @@ jobs:
           path: out/*.apk
           retention-days: 7
 
-  # 桌面端（Windows / Linux 各 x64+arm64，macOS arm64）：构建时注入内置 Python
-  #（python-build-standalone，见 desktop_sdk.dart；产物名与打包路径按 build_arch）
+  # 桌面端（Windows / Linux x64，macOS arm64）：构建时注入内置 Python
+  #（python-build-standalone，见 desktop_sdk.dart；产物名与打包路径按 build_arch）。
+  # Windows on ARM 有 x64 模拟层，用户可直接用 windows-x64 产物，故不构建原生 arm64。
   desktop-build:
     needs: verify
     strategy:
@@ -227,20 +228,10 @@ jobs:
             platform_arch: windows-x64
             build_arch: x64
             triple: x86_64-pc-windows-msvc
-          - os: windows-11-arm
-            platform_arch: windows-arm64
-            build_arch: arm64
-            triple: aarch64-pc-windows-msvc
-            flutter_manual: true
           - os: ubuntu-latest
             platform_arch: linux-x64
             build_arch: x64
             triple: x86_64-unknown-linux-gnu
-          - os: ubuntu-24.04-arm
-            platform_arch: linux-arm64
-            build_arch: arm64
-            triple: aarch64-unknown-linux-gnu
-            flutter_manual: true
           - os: macos-latest
             platform_arch: macos-arm64
             build_arch: arm64
@@ -250,41 +241,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Flutter
-        if: ${{ !matrix.flutter_manual }}
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.44.8
           cache: true
-
-      # Flutter 官方 Linux/Windows 只发布 x64 SDK 存档（无独立 arm64 存档），
-      # subosito/flutter-action 无法为 arm64 解析版本。改用官方 x64 存档
-      # 手动解压：flutter 脚本会按宿主架构（aarch64）自动下载 Dart SDK 与引擎。
-      - name: Setup Flutter (arm64 手动下载)
-        if: ${{ matrix.flutter_manual }}
-        shell: pwsh
-        run: |
-          $V = "3.44.8"
-          $dest = Join-Path $env:RUNNER_TEMP "flutter"
-          if ($IsLinux) {
-            $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${V}-stable.tar.xz"
-            $file = Join-Path $env:RUNNER_TEMP "flutter.tar.xz"
-            Invoke-WebRequest -Uri $url -OutFile $file
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-            tar -xf $file -C $dest
-            # 官方 x64 存档内置 x64 dart-sdk，Linux 无模拟机制无法执行，
-            # 删除后由 flutter 按宿主架构（aarch64）自动重新下载
-            Remove-Item -Recurse -Force (Join-Path $dest "flutter" "bin" "cache" "dart-sdk") -ErrorAction SilentlyContinue
-          } else {
-            $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_${V}-stable.zip"
-            $file = Join-Path $env:RUNNER_TEMP "flutter.zip"
-            Invoke-WebRequest -Uri $url -OutFile $file
-            Expand-Archive -Path $file -DestinationPath $dest -Force
-          }
-          $binDir = Join-Path $dest "flutter" "bin"
-          Write-Output $binDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-          $env:PATH = "$binDir$([System.IO.Path]::PathSeparator)$env:PATH"
-          flutter --version
 
       - name: Install Linux build deps
         if: runner.os == 'Linux'
