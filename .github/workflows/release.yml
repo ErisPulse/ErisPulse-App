@@ -215,7 +215,7 @@ jobs:
           path: out/*.apk
           retention-days: 7
 
-  # 桌面端（Windows / Linux / macOS，x64 + arm64）：构建时注入内置 Python
+  # 桌面端（Windows / Linux 各 x64+arm64，macOS arm64）：构建时注入内置 Python
   #（python-build-standalone，见 desktop_sdk.dart；产物名与打包路径按 build_arch）
   desktop-build:
     needs: verify
@@ -245,10 +245,6 @@ jobs:
             platform_arch: macos-arm64
             build_arch: arm64
             triple: aarch64-apple-darwin
-          - os: macos-13
-            platform_arch: macos-x64
-            build_arch: x64
-            triple: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -282,9 +278,9 @@ jobs:
             Invoke-WebRequest -Uri $url -OutFile $file
             Expand-Archive -Path $file -DestinationPath $dest -Force
           }
-          $binDir = "$dest\flutter\bin"
+          $binDir = Join-Path $dest "flutter" "bin"
           Write-Output $binDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-          $env:PATH = "$binDir;$env:PATH"
+          $env:PATH = "$binDir$([System.IO.Path]::PathSeparator)$env:PATH"
           flutter --version
 
       - name: Install Linux build deps
