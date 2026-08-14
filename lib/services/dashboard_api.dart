@@ -92,6 +92,23 @@ class DashboardApi {
     return _parseJson(resp, path);
   }
 
+  Future<Map<String, dynamic>> _deleteJson(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final resp = await http
+        .delete(
+          instance.apiUri(path),
+          headers: {
+            ..._headers,
+            if (body != null) 'Content-Type': 'application/json',
+          },
+          body: body == null ? null : jsonEncode(body),
+        )
+        .timeout(_timeout);
+    return _parseJson(resp, path);
+  }
+
   Future<Map<String, dynamic>> _parseJson(
     http.Response resp,
     String path,
@@ -269,6 +286,36 @@ class DashboardApi {
     Map<String, dynamic> values,
   ) =>
       _putJson('/adapter/$platform/config', body: {'values': values});
+
+  /// 适配器 bot（账户）配置 schema + 全量账户（GET /adapter/{platform}/accounts）
+  Future<Map<String, dynamic>> getAdapterAccounts(String platform) =>
+      _getJson('/adapter/$platform/accounts');
+
+  /// 批量保存 bot（账户）配置（整表合并，后端校验 + 热重载）
+  Future<void> saveAdapterAccounts(
+    String platform,
+    Map<String, dynamic> accounts,
+  ) =>
+      _putJson('/adapter/$platform/accounts', body: {'accounts': accounts});
+
+  /// 新增 bot（账户），[name] 为账户标识，[data] 为初始字段（可选）
+  Future<void> addAdapterAccount(
+    String platform,
+    String name, {
+    Map<String, dynamic>? data,
+  }) async {
+    await _postJson(
+      '/adapter/$platform/accounts/add',
+      body: {
+        'name': name,
+        if (data != null && data.isNotEmpty) 'data': data,
+      },
+    );
+  }
+
+  /// 删除 bot（账户）
+  Future<void> deleteAdapterAccount(String platform, String name) =>
+      _deleteJson('/adapter/$platform/accounts/${Uri.encodeComponent(name)}');
 
   // 配置
 

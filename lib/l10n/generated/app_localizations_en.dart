@@ -158,7 +158,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingDescription =>
-      'The first launch needs to prepare the runtime image\n(Ubuntu + Python + ErisPulse)';
+      'The first launch needs to prepare the runtime environment\n(Python + ErisPulse)';
 
   @override
   String get onboardingStartButton => 'Start initialization';
@@ -292,6 +292,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createSdkVersionHelper =>
       'Installed into this instance\'s own virtual environment';
+
+  @override
+  String get createEnvTitle => 'Environment source';
 
   @override
   String get createEnvFresh => 'Fresh environment';
@@ -455,6 +458,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get schemaConfigNoSchema => 'No config schema';
+
+  @override
+  String get adapterConfigGlobal => 'Global Settings';
+
+  @override
+  String get adapterConfigAccounts => 'Bot Accounts';
+
+  @override
+  String get adapterConfigAccountAdd => 'Add Account';
+
+  @override
+  String get adapterConfigAccountName => 'Account Name';
+
+  @override
+  String get adapterConfigAccountNameRequired => 'Enter an account name';
+
+  @override
+  String get adapterConfigAccountDelete => 'Delete Account';
+
+  @override
+  String adapterConfigAccountDeleteConfirm(String name) {
+    return 'Delete account $name? This cannot be undone.';
+  }
+
+  @override
+  String get adapterConfigAccountsEmpty => 'No bot accounts';
+
+  @override
+  String get adapterConfigAccountSaved => 'Account saved';
+
+  @override
+  String get adapterConfigAccountAdded => 'Account created';
+
+  @override
+  String get adapterConfigAccountDeleted => 'Account deleted';
+
+  @override
+  String get adapterConfigEnabled => 'Enabled';
 
   @override
   String get detailConfigCopied => 'Config copied';
@@ -702,7 +743,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsClearLogs => 'Clear debug log';
 
   @override
-  String get settingsClearLogsDesc => 'Clear the proot process log buffer';
+  String get settingsClearLogsDesc => 'Clear runtime debug logs';
 
   @override
   String get settingsAbout => 'About';
@@ -719,7 +760,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutDialog =>
-      'ErisPulse multi-device management client.\nLocal instances run on proot + Ubuntu; the management UI is provided by Dashboard.\n\nMIT License';
+      'ErisPulse multi-device management client.\nLocal instances run in their own isolated environment; the management UI is provided by Dashboard.\n\nMIT License';
 
   @override
   String get debugTitle => 'Debug info';

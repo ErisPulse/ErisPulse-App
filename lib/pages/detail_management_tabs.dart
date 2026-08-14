@@ -18,6 +18,7 @@ import '../models/instance.dart';
 import '../models/module_info.dart';
 import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
+import 'adapter_config_page.dart';
 import 'schema_config_page.dart';
 
 /// 模块管理 Tab
@@ -193,13 +194,11 @@ class _AdaptersTabState extends State<AdaptersTab> {
   }
 
   void _openConfig(AdapterInfo a) {
-    final api = DashboardApi(widget.instance);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SchemaConfigPage(
-          title: a.platform,
-          load: () => api.getAdapterConfig(a.platform),
-          save: (values) => api.saveAdapterConfig(a.platform, values),
+        builder: (_) => AdapterConfigPage(
+          instance: widget.instance,
+          platform: a.platform,
         ),
       ),
     );
@@ -229,7 +228,9 @@ class _AdaptersTabState extends State<AdaptersTab> {
                   onToggle: (v) => _toggle(a, v),
                   onStartStop: () => _startStop(a),
                   onRestart: () => _restart(a),
-                  onConfig: a.hasConfig ? () => _openConfig(a) : null,
+                  onConfig: (a.hasConfig || a.hasAccounts)
+                      ? () => _openConfig(a)
+                      : null,
                 ),
             ],
           ),

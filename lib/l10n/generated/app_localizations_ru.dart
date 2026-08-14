@@ -158,7 +158,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get onboardingDescription =>
-      'При первом запуске необходимо подготовить образ среды\n(Ubuntu + Python + ErisPulse)';
+      'При первом запуске необходимо подготовить среду выполнения\n(Python + ErisPulse)';
 
   @override
   String get onboardingStartButton => 'Начать инициализацию';
@@ -293,6 +293,9 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get createSdkVersionHelper =>
       'Устанавливается в собственное виртуальное окружение экземпляра';
+
+  @override
+  String get createEnvTitle => 'Источник окружения';
 
   @override
   String get createEnvFresh => 'Новое окружение';
@@ -456,6 +459,44 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get schemaConfigNoSchema => 'Нет схемы конфигурации';
+
+  @override
+  String get adapterConfigGlobal => 'Глобальные настройки';
+
+  @override
+  String get adapterConfigAccounts => 'Аккаунты ботов';
+
+  @override
+  String get adapterConfigAccountAdd => 'Добавить аккаунт';
+
+  @override
+  String get adapterConfigAccountName => 'Имя аккаунта';
+
+  @override
+  String get adapterConfigAccountNameRequired => 'Введите имя аккаунта';
+
+  @override
+  String get adapterConfigAccountDelete => 'Удалить аккаунт';
+
+  @override
+  String adapterConfigAccountDeleteConfirm(String name) {
+    return 'Удалить аккаунт $name? Это действие необратимо.';
+  }
+
+  @override
+  String get adapterConfigAccountsEmpty => 'Нет аккаунтов ботов';
+
+  @override
+  String get adapterConfigAccountSaved => 'Аккаунт сохранён';
+
+  @override
+  String get adapterConfigAccountAdded => 'Аккаунт создан';
+
+  @override
+  String get adapterConfigAccountDeleted => 'Аккаунт удалён';
+
+  @override
+  String get adapterConfigEnabled => 'Включено';
 
   @override
   String get detailConfigCopied => 'Конфиг скопирован';
@@ -705,7 +746,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsClearLogs => 'Очистить журнал отладки';
 
   @override
-  String get settingsClearLogsDesc => 'Очистить буфер журнала процесса proot';
+  String get settingsClearLogsDesc => 'Очистить журналы отладки';
 
   @override
   String get settingsAbout => 'О программе';
@@ -722,7 +763,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsAboutDialog =>
-      'Клиент управления ErisPulse.\nЛокальные экземпляры работают на proot + Ubuntu; интерфейс управления предоставляет Dashboard.\n\nMIT License';
+      'Клиент управления ErisPulse.\nЛокальные экземпляры работают в изолированной среде; интерфейс управления предоставляет Dashboard.\n\nMIT License';
 
   @override
   String get debugTitle => 'Отладочная информация';

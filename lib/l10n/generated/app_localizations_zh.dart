@@ -155,8 +155,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingTitle => '准备运行环境';
 
   @override
-  String get onboardingDescription =>
-      '首次启动需要准备运行时镜像\n（Ubuntu + Python + ErisPulse）';
+  String get onboardingDescription => '首次启动需要准备运行时环境\n（Python + ErisPulse）';
 
   @override
   String get onboardingStartButton => '开始初始化';
@@ -283,6 +282,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get createSdkVersionHelper => '安装到该实例自己的虚拟环境中';
+
+  @override
+  String get createEnvTitle => '环境来源';
 
   @override
   String get createEnvFresh => '全新环境';
@@ -438,6 +440,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get schemaConfigNoSchema => '无配置 schema';
+
+  @override
+  String get adapterConfigGlobal => '全局设置';
+
+  @override
+  String get adapterConfigAccounts => 'Bot 账户';
+
+  @override
+  String get adapterConfigAccountAdd => '新增账户';
+
+  @override
+  String get adapterConfigAccountName => '账户名称';
+
+  @override
+  String get adapterConfigAccountNameRequired => '请输入账户名称';
+
+  @override
+  String get adapterConfigAccountDelete => '删除账户';
+
+  @override
+  String adapterConfigAccountDeleteConfirm(String name) {
+    return '删除账户 $name？删除后不可恢复。';
+  }
+
+  @override
+  String get adapterConfigAccountsEmpty => '暂无 Bot 账户';
+
+  @override
+  String get adapterConfigAccountSaved => '账户已保存';
+
+  @override
+  String get adapterConfigAccountAdded => '账户已创建';
+
+  @override
+  String get adapterConfigAccountDeleted => '账户已删除';
+
+  @override
+  String get adapterConfigEnabled => '启用';
 
   @override
   String get detailConfigCopied => '配置已复制';
@@ -679,7 +719,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsClearLogs => '清空调试日志';
 
   @override
-  String get settingsClearLogsDesc => '清除 proot 进程日志缓冲';
+  String get settingsClearLogsDesc => '清空运行调试日志';
 
   @override
   String get settingsAbout => '关于';
@@ -695,7 +735,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsAboutDialog =>
-      'ErisPulse 多端管理客户端。\n本地实例基于 proot + Ubuntu 运行，管理界面由 Dashboard 提供。\n\nMIT License';
+      'ErisPulse 多端管理客户端。\n本地实例使用独立的环境运行，管理界面由 Dashboard 提供。\n\nMIT License';
 
   @override
   String get debugTitle => '调试信息';
@@ -954,8 +994,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get onboardingTitle => '準備執行環境';
 
   @override
-  String get onboardingDescription =>
-      '首次啟動需要準備執行時期映像\n（Ubuntu + Python + ErisPulse）';
+  String get onboardingDescription => '首次啟動需要準備執行時期環境\n（Python + ErisPulse）';
 
   @override
   String get onboardingStartButton => '開始初始化';
@@ -1082,6 +1121,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get createSdkVersionHelper => '安裝到該實例自己的虛擬環境中';
+
+  @override
+  String get createEnvTitle => '環境來源';
 
   @override
   String get createEnvFresh => '全新環境';
@@ -1237,6 +1279,44 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get schemaConfigNoSchema => '無設定 schema';
+
+  @override
+  String get adapterConfigGlobal => '全域設定';
+
+  @override
+  String get adapterConfigAccounts => 'Bot 帳戶';
+
+  @override
+  String get adapterConfigAccountAdd => '新增帳戶';
+
+  @override
+  String get adapterConfigAccountName => '帳戶名稱';
+
+  @override
+  String get adapterConfigAccountNameRequired => '請輸入帳戶名稱';
+
+  @override
+  String get adapterConfigAccountDelete => '刪除帳戶';
+
+  @override
+  String adapterConfigAccountDeleteConfirm(String name) {
+    return '刪除帳戶 $name？刪除後無法復原。';
+  }
+
+  @override
+  String get adapterConfigAccountsEmpty => '尚無 Bot 帳戶';
+
+  @override
+  String get adapterConfigAccountSaved => '帳戶已保存';
+
+  @override
+  String get adapterConfigAccountAdded => '帳戶已建立';
+
+  @override
+  String get adapterConfigAccountDeleted => '帳戶已刪除';
+
+  @override
+  String get adapterConfigEnabled => '啟用';
 
   @override
   String get detailConfigCopied => '組態已複製';
@@ -1478,7 +1558,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsClearLogs => '清除除錯日誌';
 
   @override
-  String get settingsClearLogsDesc => '清除 proot 程序日誌緩衝區';
+  String get settingsClearLogsDesc => '清空執行時期調試日誌';
 
   @override
   String get settingsAbout => '關於';
@@ -1494,7 +1574,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsAboutDialog =>
-      'ErisPulse 多端管理用戶端。\n本機實例基於 proot + Ubuntu 執行，管理介面由 Dashboard 提供。\n\nMIT License';
+      'ErisPulse 多端管理用戶端。\n本機實例使用獨立的環境執行，管理介面由 Dashboard 提供。\n\nMIT License';
 
   @override
   String get debugTitle => '除錯資訊';

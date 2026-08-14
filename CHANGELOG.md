@@ -30,6 +30,9 @@
   安装 Dashboard 开关 + 环境准备进度日志弹窗
 - 运行时管理页改为 PC 环境概览：内置 Python 状态 / 各实例 venv /
   PyPI 镜像源
+- 适配器多 bot（账户）配置：配置页分「全局设置」与「Bot 账户」两区，
+  支持账户列表、启用开关、新建 / 编辑 / 删除账户（schema 驱动表单，
+  保存后端校验并热重载）
 
 ### 修复
 
@@ -46,6 +49,8 @@
   预发布按后缀数字排序（PEP 440 语义）
 - 桌面 App 关闭时终止全部实例进程（`AppLifecycleListener.onExitRequested`），
   不再残留 python 进程
+- 创建实例页 PC 布局优化：表单限宽居中（560px），环境来源分组加标题，宽屏不再全宽拉伸
+- 关于 / 首启 / 清空日志文案去掉 proot / Ubuntu 等实现细节，统一通用（实现细节见架构文档）
 - 详情页操作按钮移入右上角菜单（停止 / 软重启 / 重启进程），概览页更简洁
 - 开源地址与 rootfs 下载镜像更新为 `ErisPulse/ErisPulse-App`
 - CI：修复 Windows 打包步骤 PowerShell 语法、macOS ditto 产物路径（`erispulse_app.app`）

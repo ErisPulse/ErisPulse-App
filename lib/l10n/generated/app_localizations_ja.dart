@@ -156,7 +156,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingDescription =>
-      '初回起動にはランタイムイメージの準備が必要です\n（Ubuntu + Python + ErisPulse）';
+      '初回起動にはランタイム環境の準備が必要です\n（Python + ErisPulse）';
 
   @override
   String get onboardingStartButton => '初期化を開始';
@@ -284,6 +284,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get createSdkVersionHelper => 'このインスタンス専用の仮想環境にインストール';
+
+  @override
+  String get createEnvTitle => '環境ソース';
 
   @override
   String get createEnvFresh => '新規環境';
@@ -441,6 +444,44 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get schemaConfigNoSchema => '設定スキーマがありません';
+
+  @override
+  String get adapterConfigGlobal => 'グローバル設定';
+
+  @override
+  String get adapterConfigAccounts => 'Bot アカウント';
+
+  @override
+  String get adapterConfigAccountAdd => 'アカウントを追加';
+
+  @override
+  String get adapterConfigAccountName => 'アカウント名';
+
+  @override
+  String get adapterConfigAccountNameRequired => 'アカウント名を入力してください';
+
+  @override
+  String get adapterConfigAccountDelete => 'アカウントを削除';
+
+  @override
+  String adapterConfigAccountDeleteConfirm(String name) {
+    return 'アカウント $name を削除しますか？元に戻せません。';
+  }
+
+  @override
+  String get adapterConfigAccountsEmpty => 'Bot アカウントがありません';
+
+  @override
+  String get adapterConfigAccountSaved => 'アカウントを保存しました';
+
+  @override
+  String get adapterConfigAccountAdded => 'アカウントを作成しました';
+
+  @override
+  String get adapterConfigAccountDeleted => 'アカウントを削除しました';
+
+  @override
+  String get adapterConfigEnabled => '有効';
 
   @override
   String get detailConfigCopied => '設定をコピーしました';
@@ -682,7 +723,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsClearLogs => 'デバッグログをクリア';
 
   @override
-  String get settingsClearLogsDesc => 'proot プロセスのログバッファをクリア';
+  String get settingsClearLogsDesc => '実行時のデバッグログをクリア';
 
   @override
   String get settingsAbout => '情報';
@@ -698,7 +739,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsAboutDialog =>
-      'ErisPulse マルチデバイス管理クライアント。\nローカルインスタンスは proot + Ubuntu で動作し、管理 UI は Dashboard が提供します。\n\nMIT License';
+      'ErisPulse マルチデバイス管理クライアント。\nローカルインスタンスは独立した環境で動作し、管理 UI は Dashboard が提供します。\n\nMIT License';
 
   @override
   String get debugTitle => 'デバッグ情報';

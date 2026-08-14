@@ -394,7 +394,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingDescription.
   ///
   /// In en, this message translates to:
-  /// **'The first launch needs to prepare the runtime image\n(Ubuntu + Python + ErisPulse)'**
+  /// **'The first launch needs to prepare the runtime environment\n(Python + ErisPulse)'**
   String get onboardingDescription;
 
   /// No description provided for @onboardingStartButton.
@@ -636,6 +636,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Installed into this instance\'s own virtual environment'**
   String get createSdkVersionHelper;
+
+  /// No description provided for @createEnvTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment source'**
+  String get createEnvTitle;
 
   /// No description provided for @createEnvFresh.
   ///
@@ -942,6 +948,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No config schema'**
   String get schemaConfigNoSchema;
+
+  /// No description provided for @adapterConfigGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Settings'**
+  String get adapterConfigGlobal;
+
+  /// No description provided for @adapterConfigAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Bot Accounts'**
+  String get adapterConfigAccounts;
+
+  /// No description provided for @adapterConfigAccountAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Account'**
+  String get adapterConfigAccountAdd;
+
+  /// No description provided for @adapterConfigAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Name'**
+  String get adapterConfigAccountName;
+
+  /// No description provided for @adapterConfigAccountNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an account name'**
+  String get adapterConfigAccountNameRequired;
+
+  /// No description provided for @adapterConfigAccountDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get adapterConfigAccountDelete;
+
+  /// Confirm deleting a bot account
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account {name}? This cannot be undone.'**
+  String adapterConfigAccountDeleteConfirm(String name);
+
+  /// No description provided for @adapterConfigAccountsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No bot accounts'**
+  String get adapterConfigAccountsEmpty;
+
+  /// No description provided for @adapterConfigAccountSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Account saved'**
+  String get adapterConfigAccountSaved;
+
+  /// No description provided for @adapterConfigAccountAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get adapterConfigAccountAdded;
+
+  /// No description provided for @adapterConfigAccountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted'**
+  String get adapterConfigAccountDeleted;
+
+  /// No description provided for @adapterConfigEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get adapterConfigEnabled;
 
   /// No description provided for @detailConfigCopied.
   ///
@@ -1396,7 +1474,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsClearLogsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Clear the proot process log buffer'**
+  /// **'Clear runtime debug logs'**
   String get settingsClearLogsDesc;
 
   /// No description provided for @settingsAbout.
@@ -1426,7 +1504,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAboutDialog.
   ///
   /// In en, this message translates to:
-  /// **'ErisPulse multi-device management client.\nLocal instances run on proot + Ubuntu; the management UI is provided by Dashboard.\n\nMIT License'**
+  /// **'ErisPulse multi-device management client.\nLocal instances run in their own isolated environment; the management UI is provided by Dashboard.\n\nMIT License'**
   String get settingsAboutDialog;
 
   /// No description provided for @debugTitle.

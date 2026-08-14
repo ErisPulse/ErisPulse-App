@@ -26,6 +26,9 @@ class AdapterInfo {
   /// 是否声明了配置 schema
   final bool hasConfig;
 
+  /// 是否支持多 bot（账户）配置
+  final bool hasAccounts;
+
   /// 能力列表
   final List<String> capabilities;
 
@@ -38,6 +41,7 @@ class AdapterInfo {
     this.bots = const [],
     this.statusMessage,
     this.hasConfig = false,
+    this.hasAccounts = false,
     this.capabilities = const [],
   });
 
@@ -57,6 +61,7 @@ class AdapterInfo {
           .toList(),
       statusMessage: json['status'] as String?,
       hasConfig: json['has_config'] as bool? ?? false,
+      hasAccounts: json['has_accounts'] as bool? ?? false,
       capabilities:
           (json['capabilities'] as List?)?.whereType<String>().toList() ??
               const [],
