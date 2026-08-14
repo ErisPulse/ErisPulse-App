@@ -1830,6 +1830,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Once an instance is started, raw process output will appear here in real time'**
   String get logsEmptySubtitle;
+
+  /// No description provided for @detailTabLifecycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifecycle'**
+  String get detailTabLifecycle;
+
+  /// No description provided for @detailTabCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get detailTabCommands;
+
+  /// No description provided for @detailTabBots.
+  ///
+  /// In en, this message translates to:
+  /// **'Bots'**
+  String get detailTabBots;
+
+  /// No description provided for @botsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bots'**
+  String get botsTitle;
+
+  /// No description provided for @botsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No bots'**
+  String get botsEmpty;
+
+  /// No description provided for @botsNeverActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Never active'**
+  String get botsNeverActive;
+
+  /// No description provided for @botsJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get botsJustNow;
+
+  /// No description provided for @botsMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'min ago'**
+  String get botsMinutesAgo;
+
+  /// No description provided for @botsHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'h ago'**
+  String get botsHoursAgo;
+
+  /// No description provided for @botsDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'d ago'**
+  String get botsDaysAgo;
+
+  /// No description provided for @lifecycleFilterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get lifecycleFilterType;
+
+  /// No description provided for @lifecycleFilteredEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No events match the filter'**
+  String get lifecycleFilteredEmpty;
+
+  /// No description provided for @lifecycleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No lifecycle events'**
+  String get lifecycleEmpty;
+
+  /// No description provided for @statsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message stats'**
+  String get statsTitle;
+
+  /// No description provided for @statsTotalEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Total events'**
+  String get statsTotalEvents;
+
+  /// No description provided for @statsByType.
+  ///
+  /// In en, this message translates to:
+  /// **'By type'**
+  String get statsByType;
+
+  /// No description provided for @statsByPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'By platform'**
+  String get statsByPlatform;
+
+  /// No description provided for @statsTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 24h trend'**
+  String get statsTrend;
+
+  /// No description provided for @commandsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get commandsTitle;
+
+  /// No description provided for @commandsGlobalSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Global settings'**
+  String get commandsGlobalSettings;
+
+  /// No description provided for @commandsPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Command prefix'**
+  String get commandsPrefix;
+
+  /// No description provided for @commandsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commandsSave;
+
+  /// No description provided for @commandsCaseSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Case-sensitive prefix'**
+  String get commandsCaseSensitive;
+
+  /// No description provided for @commandsAllowSpacePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow space prefix'**
+  String get commandsAllowSpacePrefix;
+
+  /// No description provided for @commandsMustAtBot.
+  ///
+  /// In en, this message translates to:
+  /// **'Must mention bot'**
+  String get commandsMustAtBot;
+
+  /// No description provided for @commandsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No commands'**
+  String get commandsEmpty;
+
+  /// No description provided for @commandsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit command'**
+  String get commandsEditTitle;
+
+  /// No description provided for @commandsEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get commandsEnabled;
+
+  /// No description provided for @commandsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'Aliases (comma separated)'**
+  String get commandsAliases;
+
+  /// No description provided for @commandsAllowedPlatforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed platforms (comma separated)'**
+  String get commandsAllowedPlatforms;
+
+  /// No description provided for @commandsBlockedPlatforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked platforms (comma separated)'**
+  String get commandsBlockedPlatforms;
+
+  /// No description provided for @commandsTransformTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform to (empty = none)'**
+  String get commandsTransformTo;
+
+  /// No description provided for @commandsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get commandsSaved;
+
+  /// No description provided for @commandsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commandsEdit;
+
+  /// No description provided for @eventsBuilderView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get eventsBuilderView;
+
+  /// No description provided for @eventsBuilderTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Builder'**
+  String get eventsBuilderTab;
+
+  /// No description provided for @eventsBuilderSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Event submitted'**
+  String get eventsBuilderSubmitted;
+
+  /// No description provided for @eventsBuilderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit failed'**
+  String get eventsBuilderFailed;
+
+  /// No description provided for @eventsBuilderType.
+  ///
+  /// In en, this message translates to:
+  /// **'Event type'**
+  String get eventsBuilderType;
+
+  /// No description provided for @eventsBuilderDetailType.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail type'**
+  String get eventsBuilderDetailType;
+
+  /// No description provided for @eventsBuilderPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get eventsBuilderPlatform;
+
+  /// No description provided for @eventsBuilderCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get eventsBuilderCustom;
+
+  /// No description provided for @eventsBuilderBot.
+  ///
+  /// In en, this message translates to:
+  /// **'Bot'**
+  String get eventsBuilderBot;
+
+  /// No description provided for @eventsBuilderSessionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Session type'**
+  String get eventsBuilderSessionType;
+
+  /// No description provided for @eventsBuilderSessionId.
+  ///
+  /// In en, this message translates to:
+  /// **'Session ID'**
+  String get eventsBuilderSessionId;
+
+  /// No description provided for @eventsBuilderSegments.
+  ///
+  /// In en, this message translates to:
+  /// **'Message segments'**
+  String get eventsBuilderSegments;
+
+  /// No description provided for @eventsBuilderAddSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add segment'**
+  String get eventsBuilderAddSegment;
+
+  /// No description provided for @eventsBuilderOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional fields'**
+  String get eventsBuilderOptional;
+
+  /// No description provided for @eventsBuilderAddField.
+  ///
+  /// In en, this message translates to:
+  /// **'Add field'**
+  String get eventsBuilderAddField;
+
+  /// No description provided for @eventsBuilderPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON preview'**
+  String get eventsBuilderPreview;
+
+  /// No description provided for @eventsBuilderCopyJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get eventsBuilderCopyJson;
+
+  /// No description provided for @eventsBuilderCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get eventsBuilderCopied;
+
+  /// No description provided for @eventsBuilderSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit event'**
+  String get eventsBuilderSubmit;
 }
 
 class _AppLocalizationsDelegate

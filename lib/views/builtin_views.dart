@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 import '../pages/detail_management_tabs.dart';
 import '../pages/files_tab.dart';
 import 'instance_audit_view.dart';
+import 'instance_bots_view.dart';
+import 'instance_commands_view.dart';
 import 'instance_events_view.dart';
+import 'instance_lifecycle_view.dart';
 import 'instance_log_view.dart';
 import 'instance_view.dart';
 
@@ -78,6 +81,30 @@ void registerBuiltinViews(DetailViewRegistry registry) {
         icon: Icons.fact_check_outlined,
         title: (l) => l.detailTabAudit,
         builder: (_, inst) => InstanceAuditView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'lifecycle',
+        icon: Icons.timeline_outlined,
+        title: (l) => l.detailTabLifecycle,
+        builder: (_, inst) => InstanceLifecycleView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'commands',
+        icon: Icons.terminal_outlined,
+        title: (l) => l.detailTabCommands,
+        builder: (_, inst) => InstanceCommandsView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'bots',
+        icon: Icons.smart_toy_outlined,
+        title: (l) => l.detailTabBots,
+        builder: (_, inst) => InstanceBotsView(instance: inst),
       ),
     );
 }

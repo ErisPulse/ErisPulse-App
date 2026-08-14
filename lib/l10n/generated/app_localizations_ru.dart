@@ -940,4 +940,165 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get logsEmptySubtitle =>
       'После запуска экземпляра здесь в реальном времени будет отображаться исходный вывод процесса';
+
+  @override
+  String get detailTabLifecycle => 'Жизненный цикл';
+
+  @override
+  String get detailTabCommands => 'Команды';
+
+  @override
+  String get detailTabBots => 'Боты';
+
+  @override
+  String get botsTitle => 'Боты';
+
+  @override
+  String get botsEmpty => 'Нет ботов';
+
+  @override
+  String get botsNeverActive => 'Не активен';
+
+  @override
+  String get botsJustNow => 'Только что';
+
+  @override
+  String get botsMinutesAgo => 'мин назад';
+
+  @override
+  String get botsHoursAgo => 'ч назад';
+
+  @override
+  String get botsDaysAgo => 'дн. назад';
+
+  @override
+  String get lifecycleFilterType => 'Тип';
+
+  @override
+  String get lifecycleFilteredEmpty => 'Нет событий по фильтру';
+
+  @override
+  String get lifecycleEmpty => 'Нет событий жизненного цикла';
+
+  @override
+  String get statsTitle => 'Статистика сообщений';
+
+  @override
+  String get statsTotalEvents => 'Всего событий';
+
+  @override
+  String get statsByType => 'По типу';
+
+  @override
+  String get statsByPlatform => 'По платформе';
+
+  @override
+  String get statsTrend => 'Тренд за 24 часа';
+
+  @override
+  String get commandsTitle => 'Управление командами';
+
+  @override
+  String get commandsGlobalSettings => 'Глобальные настройки';
+
+  @override
+  String get commandsPrefix => 'Префикс команд';
+
+  @override
+  String get commandsSave => 'Сохранить';
+
+  @override
+  String get commandsCaseSensitive => 'Префикс чувствителен к регистру';
+
+  @override
+  String get commandsAllowSpacePrefix => 'Разрешить префикс с пробелом';
+
+  @override
+  String get commandsMustAtBot => 'Требовать упоминание бота';
+
+  @override
+  String get commandsEmpty => 'Нет команд';
+
+  @override
+  String get commandsEditTitle => 'Редактировать команду';
+
+  @override
+  String get commandsEnabled => 'Включена';
+
+  @override
+  String get commandsAliases => 'Псевдонимы (через запятую)';
+
+  @override
+  String get commandsAllowedPlatforms =>
+      'Разрешённые платформы (через запятую)';
+
+  @override
+  String get commandsBlockedPlatforms =>
+      'Запрещённые платформы (через запятую)';
+
+  @override
+  String get commandsTransformTo => 'Преобразовать в (пусто — нет)';
+
+  @override
+  String get commandsSaved => 'Сохранено';
+
+  @override
+  String get commandsEdit => 'Изменить';
+
+  @override
+  String get eventsBuilderView => 'Просмотр';
+
+  @override
+  String get eventsBuilderTab => 'Конструктор';
+
+  @override
+  String get eventsBuilderSubmitted => 'Событие отправлено';
+
+  @override
+  String get eventsBuilderFailed => 'Ошибка отправки';
+
+  @override
+  String get eventsBuilderType => 'Тип события';
+
+  @override
+  String get eventsBuilderDetailType => 'Подтип';
+
+  @override
+  String get eventsBuilderPlatform => 'Платформа';
+
+  @override
+  String get eventsBuilderCustom => 'Своя';
+
+  @override
+  String get eventsBuilderBot => 'Бот';
+
+  @override
+  String get eventsBuilderSessionType => 'Тип сессии';
+
+  @override
+  String get eventsBuilderSessionId => 'ID сессии';
+
+  @override
+  String get eventsBuilderSegments => 'Сегменты сообщения';
+
+  @override
+  String get eventsBuilderAddSegment => 'Добавить сегмент';
+
+  @override
+  String get eventsBuilderOptional => 'Необязательные поля';
+
+  @override
+  String get eventsBuilderAddField => 'Добавить поле';
+
+  @override
+  String get eventsBuilderPreview => 'Предпросмотр JSON';
+
+  @override
+  String get eventsBuilderCopyJson => 'Копировать JSON';
+
+  @override
+  String get eventsBuilderCopied => 'Скопировано';
+
+  @override
+  String get eventsBuilderSubmit => 'Отправить событие';
 }

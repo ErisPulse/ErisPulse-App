@@ -913,4 +913,163 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get logsEmptySubtitle => 'インスタンスを起動すると、プロセスの生の出力がリアルタイムでここに表示されます';
+
+  @override
+  String get detailTabLifecycle => 'ライフサイクル';
+
+  @override
+  String get detailTabCommands => 'コマンド';
+
+  @override
+  String get detailTabBots => 'ボット';
+
+  @override
+  String get botsTitle => 'ボット';
+
+  @override
+  String get botsEmpty => 'ボットなし';
+
+  @override
+  String get botsNeverActive => '未アクティブ';
+
+  @override
+  String get botsJustNow => 'たった今';
+
+  @override
+  String get botsMinutesAgo => '分前';
+
+  @override
+  String get botsHoursAgo => '時間前';
+
+  @override
+  String get botsDaysAgo => '日前';
+
+  @override
+  String get lifecycleFilterType => '種別';
+
+  @override
+  String get lifecycleFilteredEmpty => 'フィルターに一致するイベントはありません';
+
+  @override
+  String get lifecycleEmpty => 'ライフサイクルイベントはありません';
+
+  @override
+  String get statsTitle => 'メッセージ統計';
+
+  @override
+  String get statsTotalEvents => '総イベント数';
+
+  @override
+  String get statsByType => '種別ごと';
+
+  @override
+  String get statsByPlatform => 'プラットフォームごと';
+
+  @override
+  String get statsTrend => '直近24時間の傾向';
+
+  @override
+  String get commandsTitle => 'コマンド管理';
+
+  @override
+  String get commandsGlobalSettings => 'グローバル設定';
+
+  @override
+  String get commandsPrefix => 'コマンドプレフィックス';
+
+  @override
+  String get commandsSave => '保存';
+
+  @override
+  String get commandsCaseSensitive => 'プレフィックスの大文字小文字を区別';
+
+  @override
+  String get commandsAllowSpacePrefix => 'スペースプレフィックスを許可';
+
+  @override
+  String get commandsMustAtBot => 'ボットへのメンション必須';
+
+  @override
+  String get commandsEmpty => 'コマンドなし';
+
+  @override
+  String get commandsEditTitle => 'コマンドを編集';
+
+  @override
+  String get commandsEnabled => '有効';
+
+  @override
+  String get commandsAliases => 'エイリアス（カンマ区切り）';
+
+  @override
+  String get commandsAllowedPlatforms => '許可プラットフォーム（カンマ区切り）';
+
+  @override
+  String get commandsBlockedPlatforms => '拒否プラットフォーム（カンマ区切り）';
+
+  @override
+  String get commandsTransformTo => '変換先（空ならなし）';
+
+  @override
+  String get commandsSaved => '保存しました';
+
+  @override
+  String get commandsEdit => '編集';
+
+  @override
+  String get eventsBuilderView => '表示';
+
+  @override
+  String get eventsBuilderTab => 'ビルダー';
+
+  @override
+  String get eventsBuilderSubmitted => 'イベントを送信しました';
+
+  @override
+  String get eventsBuilderFailed => '送信に失敗しました';
+
+  @override
+  String get eventsBuilderType => 'イベント種別';
+
+  @override
+  String get eventsBuilderDetailType => '詳細種別';
+
+  @override
+  String get eventsBuilderPlatform => 'プラットフォーム';
+
+  @override
+  String get eventsBuilderCustom => 'カスタム';
+
+  @override
+  String get eventsBuilderBot => 'ボット';
+
+  @override
+  String get eventsBuilderSessionType => 'セッション種別';
+
+  @override
+  String get eventsBuilderSessionId => 'セッション ID';
+
+  @override
+  String get eventsBuilderSegments => 'メッセージセグメント';
+
+  @override
+  String get eventsBuilderAddSegment => 'セグメントを追加';
+
+  @override
+  String get eventsBuilderOptional => 'オプションフィールド';
+
+  @override
+  String get eventsBuilderAddField => 'フィールドを追加';
+
+  @override
+  String get eventsBuilderPreview => 'JSON プレビュー';
+
+  @override
+  String get eventsBuilderCopyJson => 'JSON をコピー';
+
+  @override
+  String get eventsBuilderCopied => 'コピーしました';
+
+  @override
+  String get eventsBuilderSubmit => 'イベントを送信';
 }

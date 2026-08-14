@@ -935,4 +935,163 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get logsEmptySubtitle =>
       'Once an instance is started, raw process output will appear here in real time';
+
+  @override
+  String get detailTabLifecycle => 'Lifecycle';
+
+  @override
+  String get detailTabCommands => 'Commands';
+
+  @override
+  String get detailTabBots => 'Bots';
+
+  @override
+  String get botsTitle => 'Bots';
+
+  @override
+  String get botsEmpty => 'No bots';
+
+  @override
+  String get botsNeverActive => 'Never active';
+
+  @override
+  String get botsJustNow => 'Just now';
+
+  @override
+  String get botsMinutesAgo => 'min ago';
+
+  @override
+  String get botsHoursAgo => 'h ago';
+
+  @override
+  String get botsDaysAgo => 'd ago';
+
+  @override
+  String get lifecycleFilterType => 'Type';
+
+  @override
+  String get lifecycleFilteredEmpty => 'No events match the filter';
+
+  @override
+  String get lifecycleEmpty => 'No lifecycle events';
+
+  @override
+  String get statsTitle => 'Message stats';
+
+  @override
+  String get statsTotalEvents => 'Total events';
+
+  @override
+  String get statsByType => 'By type';
+
+  @override
+  String get statsByPlatform => 'By platform';
+
+  @override
+  String get statsTrend => 'Last 24h trend';
+
+  @override
+  String get commandsTitle => 'Commands';
+
+  @override
+  String get commandsGlobalSettings => 'Global settings';
+
+  @override
+  String get commandsPrefix => 'Command prefix';
+
+  @override
+  String get commandsSave => 'Save';
+
+  @override
+  String get commandsCaseSensitive => 'Case-sensitive prefix';
+
+  @override
+  String get commandsAllowSpacePrefix => 'Allow space prefix';
+
+  @override
+  String get commandsMustAtBot => 'Must mention bot';
+
+  @override
+  String get commandsEmpty => 'No commands';
+
+  @override
+  String get commandsEditTitle => 'Edit command';
+
+  @override
+  String get commandsEnabled => 'Enabled';
+
+  @override
+  String get commandsAliases => 'Aliases (comma separated)';
+
+  @override
+  String get commandsAllowedPlatforms => 'Allowed platforms (comma separated)';
+
+  @override
+  String get commandsBlockedPlatforms => 'Blocked platforms (comma separated)';
+
+  @override
+  String get commandsTransformTo => 'Transform to (empty = none)';
+
+  @override
+  String get commandsSaved => 'Saved';
+
+  @override
+  String get commandsEdit => 'Edit';
+
+  @override
+  String get eventsBuilderView => 'View';
+
+  @override
+  String get eventsBuilderTab => 'Builder';
+
+  @override
+  String get eventsBuilderSubmitted => 'Event submitted';
+
+  @override
+  String get eventsBuilderFailed => 'Submit failed';
+
+  @override
+  String get eventsBuilderType => 'Event type';
+
+  @override
+  String get eventsBuilderDetailType => 'Detail type';
+
+  @override
+  String get eventsBuilderPlatform => 'Platform';
+
+  @override
+  String get eventsBuilderCustom => 'Custom';
+
+  @override
+  String get eventsBuilderBot => 'Bot';
+
+  @override
+  String get eventsBuilderSessionType => 'Session type';
+
+  @override
+  String get eventsBuilderSessionId => 'Session ID';
+
+  @override
+  String get eventsBuilderSegments => 'Message segments';
+
+  @override
+  String get eventsBuilderAddSegment => 'Add segment';
+
+  @override
+  String get eventsBuilderOptional => 'Optional fields';
+
+  @override
+  String get eventsBuilderAddField => 'Add field';
+
+  @override
+  String get eventsBuilderPreview => 'JSON preview';
+
+  @override
+  String get eventsBuilderCopyJson => 'Copy JSON';
+
+  @override
+  String get eventsBuilderCopied => 'Copied';
+
+  @override
+  String get eventsBuilderSubmit => 'Submit event';
 }

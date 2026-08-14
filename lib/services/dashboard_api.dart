@@ -471,4 +471,66 @@ class DashboardApi {
   Future<void> deleteFiles(List<String> paths) async {
     await _postJson('/files/delete', body: {'paths': paths});
   }
+
+  // 机器人总览（/bots）
+
+  /// 全部机器人（跨平台汇总，只读总览）
+  Future<List<Map<String, dynamic>>> getBots() async {
+    final json = await _getJson('/bots');
+    final list = json['bots'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  // 生命周期 / 消息统计
+
+  /// 生命周期事件记录（module.load / module.unload 等）
+  Future<List<Map<String, dynamic>>> getLifecycle() async {
+    final json = await _getJson('/lifecycle');
+    final list = json['events'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<void> clearLifecycle() => _postJson('/lifecycle/clear');
+
+  /// 消息统计（total_events / by_type / by_platform / hourly）
+  Future<Map<String, dynamic>> getMessageStats() => _getJson('/message-stats');
+
+  // 命令管理（/commands）
+
+  /// 命令列表 + 全局设置 + 已注册平台（一次返回）
+  Future<Map<String, dynamic>> getCommands() => _getJson('/commands');
+
+  /// 更新命令全局设置（prefix / case_sensitive / allow_space_prefix / must_at_bot）
+  Future<void> saveCommandSettings(Map<String, dynamic> settings) async {
+    await _putJson('/commands/settings', body: settings);
+  }
+
+  /// 更新单条命令规则（enabled / aliases / allowed_platforms / blocked_platforms / transform_to）
+  Future<void> updateCommand(String name, Map<String, dynamic> data) async {
+    await _putJson('/commands/${Uri.encodeComponent(name)}', body: data);
+  }
+
+  // 事件构建器（/builder）
+
+  /// 消息段类型定义（standard_segments + platform_segments）
+  Future<Map<String, dynamic>> getBuilderSegments() =>
+      _getJson('/builder/segments');
+
+  /// 校验手工构建的事件数据
+  Future<Map<String, dynamic>> validateBuilderEvent(
+    Map<String, dynamic> event,
+  ) =>
+      _postJson('/builder/validate', body: event);
+
+  /// 提交构建的事件到适配器系统
+  Future<Map<String, dynamic>> submitBuilderEvent(
+    Map<String, dynamic> event,
+  ) =>
+      _postJson('/builder/submit', body: event);
 }

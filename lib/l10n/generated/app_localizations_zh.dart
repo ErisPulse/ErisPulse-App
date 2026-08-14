@@ -906,6 +906,165 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get logsEmptySubtitle => '启动实例后，进程原始输出将实时显示在这里';
+
+  @override
+  String get detailTabLifecycle => '生命周期';
+
+  @override
+  String get detailTabCommands => '命令';
+
+  @override
+  String get detailTabBots => '机器人';
+
+  @override
+  String get botsTitle => '机器人';
+
+  @override
+  String get botsEmpty => '暂无机器人';
+
+  @override
+  String get botsNeverActive => '从未活跃';
+
+  @override
+  String get botsJustNow => '刚刚活跃';
+
+  @override
+  String get botsMinutesAgo => '分钟前';
+
+  @override
+  String get botsHoursAgo => '小时前';
+
+  @override
+  String get botsDaysAgo => '天前';
+
+  @override
+  String get lifecycleFilterType => '类型';
+
+  @override
+  String get lifecycleFilteredEmpty => '没有符合筛选条件的事件';
+
+  @override
+  String get lifecycleEmpty => '暂无生命周期事件';
+
+  @override
+  String get statsTitle => '消息统计';
+
+  @override
+  String get statsTotalEvents => '总事件数';
+
+  @override
+  String get statsByType => '按类型';
+
+  @override
+  String get statsByPlatform => '按平台';
+
+  @override
+  String get statsTrend => '近24小时趋势';
+
+  @override
+  String get commandsTitle => '命令管理';
+
+  @override
+  String get commandsGlobalSettings => '全局设置';
+
+  @override
+  String get commandsPrefix => '指令前缀';
+
+  @override
+  String get commandsSave => '保存';
+
+  @override
+  String get commandsCaseSensitive => '前缀区分大小写';
+
+  @override
+  String get commandsAllowSpacePrefix => '允许空格前缀';
+
+  @override
+  String get commandsMustAtBot => '必须 @机器人';
+
+  @override
+  String get commandsEmpty => '暂无命令';
+
+  @override
+  String get commandsEditTitle => '编辑命令';
+
+  @override
+  String get commandsEnabled => '已启用';
+
+  @override
+  String get commandsAliases => '别名（逗号分隔）';
+
+  @override
+  String get commandsAllowedPlatforms => '允许的平台（逗号分隔）';
+
+  @override
+  String get commandsBlockedPlatforms => '禁止的平台（逗号分隔）';
+
+  @override
+  String get commandsTransformTo => '转发为（留空表示不转发）';
+
+  @override
+  String get commandsSaved => '已保存';
+
+  @override
+  String get commandsEdit => '编辑';
+
+  @override
+  String get eventsBuilderView => '查看';
+
+  @override
+  String get eventsBuilderTab => '构建器';
+
+  @override
+  String get eventsBuilderSubmitted => '事件已提交';
+
+  @override
+  String get eventsBuilderFailed => '提交失败';
+
+  @override
+  String get eventsBuilderType => '事件类型';
+
+  @override
+  String get eventsBuilderDetailType => '子类型';
+
+  @override
+  String get eventsBuilderPlatform => '平台';
+
+  @override
+  String get eventsBuilderCustom => '自定义';
+
+  @override
+  String get eventsBuilderBot => '机器人';
+
+  @override
+  String get eventsBuilderSessionType => '会话类型';
+
+  @override
+  String get eventsBuilderSessionId => '会话 ID';
+
+  @override
+  String get eventsBuilderSegments => '消息分段';
+
+  @override
+  String get eventsBuilderAddSegment => '添加分段';
+
+  @override
+  String get eventsBuilderOptional => '可选字段';
+
+  @override
+  String get eventsBuilderAddField => '添加字段';
+
+  @override
+  String get eventsBuilderPreview => 'JSON 预览';
+
+  @override
+  String get eventsBuilderCopyJson => '复制 JSON';
+
+  @override
+  String get eventsBuilderCopied => '已复制';
+
+  @override
+  String get eventsBuilderSubmit => '提交事件';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -1810,4 +1969,163 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get logsEmptySubtitle => '啟動實例後，程序原始輸出將即時顯示在這裡';
+
+  @override
+  String get detailTabLifecycle => '生命週期';
+
+  @override
+  String get detailTabCommands => '指令';
+
+  @override
+  String get detailTabBots => '機器人';
+
+  @override
+  String get botsTitle => '機器人';
+
+  @override
+  String get botsEmpty => '暫無機器人';
+
+  @override
+  String get botsNeverActive => '從未活躍';
+
+  @override
+  String get botsJustNow => '剛剛活躍';
+
+  @override
+  String get botsMinutesAgo => '分鐘前';
+
+  @override
+  String get botsHoursAgo => '小時前';
+
+  @override
+  String get botsDaysAgo => '天前';
+
+  @override
+  String get lifecycleFilterType => '類型';
+
+  @override
+  String get lifecycleFilteredEmpty => '沒有符合篩選條件的事件';
+
+  @override
+  String get lifecycleEmpty => '暫無生命週期事件';
+
+  @override
+  String get statsTitle => '訊息統計';
+
+  @override
+  String get statsTotalEvents => '總事件數';
+
+  @override
+  String get statsByType => '按類型';
+
+  @override
+  String get statsByPlatform => '按平台';
+
+  @override
+  String get statsTrend => '近 24 小時趨勢';
+
+  @override
+  String get commandsTitle => '指令管理';
+
+  @override
+  String get commandsGlobalSettings => '全域設定';
+
+  @override
+  String get commandsPrefix => '指令前綴';
+
+  @override
+  String get commandsSave => '儲存';
+
+  @override
+  String get commandsCaseSensitive => '前綴區分大小寫';
+
+  @override
+  String get commandsAllowSpacePrefix => '允許空格前綴';
+
+  @override
+  String get commandsMustAtBot => '必須 @機器人';
+
+  @override
+  String get commandsEmpty => '暫無指令';
+
+  @override
+  String get commandsEditTitle => '編輯指令';
+
+  @override
+  String get commandsEnabled => '已啟用';
+
+  @override
+  String get commandsAliases => '別名（逗號分隔）';
+
+  @override
+  String get commandsAllowedPlatforms => '允許的平台（逗號分隔）';
+
+  @override
+  String get commandsBlockedPlatforms => '禁止的平台（逗號分隔）';
+
+  @override
+  String get commandsTransformTo => '轉發為（留空表示不轉發）';
+
+  @override
+  String get commandsSaved => '已儲存';
+
+  @override
+  String get commandsEdit => '編輯';
+
+  @override
+  String get eventsBuilderView => '檢視';
+
+  @override
+  String get eventsBuilderTab => '建構器';
+
+  @override
+  String get eventsBuilderSubmitted => '事件已提交';
+
+  @override
+  String get eventsBuilderFailed => '提交失敗';
+
+  @override
+  String get eventsBuilderType => '事件類型';
+
+  @override
+  String get eventsBuilderDetailType => '子類型';
+
+  @override
+  String get eventsBuilderPlatform => '平台';
+
+  @override
+  String get eventsBuilderCustom => '自訂';
+
+  @override
+  String get eventsBuilderBot => '機器人';
+
+  @override
+  String get eventsBuilderSessionType => '工作階段類型';
+
+  @override
+  String get eventsBuilderSessionId => '工作階段 ID';
+
+  @override
+  String get eventsBuilderSegments => '訊息分段';
+
+  @override
+  String get eventsBuilderAddSegment => '新增分段';
+
+  @override
+  String get eventsBuilderOptional => '可選欄位';
+
+  @override
+  String get eventsBuilderAddField => '新增欄位';
+
+  @override
+  String get eventsBuilderPreview => 'JSON 預覽';
+
+  @override
+  String get eventsBuilderCopyJson => '複製 JSON';
+
+  @override
+  String get eventsBuilderCopied => '已複製';
+
+  @override
+  String get eventsBuilderSubmit => '提交事件';
 }

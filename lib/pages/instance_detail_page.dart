@@ -11,6 +11,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +50,9 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   List<Map<String, dynamic>> _events = [];
   bool _loading = true;
   String? _error;
+
+  /// 消息统计（/api/message-stats）
+  Map<String, dynamic>? _stats;
 
   /// 本机可达地址（v4 / v6）
   List<InternetAddress> _localAddrs = [];
@@ -109,6 +113,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         api.getAdapters(),
         api.getSystemInfo(),
         api.getEvents(limit: 30),
+        api.getMessageStats(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -116,6 +121,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         _adapters = (results[1] as List<AdapterInfo>);
         _sys = results[2] as SystemInfo;
         _events = (results[3] as List<Map<String, dynamic>>);
+        _stats = results[4] as Map<String, dynamic>?;
         _loading = false;
         _error = null;
       });
@@ -373,6 +379,11 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
       sys: _sys,
       error: _error,
     );
+    final stats = _MessageStatsCard(
+      loading: _loading,
+      stats: _stats,
+      error: _error,
+    );
     final events = _EventCard(
       loading: _loading,
       events: _events,
@@ -396,6 +407,8 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                     children: [
                       overview,
                       const SizedBox(height: 12),
+                      stats,
+                      const SizedBox(height: 12),
                       connect,
                     ],
                   ),
@@ -406,6 +419,8 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
             )
           else ...[
             overview,
+            const SizedBox(height: 12),
+            stats,
             const SizedBox(height: 12),
             events,
             const SizedBox(height: 12),
@@ -1020,6 +1035,209 @@ class _EventCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 消息统计卡（/api/message-stats：总事件 / 按类型 / 按平台 / 24h 趋势）
+class _MessageStatsCard extends StatelessWidget {
+  const _MessageStatsCard({
+    required this.loading,
+    required this.stats,
+    required this.error,
+  });
+
+  final bool loading;
+  final Map<String, dynamic>? stats;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final byType = (stats?['by_type'] as Map?)?.cast<String, dynamic>() ?? {};
+    final byPlatform =
+        (stats?['by_platform'] as Map?)?.cast<String, dynamic>() ?? {};
+    final hourly = (stats?['hourly'] as Map?)?.cast<String, dynamic>() ?? {};
+    final total = stats?['total_events'];
+    final hasData =
+        byType.isNotEmpty || byPlatform.isNotEmpty || hourly.isNotEmpty;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.bar_chart,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(l10n.statsTitle, style: theme.textTheme.titleSmall),
+                const Spacer(),
+                if (loading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (error != null)
+              Text(
+                error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              )
+            else if (!hasData)
+              Text(
+                l10n.detailNoEvents,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else ...[
+              _TrendBars(hourly: hourly, label: l10n.statsTrend),
+              if (total != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      l10n.statsTotalEvents,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$total',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (byType.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.statsByType,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _StatChips(map: byType),
+              ],
+              if (byPlatform.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.statsByPlatform,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _StatChips(map: byPlatform),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 24h 消息趋势柱状图（hourly：{整点unix秒: 计数}）
+class _TrendBars extends StatelessWidget {
+  const _TrendBars({required this.hourly, required this.label});
+  final Map<String, dynamic> hourly;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final bars = <(int, int)>[]; // (count, hourLabel)
+    for (var h = 23; h >= 0; h--) {
+      final t = now.subtract(Duration(hours: h));
+      final key = (t.millisecondsSinceEpoch ~/ 1000 ~/ 3600) * 3600;
+      final v = hourly[key.toString()];
+      final count = v is num ? v.toInt() : 0;
+      bars.add((count, t.hour));
+    }
+    final maxCount = bars.map((b) => b.$1).fold(1, math.max);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 56,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final b in bars)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 1),
+                    child: Container(
+                      height: math.max(2, 52.0 * b.$1 / maxCount),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary
+                            .withValues(alpha: b.$1 == 0 ? 0.15 : 0.6),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 计数 chips（type/platform -> count）
+class _StatChips extends StatelessWidget {
+  const _StatChips({required this.map});
+  final Map<String, dynamic> map;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        for (final e in map.entries)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '${e.key} · ${e.value}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
