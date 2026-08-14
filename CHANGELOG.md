@@ -57,6 +57,12 @@
 - 详情页操作按钮移入右上角菜单（停止 / 软重启 / 重启进程），概览页更简洁
 - 开源地址与 rootfs 下载镜像更新为 `ErisPulse/ErisPulse-App`
 - CI：修复 Windows 打包步骤 PowerShell 语法、macOS ditto 产物路径（`erispulse_app.app`）
+- 修复桌面端"内置 Python 释放失败"：内置 Python 资产命名不一致（CI 打
+  `python-windows-x64.tar.gz`，App 按 `python-windows-amd64` 加载），
+  统一为 `x64`，Windows / Linux 首次启动可正常释放 Python
+- 桌面端新增构建产物：linux-arm64 / windows-arm64 / macos-x64
+- Windows 新增 Inno Setup 安装器（x64 / arm64 各产 `*-setup.exe`），
+  与 zip 一起发布
 
 ### 变更
 

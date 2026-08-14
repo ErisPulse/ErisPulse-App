@@ -82,14 +82,14 @@ class DesktopEnv {
     return '$base/bin/python';
   }
 
-  /// 当前平台-架构标识（内置 Python 资产命名：windows/linux/macos × amd64/arm64）
+  /// 当前平台-架构标识（内置 Python 资产命名：windows/linux/macos × x64/arm64）
   static String hostPlatformArch() {
     final os =
         Platform.isWindows ? 'windows' : (Platform.isMacOS ? 'macos' : 'linux');
     return '$os-${_hostArchSuffix()}';
   }
 
-  /// 主机架构后缀（amd64 / arm64）。dart:io Platform 无 arch 属性，
+  /// 主机架构后缀（x64 / arm64）。dart:io Platform 无 arch 属性，
   /// 从系统查询：Windows 用 PROCESSOR_ARCHITECTURE，Unix 用 uname -m。
   static String _hostArchSuffix() {
     String raw;
@@ -106,7 +106,7 @@ class DesktopEnv {
     final lower = raw.toLowerCase();
     return (lower.contains('aarch64') || lower.contains('arm64'))
         ? 'arm64'
-        : 'amd64';
+        : 'x64';
   }
 }
 

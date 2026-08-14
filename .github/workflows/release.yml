@@ -215,8 +215,8 @@ jobs:
           path: out/*.apk
           retention-days: 7
 
-  # 桌面端（Windows / Linux / macOS）：构建时注入内置 Python
-  #（python-build-standalone，见 desktop_sdk.dart）
+  # 桌面端（Windows / Linux / macOS，x64 + arm64）：构建时注入内置 Python
+  #（python-build-standalone，见 desktop_sdk.dart；产物名与打包路径按 build_arch）
   desktop-build:
     needs: verify
     strategy:
@@ -224,14 +224,29 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact: windows
             platform_arch: windows-x64
+            build_arch: x64
+            triple: x86_64-pc-windows-msvc
+          - os: windows-11-arm
+            platform_arch: windows-arm64
+            build_arch: arm64
+            triple: aarch64-pc-windows-msvc
           - os: ubuntu-latest
-            artifact: linux
             platform_arch: linux-x64
+            build_arch: x64
+            triple: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            platform_arch: linux-arm64
+            build_arch: arm64
+            triple: aarch64-unknown-linux-gnu
           - os: macos-latest
-            artifact: macos
             platform_arch: macos-arm64
+            build_arch: arm64
+            triple: aarch64-apple-darwin
+          - os: macos-13
+            platform_arch: macos-x64
+            build_arch: x64
+            triple: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -269,12 +284,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
-          PA="${{ matrix.platform_arch }}"
-          case "$PA" in
-            windows-x64) triple="x86_64-pc-windows-msvc" ;;
-            linux-x64)   triple="x86_64-unknown-linux-gnu" ;;
-            macos-arm64) triple="aarch64-apple-darwin" ;;
-          esac
+          TRIPLE="${{ matrix.triple }}"
           RESP=$(curl -sL --retry 3 --retry-delay 2 \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
@@ -284,15 +294,15 @@ jobs:
             echo "$RESP" | head -c 500
             exit 1
           }
-          ASSET=$(echo "$RESP" | jq -r --arg t "$triple" \
+          ASSET=$(echo "$RESP" | jq -r --arg t "$TRIPLE" \
             '[.assets[] | select(.name | test("cpython-3\\.15\\..*" + $t + ".*install_only\\.tar\\.gz$"))][0].browser_download_url')
           if [ -z "$ASSET" ] || [ "$ASSET" = "null" ]; then
-            echo "::error::No bundled Python asset for $PA"
+            echo "::error::No bundled Python asset for ${{ matrix.platform_arch }} ($TRIPLE)"
             exit 1
           fi
           echo "Downloading $ASSET"
           mkdir -p assets/python
-          curl -sL "$ASSET" -o "assets/python/python-$PA.tar.gz"
+          curl -sL "$ASSET" -o "assets/python/python-${{ matrix.platform_arch }}.tar.gz"
           ls -lh assets/python/
 
       - name: Setup NuGet (Windows)
@@ -322,17 +332,48 @@ jobs:
         shell: pwsh
         run: |
           $V = "${{ steps.version.outputs.version }}"
+          $Arch = "${{ matrix.build_arch }}"
           New-Item -ItemType Directory -Path out -Force | Out-Null
-          Compress-Archive -Path "build/windows/x64/runner/Release/*" `
-            -DestinationPath "out/ErisPulse-App-$V-windows-x64.zip"
+          Compress-Archive -Path "build/windows/$Arch/runner/Release/*" `
+            -DestinationPath "out/ErisPulse-App-$V-windows-$Arch.zip"
+
+      - name: Ensure Inno Setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $V = "${{ steps.version.outputs.version }}"
+          $Arch = "${{ matrix.build_arch }}"
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $iscc "/DVersion=$V" "/DArch=$Arch" windows-installer.iss
+
+      - name: Verify bundled Python asset
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            DIR="build/windows/${{ matrix.build_arch }}/runner/Release/data/flutter_assets/assets/python"
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            DIR="build/linux/${{ matrix.build_arch }}/release/bundle/data/flutter_assets/assets/python"
+          else
+            DIR="build/macos/Build/Products/Release/erispulse_app.app/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/python"
+          fi
+          ls -lh "$DIR" || { echo "::error::bundled Python 未进入 flutter_assets ($DIR)"; exit 1; }
 
       - name: Package Linux
         if: runner.os == 'Linux'
         run: |
           V="${{ steps.version.outputs.version }}"
           mkdir -p out
-          tar -czf "out/ErisPulse-App-${V}-linux-x64.tar.gz" \
-            -C build/linux/x64/release/bundle .
+          tar -czf "out/ErisPulse-App-${V}-linux-${{ matrix.build_arch }}.tar.gz" \
+            -C build/linux/${{ matrix.build_arch }}/release/bundle .
 
       - name: Package macOS
         if: runner.os == 'macOS'
@@ -342,12 +383,12 @@ jobs:
           # macOS app 名来自 AppInfo.xcconfig 的 PRODUCT_NAME（erispulse_app）
           ditto -c -k --keepParent \
             "build/macos/Build/Products/Release/erispulse_app.app" \
-            "out/ErisPulse-App-${V}-macos-arm64.zip"
+            "out/ErisPulse-App-${V}-macos-${{ matrix.build_arch }}.zip"
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.artifact }}
+          name: desktop-${{ matrix.platform_arch }}
           path: out/
           retention-days: 7
 
@@ -380,10 +421,8 @@ jobs:
           # APK（来自 build-apk 矩阵）
           cp artifacts/apk-online/*.apk out/ 2>/dev/null || true
           cp artifacts/apk-offline/*.apk out/ 2>/dev/null || true
-          # 桌面端（来自 desktop-build 矩阵）
-          cp artifacts/desktop-windows/* out/ 2>/dev/null || true
-          cp artifacts/desktop-linux/* out/ 2>/dev/null || true
-          cp artifacts/desktop-macos/* out/ 2>/dev/null || true
+          # 桌面端（来自 desktop-build 矩阵，desktop-{platform_arch}）
+          cp artifacts/desktop-*/* out/ 2>/dev/null || true
           # rootfs + 二进制（来自 build-rootfs）
           # rootfs 使用固定资产名：App 端通过 releases/latest/download/erispulse-rootfs-aarch64.tar.gz 下载
           cp artifacts/runtime-assets/rootfs.tar.gz              "out/erispulse-rootfs-aarch64.tar.gz"
