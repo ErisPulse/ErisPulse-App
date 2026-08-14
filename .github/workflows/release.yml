@@ -272,13 +272,13 @@ jobs:
           $dest = Join-Path $env:RUNNER_TEMP "flutter"
           if ($IsLinux) {
             $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${V}-stable.tar.xz"
-            $file = Join-Path $env:TEMP "flutter.tar.xz"
+            $file = Join-Path $env:RUNNER_TEMP "flutter.tar.xz"
             Invoke-WebRequest -Uri $url -OutFile $file
             New-Item -ItemType Directory -Path $dest -Force | Out-Null
             tar -xf $file -C $dest
           } else {
             $url = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_${V}-stable.zip"
-            $file = Join-Path $env:TEMP "flutter.zip"
+            $file = Join-Path $env:RUNNER_TEMP "flutter.zip"
             Invoke-WebRequest -Uri $url -OutFile $file
             Expand-Archive -Path $file -DestinationPath $dest -Force
           }
