@@ -22,6 +22,9 @@
 
 ### 修复
 
+- 桌面端增加最小窗口尺寸限制
+  （Windows：`WM_GETMINMAXINFO` 按 DPI 缩放；Linux：GTK size request；
+  macOS：NSWindow minSize）
 - Windows 安装版（setup.exe）打开 Dashboard 永久转圈：WebView2 默认把
   user data folder 放在 exe 同目录，安装到 Program Files（只读）后环境
   创建失败。现显式指定到应用数据目录（%APPDATA%\<app>\WebView2），

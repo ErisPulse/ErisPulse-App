@@ -213,6 +213,17 @@ Win32Window::MessageHandler(HWND hwnd,
       }
       return 0;
 
+    case WM_GETMINMAXINFO:
+      if (min_width_ > 0 && min_height_ > 0) {
+        auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+        double dpi = FlutterDesktopGetDpiForMonitor(
+            MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST));
+        double scale_factor = dpi / 96.0;
+        info->ptMinTrackSize.x = Scale(min_width_, scale_factor);
+        info->ptMinTrackSize.y = Scale(min_height_, scale_factor);
+      }
+      return 0;
+
     case WM_DWMCOLORIZATIONCOLORCHANGED:
       UpdateTheme(hwnd);
       return 0;
@@ -261,6 +272,11 @@ HWND Win32Window::GetHandle() {
 
 void Win32Window::SetQuitOnClose(bool quit_on_close) {
   quit_on_close_ = quit_on_close;
+}
+
+void Win32Window::SetMinimumSize(const Size& size) {
+  min_width_ = size.width;
+  min_height_ = size.height;
 }
 
 bool Win32Window::OnCreate() {
