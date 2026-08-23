@@ -255,9 +255,17 @@ class DesktopRuntime {
 
   /// 停止全部
   Future<void> stopAll() async {
-    for (final id in _procs.keys.toList()) {
-      await stopInstance(id);
-    }
+    // 并行停止全部实例：避免逐个等待进程退出的超时累积，加快退出。
+    // 每个实例最多等待 5s（taskkill / 日志关闭），单个卡住不影响整体退出。
+    final stops = _procs.keys
+        .map(
+          (id) => stopInstance(id).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {},
+          ),
+        )
+        .toList();
+    await Future.wait(stops, eagerError: false);
   }
 
   /// App 退出时调用：终止全部实例进程
@@ -399,7 +407,13 @@ class DesktopRuntime {
       final pid = tracker.pid;
       if (pid == null) return;
       if (Platform.isWindows) {
-        await Process.run('taskkill', ['/F', '/T', '/PID', '$pid']);
+        // 异步 taskkill，超时则放弃（不阻塞 UI / 不无限等待）。
+        try {
+          await Process.run('taskkill', ['/F', '/T', '/PID', '$pid'])
+              .timeout(const Duration(seconds: 3));
+        } on TimeoutException {
+          // 杀进程最坏情况直接放弃，交由 exit(0) 兜底
+        }
         return;
       }
       final proc = tracker.process;
@@ -453,10 +467,21 @@ class DesktopRuntime {
   /// Windows: `netstat -ano`（本地地址以 `:port` 结尾且 LISTENING）；
   /// POSIX: `ss -ltnp`（LISTEN 且 local 为 `*:port`/`0.0.0.0:port`，
   /// 从 users:(...pid=N...) 提取）。查不到返回 null。
+  /// 带超时异步执行系统命令：超时返回空结果（不阻塞主 isolate、不重试）。
+  static Future<ProcessResult> _runCmd(
+    String executable,
+    List<String> arguments,
+  ) {
+    return Process.run(executable, arguments).timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => ProcessResult(0, 0, '', ''),
+    );
+  }
+
   static Future<int?> resolvePidByPort(int port) async {
     try {
       if (Platform.isWindows) {
-        final r = await Process.run('netstat', ['-ano', '-p', 'tcp']);
+        final r = await _runCmd('netstat', ['-ano', '-p', 'tcp']);
         for (final line in (r.stdout.toString().split('\n'))) {
           final parts = line.trim().split(RegExp(r'\s+'));
           if (parts.length >= 5 &&
@@ -467,7 +492,7 @@ class DesktopRuntime {
         }
         return null;
       }
-      final r = await Process.run('ss', ['-ltnp']);
+      final r = await _runCmd('ss', ['-ltnp']);
       for (final line in (r.stdout.toString().split('\n'))) {
         final parts = line.trim().split(RegExp(r'\s+'));
         if (parts.length >= 4 &&

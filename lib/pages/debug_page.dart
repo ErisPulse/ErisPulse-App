@@ -24,7 +24,11 @@ import '../services/runtime/runtime_controller.dart';
 
 class DebugPage extends StatefulWidget {
   static const routeName = '/debug';
-  const DebugPage({super.key});
+
+  /// 桌面主区域嵌入式显示（无独立 Scaffold/AppBar）。移动端作为独立页。
+  const DebugPage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<DebugPage> createState() => _DebugPageState();
@@ -133,6 +137,91 @@ class _DebugPageState extends State<DebugPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final Widget body = Consumer<RuntimeController>(
+      builder: (context, runtime, _) {
+        final l10n = AppLocalizations.of(context);
+        return Column(
+          children: [
+            SizedBox(
+              height: 210,
+              child: _InfoSection(
+                rows: [
+                  (l10n.debugAppVersion, '$_appVersion (build $_appBuild)'),
+                  if (_device != null) (l10n.debugDeviceModel, _device!.model),
+                  if (_device != null)
+                    (
+                      l10n.debugAndroid,
+                      '${_device!.version.release} (SDK ${_device!.version.sdkInt})'
+                    ),
+                  if (_device != null)
+                    (l10n.debugAbi, _device!.supportedAbis.join(', ')),
+                  if (_device == null)
+                    (l10n.debugSystem, _osVersion.isEmpty ? '…' : _osVersion),
+                  (
+                    l10n.debugNativeLib,
+                    _nativeLibDir.isEmpty ? '…' : _nativeLibDir
+                  ),
+                  (
+                    l10n.debugRootfs,
+                    runtime.rootfsReady
+                        ? l10n.debugReady
+                        : '${l10n.debugNotReady}${runtime.rootfsProgress != null ? ' (${runtime.rootfsProgress!.round()}%)' : ''}'
+                  ),
+                  if (runtime.rootfsError != null)
+                    (l10n.debugRootfsError, runtime.rootfsError!),
+                  (
+                    l10n.debugInstanceCount,
+                    '${context.read<InstanceManager>().count}'
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.terminal, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.debugProcessLogs,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const Spacer(),
+                  Consumer<RuntimeController>(
+                    builder: (context, runtime, _) => TextButton.icon(
+                      onPressed: () => _copyLogs(runtime),
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: Text(l10n.commonCopy),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: runtime.debugLog,
+                builder: (context, _) {
+                  final entries = runtime.debugLog.entries;
+                  if (entries.isEmpty) {
+                    return Center(child: Text(l10n.debugNoLogs));
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: entries.length,
+                    itemBuilder: (context, i) =>
+                        _DebugLogLine(entry: entries[i]),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    // 移动端独立路由页 / 桌面嵌入：embedded 时由主界面承载顶部标题栏
+    if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.debugTitle),
@@ -153,90 +242,7 @@ class _DebugPageState extends State<DebugPage> {
           ),
         ],
       ),
-      body: Consumer<RuntimeController>(
-        builder: (context, runtime, _) {
-          final l10n = AppLocalizations.of(context);
-          return Column(
-            children: [
-              SizedBox(
-                height: 210,
-                child: _InfoSection(
-                  rows: [
-                    (l10n.debugAppVersion, '$_appVersion (build $_appBuild)'),
-                    if (_device != null)
-                      (l10n.debugDeviceModel, _device!.model),
-                    if (_device != null)
-                      (
-                        l10n.debugAndroid,
-                        '${_device!.version.release} (SDK ${_device!.version.sdkInt})'
-                      ),
-                    if (_device != null)
-                      (l10n.debugAbi, _device!.supportedAbis.join(', ')),
-                    if (_device == null)
-                      (l10n.debugSystem, _osVersion.isEmpty ? '…' : _osVersion),
-                    (
-                      l10n.debugNativeLib,
-                      _nativeLibDir.isEmpty ? '…' : _nativeLibDir
-                    ),
-                    (
-                      l10n.debugRootfs,
-                      runtime.rootfsReady
-                          ? l10n.debugReady
-                          : '${l10n.debugNotReady}${runtime.rootfsProgress != null ? ' (${runtime.rootfsProgress!.round()}%)' : ''}'
-                    ),
-                    if (runtime.rootfsError != null)
-                      (l10n.debugRootfsError, runtime.rootfsError!),
-                    (
-                      l10n.debugInstanceCount,
-                      '${context.read<InstanceManager>().count}'
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.terminal, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.debugProcessLogs,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const Spacer(),
-                    Consumer<RuntimeController>(
-                      builder: (context, runtime, _) => TextButton.icon(
-                        onPressed: () => _copyLogs(runtime),
-                        icon: const Icon(Icons.copy, size: 18),
-                        label: Text(l10n.commonCopy),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: runtime.debugLog,
-                  builder: (context, _) {
-                    final entries = runtime.debugLog.entries;
-                    if (entries.isEmpty) {
-                      return Center(child: Text(l10n.debugNoLogs));
-                    }
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      itemCount: entries.length,
-                      itemBuilder: (context, i) =>
-                          _DebugLogLine(entry: entries[i]),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+      body: body,
     );
   }
 }

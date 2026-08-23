@@ -21,9 +21,11 @@ import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
+import '../theme/app_theme.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/states.dart';
 import '../widgets/status_indicators.dart';
+import '../widgets/window_title_bar.dart';
 import 'dashboard_page.dart';
 import 'instance_create_page.dart';
 import 'instance_detail_page.dart';
@@ -41,9 +43,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Timer? _timer;
-
-  /// 桌面：NavigationRail 选中索引（0=实例，1=设置，2=调试）
-  int _railIndex = 0;
 
   @override
   void initState() {
@@ -112,77 +111,52 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 桌面布局：左侧 NavigationRail + 右侧内容区（宽屏自适应居中）
+  /// 桌面布局（WinUI3 风格）：顶部一体标题栏横贯 + 左侧导航列 + 右侧内容区
   Widget _buildDesktop(BuildContext context, AppLocalizations l10n) {
-    final theme = Theme.of(context);
     return Scaffold(
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
         children: [
-          NavigationRail(
-            selectedIndex: _railIndex,
-            onDestinationSelected: _onRailSelected,
-            labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 40,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.bolt,
-                  size: 32,
-                  color: theme.colorScheme.primary,
-                ),
+          // 顶栏横贯全宽（含标题 + 拖拽区 + 窗口控制按钮），与标题栏同高
+          WindowTitleBar(
+            title: _paneTitle(l10n),
+            leading: Image.asset(
+              'assets/images/logo.png',
+              height: 28,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.bolt,
+                size: 24,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            destinations: [
-              NavigationRailDestination(
-                icon: const Icon(Icons.dns_outlined),
-                selectedIcon: const Icon(Icons.dns),
-                label: Text(l10n.railInstances),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings),
-                label: Text(l10n.commonSettings),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.bug_report_outlined),
-                selectedIcon: const Icon(Icons.bug_report),
-                label: Text(l10n.homeDebugTooltip),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: l10n.commonRefresh,
+                onPressed: _refreshStatus,
               ),
             ],
           ),
-          const VerticalDivider(width: 1, thickness: 1),
+          const Divider(height: 1),
           Expanded(
-            child: Column(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-                  child: Row(
-                    children: [
-                      Text(
-                        'ErisPulse',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        tooltip: l10n.commonRefresh,
-                        onPressed: _refreshStatus,
-                      ),
-                    ],
-                  ),
+                // 左侧导航列（WinUI3 风格导航项）
+                _SideNav(
+                  index: _navIndex,
+                  onSelected: _onNavSelected,
                 ),
+                const VerticalDivider(width: 1, thickness: 1),
+                // 右侧主区域：实例 / 设置 / 调试 随导航切换（IndexedStack 保活）
                 Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 960),
-                      child: _buildContent(context, l10n),
-                    ),
+                  child: IndexedStack(
+                    index: _navIndex,
+                    children: [
+                      _buildAdaptiveContent(context, l10n),
+                      const SettingsPage(embedded: true),
+                      const DebugPage(embedded: true),
+                    ],
                   ),
                 ),
               ],
@@ -198,17 +172,76 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _onRailSelected(int index) {
-    setState(() => _railIndex = index);
-    if (index == 1) {
-      Navigator.of(context).pushNamed(SettingsPage.routeName).then((_) {
-        if (mounted) setState(() => _railIndex = 0);
-      });
-    } else if (index == 2) {
-      Navigator.of(context).pushNamed(DebugPage.routeName).then((_) {
-        if (mounted) setState(() => _railIndex = 0);
-      });
-    }
+  /// 桌面左侧导航选中（0 实例 / 1 设置 / 2 调试）
+  /// 右侧主区域随导航切换（IndexedStack），不再 push 独立路由页
+  int _navIndex = 0;
+
+  void _onNavSelected(int index) {
+    setState(() => _navIndex = index);
+  }
+
+  String _paneTitle(AppLocalizations l10n) => switch (_navIndex) {
+        1 => l10n.commonSettings,
+        2 => l10n.homeDebugTooltip,
+        _ => 'ErisPulse',
+      };
+
+  /// 内容区：随窗口宽度自适应（宽屏实例卡片多列网格）
+  Widget _buildAdaptiveContent(BuildContext context, AppLocalizations l10n) {
+    return Consumer<InstanceManager>(
+      builder: (context, mgr, _) {
+        if (mgr.count == 0) {
+          return Column(
+            children: [
+              const _RootfsBanner(),
+              Expanded(
+                child: EmptyState(
+                  icon: Icons.dns_outlined,
+                  title: l10n.homeEmptyTitle,
+                  subtitle: l10n.homeEmptySubtitle,
+                  actionLabel: l10n.commonCreateInstance,
+                  onAction: () => _navigateToCreate(),
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            const _RootfsBanner(),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  // 宽屏自适应：≥1150 三列 / ≥760 两列 / 否则单列
+                  final columns = width >= 1150
+                      ? 3
+                      : width >= 760
+                          ? 2
+                          : 1;
+                  final items = mgr.instances;
+                  return RefreshIndicator(
+                    onRefresh: _refreshStatus,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        mainAxisExtent: 128,
+                      ),
+                      itemCount: items.length,
+                      itemBuilder: (context, i) =>
+                          _InstanceTile(instance: items[i]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// 内容区：实例横幅 + 列表（桌面与移动共用）
@@ -238,9 +271,10 @@ class _HomePageState extends State<HomePage> {
               child: RefreshIndicator(
                 onRefresh: _refreshStatus,
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: mgr.count,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) =>
                       _InstanceTile(instance: mgr.instances[i]),
                 ),
@@ -264,6 +298,195 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+/// 左侧导航列（WinUI3 风格）：实例 / 设置 / 调试。
+///
+/// 受控组件：[index] 由外部（主页面 state）决定，点击回调 [onSelected]。
+/// 项以"图标 + 标签"圆角高亮块呈现，选中项铺主题色浅底。
+class _SideNav extends StatelessWidget {
+  const _SideNav({required this.index, required this.onSelected});
+
+  final int index;
+  final ValueChanged<int> onSelected;
+
+  static const _items = [
+    (Icons.dns_outlined, Icons.dns),
+    (Icons.settings_outlined, Icons.settings),
+    (Icons.bug_report_outlined, Icons.bug_report),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = [
+      l10n.railInstances,
+      l10n.commonSettings,
+      l10n.homeDebugTooltip,
+    ];
+    return SizedBox(
+      width: 176,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        children: [
+          for (var i = 0; i < _items.length; i++)
+            _SideNavItem(
+              icon: _items[i].$1,
+              selectedIcon: _items[i].$2,
+              label: labels[i],
+              selected: index == i,
+              onTap: () => onSelected(i),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SideNavItem extends StatelessWidget {
+  const _SideNavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: selected ? scheme.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? selectedIcon : icon,
+                  size: 20,
+                  color: selected
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: selected
+                            ? scheme.onPrimaryContainer
+                            : scheme.onSurfaceVariant,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 圆角信息标签（端口 / 版本 / URL 等）
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.text, this.icon});
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 状态/健康徽章（带圆点着色，沿用 StatusDot 的配色语义）
+class _HealthChip extends StatelessWidget {
+  const _HealthChip({
+    required this.text,
+    this.status,
+    this.health,
+  });
+
+  final String text;
+  final InstanceStatus? status;
+  final InstanceHealth? health;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final h = health;
+    final color = h != null
+        ? switch (h) {
+            InstanceHealth.healthy => Colors.green,
+            InstanceHealth.booting => Colors.blue,
+            InstanceHealth.unauthorized => Colors.orange,
+            InstanceHealth.unreachable => Colors.red,
+            InstanceHealth.unknown => Colors.grey,
+          }
+        : switch (status!) {
+            InstanceStatus.running => Colors.green,
+            InstanceStatus.starting => Colors.blue,
+            InstanceStatus.error => Colors.red,
+            InstanceStatus.destroying => Colors.orange,
+            InstanceStatus.stopped => Colors.grey,
+          };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: color),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 单实例列表项
 class _InstanceTile extends StatelessWidget {
   const _InstanceTile({required this.instance});
@@ -273,67 +496,198 @@ class _InstanceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDesktop = !Platform.isAndroid && !Platform.isIOS;
-    final tile = ContextMenuRegion(
-      onContextMenu: (pos) => _showContextMenu(context, pos),
-      child: ListTile(
-        leading: StatusDot(
-          status: instance.status,
-          health: instance.isRemote ? instance.health : null,
-        ),
-        title: Row(
-          children: [
-            if (instance.isRemote) ...[
-              Icon(
-                Icons.cloud_outlined,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 4),
-            ],
-            Expanded(
-              child: Text(
-                instance.name,
-                style: Theme.of(context).textTheme.titleMedium,
+    if (!isDesktop) {
+      return ContextMenuRegion(
+        onContextMenu: (pos) => _showContextMenu(context, pos),
+        child: Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => InstanceDetailPage(instanceId: instance.id),
               ),
             ),
-            Text(
-              instance.isRemote
-                  ? instance.remoteUrl ?? l10n.commonRemote
-                  : ':${instance.port}'
-                      '${instance.runtimeVersion != null ? ' · v${instance.runtimeVersion}' : ''}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontFamily: 'monospace',
-                    color: Theme.of(context).colorScheme.outline,
+            onLongPress: () => _showActionMenu(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  StatusDot(
+                    status: instance.status,
+                    health: instance.isRemote ? instance.health : null,
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (instance.isRemote) ...[
+                              Icon(
+                                Icons.cloud_outlined,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Expanded(
+                              child: Text(
+                                instance.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          instance.isRemote
+                              ? _remoteLabel(l10n, instance.health)
+                              : instance.status == InstanceStatus.error
+                                  ? (instance.errorMessage ?? l10n.statusError)
+                                  : '${_statusLabel(l10n, instance.status)} · '
+                                      '${_healthLabel(l10n, instance.health)}',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _InfoPill(text: _portOrUrlText(l10n)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ),
-          ],
-        ),
-        subtitle: Text(
-          instance.isRemote
-              ? _remoteLabel(l10n, instance.health)
-              : instance.status == InstanceStatus.error
-                  ? (instance.errorMessage ?? l10n.statusError)
-                  : '${_statusLabel(l10n, instance.status)} · '
-                      '${_healthLabel(l10n, instance.health)}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => InstanceDetailPage(instanceId: instance.id),
           ),
         ),
-        onLongPress: () => _showActionMenu(context),
+      );
+    }
+
+    // 桌面：饱满的网格卡片（信息密度更高）
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final running = instance.status == InstanceStatus.running ||
+        instance.status == InstanceStatus.starting;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ContextMenuRegion(
+        onContextMenu: (pos) => _showContextMenu(context, pos),
+        child: InkWell(
+          onTap: () => Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => InstanceDetailPage(instanceId: instance.id),
+            ),
+          ),
+          onLongPress: () => _showActionMenu(context),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    StatusDot(
+                      status: instance.status,
+                      health: instance.isRemote ? instance.health : null,
+                    ),
+                    const SizedBox(width: 8),
+                    if (instance.isRemote) ...[
+                      Icon(
+                        Icons.cloud_outlined,
+                        size: 16,
+                        color: scheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        instance.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // 端口/版本 + 健康徽章
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _InfoPill(
+                      text: _portOrUrlText(l10n),
+                      icon: Icons.link,
+                    ),
+                    if (instance.runtimeVersion != null)
+                      _InfoPill(text: 'v${instance.runtimeVersion}'),
+                    _HealthChip(
+                      text: instance.isRemote
+                          ? _remoteLabel(l10n, instance.health)
+                          : _statusLabel(l10n, instance.status),
+                      status: instance.status,
+                      health: instance.isRemote ? instance.health : null,
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // 操作按钮
+                Row(
+                  children: [
+                    if (!instance.isRemote &&
+                        (instance.status == InstanceStatus.stopped ||
+                            instance.status == InstanceStatus.error))
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => _start(context),
+                          icon: const Icon(Icons.play_arrow, size: 16),
+                          label: Text(l10n.commonStart),
+                        ),
+                      )
+                    else if (!instance.isRemote && running) ...[
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => _stop(context),
+                          icon: const Icon(Icons.stop, size: 16),
+                          label: Text(l10n.commonStop),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      onPressed: () => _openDashboard(context),
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      tooltip: l10n.detailOpenDashboard,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
-    if (!isDesktop) return tile;
-    // 桌面：卡片化展示
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      clipBehavior: Clip.antiAlias,
-      child: tile,
-    );
   }
+
+  /// 端口/URL + 版本的可读文本
+  String _portOrUrlText(AppLocalizations l10n) => instance.isRemote
+      ? (instance.remoteUrl ?? l10n.commonRemote)
+      : ':${instance.port}';
 
   static String _statusLabel(AppLocalizations l10n, InstanceStatus s) =>
       switch (s) {

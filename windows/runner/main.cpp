@@ -15,8 +15,7 @@ constexpr const wchar_t kSingleInstanceMutex[] =
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
-  HANDLE single_mutex =
-      CreateMutexW(nullptr, TRUE, kSingleInstanceMutex);
+  HANDLE single_mutex = CreateMutexW(nullptr, TRUE, kSingleInstanceMutex);
   if (single_mutex != nullptr && GetLastError() == ERROR_ALREADY_EXISTS) {
     // App already running: restore and focus its window, then exit.
     HWND existing =
@@ -51,8 +50,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!window.Create(L"ErisPulse App", origin, size)) {
     return EXIT_FAILURE;
   }
+  // 窗口销毁时结束消息循环，确保进程正常退出。window_manager 的
+  // setPreventClose(true) 拦截的是 WM_CLOSE（用于关闭确认），不影响此处
+  // WM_DESTROY → PostQuitMessage 的正常退出路径。
   window.SetQuitOnClose(true);
-  window.SetMinimumSize(Win32Window::Size(960, 640));
 
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {

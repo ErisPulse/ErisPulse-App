@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "en",
   "@@context": {
     "appName": "ErisPulse"
@@ -11,6 +11,10 @@
   "commonSave": "Save",
   "commonDelete": "Delete",
   "commonStart": "Start",
+  "detailInstanceNotRunning": "Instance is not running",
+  "detailInstanceNotRunningHint": "Start the instance to access its data.",
+  "detailStartupWait": "Connecting to instance…",
+  "exitStoppingInstances": "Please wait, stopping instances…\nDo not force close this program",
   "commonStop": "Stop",
   "commonRestart": "Restart",
   "commonCreate": "Create",

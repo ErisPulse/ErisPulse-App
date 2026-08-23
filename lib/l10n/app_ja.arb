@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "ja",
   "appName": "ErisPulse",
   "commonCancel": "キャンセル",
@@ -8,6 +8,10 @@
   "commonSave": "保存",
   "commonDelete": "削除",
   "commonStart": "起動",
+  "detailInstanceNotRunning": "インスタンスが起動していません",
+  "detailInstanceNotRunningHint": "インスタンスを起動するとデータを確認できます。",
+  "detailStartupWait": "インスタンスに接続しています…",
+  "exitStoppingInstances": "しばらくお待ちください。インスタンスを停止中です…\nプログラムを強制終了しないでください",
   "commonStop": "停止",
   "commonRestart": "再起動",
   "commonCreate": "作成",

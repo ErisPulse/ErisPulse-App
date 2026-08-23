@@ -33,6 +33,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get commonStart => 'Запуск';
 
   @override
+  String get detailInstanceNotRunning => 'Экземпляр не запущен';
+
+  @override
+  String get detailInstanceNotRunningHint =>
+      'Запустите экземпляр, чтобы получить доступ к его данным.';
+
+  @override
+  String get detailStartupWait => 'Подключение к экземпляру…';
+
+  @override
+  String get exitStoppingInstances =>
+      'Подождите, идёт остановка экземпляров…\nНе закрывайте программу принудительно';
+
+  @override
   String get commonStop => 'Остановить';
 
   @override

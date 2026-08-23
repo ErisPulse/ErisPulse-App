@@ -33,6 +33,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonStart => '起動';
 
   @override
+  String get detailInstanceNotRunning => 'インスタンスが起動していません';
+
+  @override
+  String get detailInstanceNotRunningHint => 'インスタンスを起動するとデータを確認できます。';
+
+  @override
+  String get detailStartupWait => 'インスタンスに接続しています…';
+
+  @override
+  String get exitStoppingInstances =>
+      'しばらくお待ちください。インスタンスを停止中です…\nプログラムを強制終了しないでください';
+
+  @override
   String get commonStop => '停止';
 
   @override

@@ -30,6 +30,8 @@ import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
 import '../views/instance_view.dart';
 import '../widgets/status_indicators.dart';
+import '../widgets/states.dart';
+import '../widgets/window_title_bar.dart';
 import 'dashboard_page.dart';
 
 /// 宽屏阈值：超过则使用 PC 左侧导航布局
@@ -61,6 +63,9 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   /// 在线机器人数量（/api/bots）
   int _onlineBots = 0;
 
+  /// 完整机器人列表（/api/bots，用于概览平台分布）
+  List<Map<String, dynamic>> _bots = [];
+
   /// 框架信息（/api/status framework：version / python_version / platform）
   Map<String, dynamic>? _frameworkInfo;
 
@@ -70,11 +75,45 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   /// 当前选中视图索引（0 = 概览，1..n = 注册视图）
   int _tabIndex = 0;
 
+  /// 待构建的数据是否已加载成功（true 仅在后端实际可达并成功取到数据后）
+  bool _backendReady = false;
+
   /// 宽屏（PC）已访问过的视图索引集合，用于 IndexedStack 懒实例化
   final Set<int> _visited = {0};
 
   Instance? _lookup() =>
       context.read<InstanceManager>().findById(widget.instanceId);
+
+  /// 本地实例当前是否已挂起（未启动 / 异常），此时后端不可达。
+  bool _notRunning(Instance inst) =>
+      !inst.isRemote &&
+      (inst.status == InstanceStatus.stopped ||
+          inst.status == InstanceStatus.error);
+
+  /// 实例未启动时的统一占位：提示先启动实例，不向后端发起请求。
+  Widget _stoppedView(AppLocalizations l10n, Instance inst) {
+    final startable = !inst.isRemote &&
+        (inst.status == InstanceStatus.stopped ||
+            inst.status == InstanceStatus.error);
+    return EmptyState(
+      icon: Icons.power_off_outlined,
+      title: l10n.detailInstanceNotRunning,
+      subtitle: startable ? l10n.detailInstanceNotRunningHint : null,
+      actionLabel: startable ? l10n.commonStart : null,
+      onAction: startable ? _start : null,
+    );
+  }
+
+  /// 实例未启动（挂起）时其它视图的占位；启动中但后端未就绪时显示等待，
+  /// 若实例状态为启动中则提示正在启动（自动切换，无需手动刷新）。
+  Widget _pendingView(Instance inst, AppLocalizations l10n) {
+    if (inst.status == InstanceStatus.starting) {
+      return LoadingView(label: l10n.detailStartupWait);
+    }
+    if (_notRunning(inst)) return _stoppedView(l10n, inst);
+    // 其它情况：后端暂未就绪，继续轮询等待
+    return LoadingView(label: l10n.detailStartupWait);
+  }
 
   @override
   void initState() {
@@ -127,9 +166,10 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
       ]);
       // 在线机器人 / 框架版本（失败不阻塞主概览，如旧版本无端点）
       int onlineBots = 0;
+      List<Map<String, dynamic>> bots = [];
       Map<String, dynamic>? fwInfo;
       try {
-        final bots = await api.getBots();
+        bots = await api.getBots();
         onlineBots =
             bots.where((b) => b['status']?.toString() == 'online').length;
       } catch (_) {}
@@ -149,15 +189,18 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         _totalEvents = evt.totalCount;
         _stats = results[4] as Map<String, dynamic>?;
         _onlineBots = onlineBots;
+        _bots = bots;
         _frameworkInfo = fwInfo;
         _loading = false;
         _error = null;
+        _backendReady = true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
         _error = AppLocalizations.of(context).detailUnreachableError;
+        _backendReady = false;
       });
     }
     final health = await DashboardApi.ping(inst);
@@ -392,75 +435,107 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     return Consumer<InstanceManager>(
       builder: (context, mgr, _) {
         final inst = mgr.findById(widget.instanceId);
+        final actions = _buildDetailActions(inst, l10n);
+        final body = inst == null
+            ? Center(child: Text(l10n.detailNotFound))
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= _wideBreakpoint;
+                  return _buildBody(context, l10n, inst, isWide);
+                },
+              );
+        // 桌面：统一使用无边框自绘顶栏（可拖拽 + 窗口控制），移动端沿用 AppBar
+        if (!Platform.isAndroid && !Platform.isIOS) {
+          return Scaffold(
+            body: Column(
+              children: [
+                WindowTitleBar(
+                  title: inst?.name ?? l10n.detailNotFound,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  actions: actions,
+                ),
+                const Divider(height: 1),
+                Expanded(child: body),
+              ],
+            ),
+          );
+        }
         return Scaffold(
           appBar: AppBar(
-            title: Text(inst?.name ?? l10n.detailNotFound),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.copy_outlined),
-                tooltip: l10n.dashboardCopyTokenTooltip,
-                onPressed: _copyToken,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: l10n.detailRefreshState,
-                onPressed: _refreshHealth,
-              ),
-              PopupMenuButton<String>(
-                onSelected: (v) {
-                  if (v == 'start') _start();
-                  if (v == 'stop') _stop();
-                  if (v == 'softRestart') _softRestart();
-                  if (v == 'restart') _restart();
-                },
-                itemBuilder: (_) {
-                  final running = inst != null &&
-                      (inst.status == InstanceStatus.running ||
-                          inst.status == InstanceStatus.starting);
-                  final startable = inst != null &&
-                      !inst.isRemote &&
-                      (inst.status == InstanceStatus.stopped ||
-                          inst.status == InstanceStatus.error);
-                  return [
-                    if (startable)
-                      PopupMenuItem(
-                        value: 'start',
-                        child: Text(l10n.commonStart),
-                      ),
-                    if (inst != null && !inst.isRemote && running) ...[
-                      PopupMenuItem(
-                        value: 'stop',
-                        child: Text(l10n.commonStop),
-                      ),
-                    ],
-                    if (running) ...[
-                      PopupMenuItem(
-                        value: 'softRestart',
-                        child: Text(l10n.commonSoftRestart),
-                      ),
-                    ],
-                    if (inst != null && !inst.isRemote && running) ...[
-                      PopupMenuItem(
-                        value: 'restart',
-                        child: Text(l10n.commonHardRestart),
-                      ),
-                    ],
-                  ];
-                },
-              ),
-            ],
+            title: Text(
+              inst?.name ?? l10n.detailNotFound,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            actions: actions,
           ),
-          body: inst == null
-              ? Center(child: Text(l10n.detailNotFound))
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth >= _wideBreakpoint;
-                    return _buildBody(context, l10n, inst, isWide);
-                  },
-                ),
+          body: body,
         );
       },
     );
+  }
+
+  /// 详情页顶栏右侧动作（复制 Token / 刷新 / 右上角启动菜单）
+  List<Widget> _buildDetailActions(Instance? inst, AppLocalizations l10n) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.copy_outlined),
+        tooltip: l10n.dashboardCopyTokenTooltip,
+        onPressed: _copyToken,
+      ),
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        tooltip: l10n.detailRefreshState,
+        onPressed: _refreshHealth,
+      ),
+      PopupMenuButton<String>(
+        onSelected: (v) {
+          if (v == 'start') _start();
+          if (v == 'stop') _stop();
+          if (v == 'softRestart') _softRestart();
+          if (v == 'restart') _restart();
+        },
+        itemBuilder: (_) {
+          final running = inst != null &&
+              (inst.status == InstanceStatus.running ||
+                  inst.status == InstanceStatus.starting);
+          final startable = inst != null &&
+              !inst.isRemote &&
+              (inst.status == InstanceStatus.stopped ||
+                  inst.status == InstanceStatus.error);
+          return [
+            if (startable)
+              PopupMenuItem(
+                value: 'start',
+                child: Text(l10n.commonStart),
+              ),
+            if (inst != null && !inst.isRemote && running) ...[
+              PopupMenuItem(
+                value: 'stop',
+                child: Text(l10n.commonStop),
+              ),
+            ],
+            if (running) ...[
+              PopupMenuItem(
+                value: 'softRestart',
+                child: Text(l10n.commonSoftRestart),
+              ),
+            ],
+            if (inst != null && !inst.isRemote && running) ...[
+              PopupMenuItem(
+                value: 'restart',
+                child: Text(l10n.commonHardRestart),
+              ),
+            ],
+          ];
+        },
+      ),
+    ];
   }
 
   /// 布局：PC 宽屏左侧导航 + 内容区（IndexedStack 保留状态），
@@ -504,7 +579,9 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                     // 懒实例化：未访问过的视图暂不构建，避免启动即拉全部数据
                     for (var i = 0; i < views.length; i++)
                       _visited.contains(i + 1)
-                          ? views[i].builder(context, inst)
+                          ? (_backendReady
+                              ? views[i].builder(context, inst)
+                              : _pendingView(inst, l10n))
                           : const SizedBox.shrink(),
                   ],
                 ),
@@ -529,7 +606,10 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                 child: TabBarView(
                   children: [
                     _buildOverview(inst, l10n, false),
-                    for (final v in views) v.builder(context, inst),
+                    for (final v in views)
+                      _backendReady
+                          ? v.builder(context, inst)
+                          : _pendingView(inst, l10n),
                   ],
                 ),
               ),
@@ -552,16 +632,26 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     final startable = !inst.isRemote &&
         (inst.status == InstanceStatus.stopped ||
             inst.status == InstanceStatus.error);
-    final overview = _OverviewCard(
+    final hero = _HeroGrid(
       loading: _loading,
       modules: _modules,
       adapters: _adapters,
-      sys: _sys,
-      error: _error,
       onlineBots: _onlineBots,
       totalEvents: _totalEvents,
-      frameworkInfo: _frameworkInfo,
       onTileTap: _gotoView,
+      isWide: isWide,
+    );
+    final resource = _ResourceOverview(
+      loading: _loading,
+      sys: _sys,
+      frameworkInfo: _frameworkInfo,
+      error: _error,
+      isWide: isWide,
+    );
+    final bots = _BotPlatformCard(
+      loading: _loading,
+      bots: _bots,
+      error: _error,
     );
     final stats = _MessageStatsCard(
       loading: _loading,
@@ -579,45 +669,52 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _Header(instance: inst),
-          const SizedBox(height: 12),
+          // 顶部状态横幅：名称 + 状态/类型/健康大徽章 + 运行时长
+          _StatusBanner(instance: inst),
+          const SizedBox(height: 14),
+          // Hero 大数字：适配器 / 模块 / 机器人 / 事件（点击跳视图）
+          hero,
+          const SizedBox(height: 14),
           if (isWide)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 左列：系统资源（CPU/内存大进度 + uptime/PID/线程）
                 Expanded(
+                  flex: 3,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      overview,
+                      resource,
                       const SizedBox(height: 12),
-                      stats,
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
+                // 右列：机器人平台分布 + 消息统计
                 Expanded(
+                  flex: 2,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      events,
+                      bots,
                       const SizedBox(height: 12),
-                      connect,
+                      stats,
                     ],
                   ),
                 ),
               ],
             )
           else ...[
-            overview,
+            resource,
+            const SizedBox(height: 12),
+            bots,
             const SizedBox(height: 12),
             stats,
-            const SizedBox(height: 12),
-            events,
-            const SizedBox(height: 12),
-            connect,
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          events,
+          const SizedBox(height: 12),
           _ActionSection(
             isWide: isWide,
             onOpenDashboard: _openDashboard,
@@ -626,170 +723,104 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
             onSoftRestart: running ? _softRestart : null,
             onRestart: !inst.isRemote && running ? _restart : null,
           ),
+          const SizedBox(height: 12),
+          // 连接信息为次要信息，置底
+          connect,
         ],
       ),
     );
   }
 }
 
-/// 头部：Logo + 名称 + 状态 / 类型 / 健康
-class _Header extends StatelessWidget {
-  const _Header({required this.instance});
+/// 顶部状态横幅：实例名称 + 状态徽章。
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner({required this.instance});
   final Instance instance;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Row(
-      children: [
-        // Logo 为横版图（1672x941），按原始比例完整展示
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.asset(
-            'assets/images/logo.png',
-            width: 96,
-            height: 54,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Container(
-              width: 96,
-              height: 54,
-              color: theme.colorScheme.primaryContainer,
-              child: Icon(
-                Icons.bolt,
-                color: theme.colorScheme.onPrimaryContainer,
+    final scheme = theme.colorScheme;
+    final running = instance.status == InstanceStatus.running ||
+        instance.status == InstanceStatus.starting;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 92,
+              height: 52,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                width: 92,
+                height: 52,
+                color: scheme.primaryContainer,
+                child: Icon(Icons.bolt, color: scheme.onPrimaryContainer),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      instance.name,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        instance.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  StatusDot(
-                    status: instance.status,
-                    health: instance.isRemote ? instance.health : null,
-                    size: 11,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _Tag(
-                    icon: instance.isRemote
-                        ? Icons.cloud_outlined
-                        : Icons.phone_android,
-                    label: instance.isRemote
-                        ? l10n.commonRemote
-                        : l10n.commonLocal,
-                  ),
-                  _Tag(
-                    icon: Icons.circle,
-                    label: instance.isRemote
-                        ? _remoteLabel(l10n, instance.health)
-                        : _statusLabel(l10n, instance.status),
-                    color: instance.isRemote
-                        ? _healthColor(instance.health)
-                        : _statusColor(instance.status),
-                  ),
-                  _Tag(
-                    icon: Icons.health_and_safety_outlined,
-                    label: _healthLabel(l10n, instance.health),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  static String _statusLabel(AppLocalizations l10n, InstanceStatus s) =>
-      switch (s) {
-        InstanceStatus.stopped => l10n.statusStopped,
-        InstanceStatus.starting => l10n.statusStarting,
-        InstanceStatus.running => l10n.statusRunning,
-        InstanceStatus.error => l10n.statusError,
-        InstanceStatus.destroying => l10n.statusDestroying,
-      };
-
-  static String _healthLabel(AppLocalizations l10n, InstanceHealth h) =>
-      switch (h) {
-        InstanceHealth.healthy => l10n.statusHealthy,
-        InstanceHealth.booting => l10n.statusBooting,
-        InstanceHealth.unauthorized => l10n.statusTokenInvalid,
-        InstanceHealth.unreachable => l10n.statusOffline,
-        InstanceHealth.unknown => l10n.statusUnknown,
-      };
-
-  /// 远程实例的状态标签：由健康度表达（在线/连接中/离线/…）
-  static String _remoteLabel(AppLocalizations l10n, InstanceHealth h) =>
-      switch (h) {
-        InstanceHealth.healthy => l10n.statusOnline,
-        InstanceHealth.booting => l10n.statusConnecting,
-        InstanceHealth.unauthorized => l10n.statusTokenInvalid,
-        InstanceHealth.unreachable => l10n.statusOffline,
-        InstanceHealth.unknown => l10n.statusRemoteUnknown,
-      };
-
-  static Color _healthColor(InstanceHealth h) => switch (h) {
-        InstanceHealth.healthy => Colors.green,
-        InstanceHealth.booting => Colors.blue,
-        InstanceHealth.unauthorized => Colors.orange,
-        InstanceHealth.unreachable => Colors.red,
-        InstanceHealth.unknown => Colors.grey,
-      };
-
-  static Color _statusColor(InstanceStatus s) => switch (s) {
-        InstanceStatus.running => Colors.green,
-        InstanceStatus.starting => Colors.blue,
-        InstanceStatus.error => Colors.red,
-        InstanceStatus.destroying => Colors.orange,
-        InstanceStatus.stopped => Colors.grey,
-      };
-}
-
-/// 小标签
-class _Tag extends StatelessWidget {
-  const _Tag({required this.icon, required this.label, this.color});
-  final IconData icon;
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: c),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: c),
+                    const SizedBox(width: 8),
+                    StatusDot(
+                      status: instance.status,
+                      health: instance.isRemote ? instance.health : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (!instance.isRemote)
+                      _StatusBadge(
+                        icon: running ? Icons.sensors : Icons.power_off,
+                        label:
+                            running ? l10n.statusRunning : l10n.statusStopped,
+                        color: running ? Colors.green : Colors.grey,
+                      )
+                    else
+                      _StatusBadge(
+                        icon: Icons.cloud_outlined,
+                        label: l10n.commonRemote,
+                        color: scheme.primary,
+                      ),
+                    _StatusBadge(
+                      icon: Icons.health_and_safety_outlined,
+                      label: instance.isRemote
+                          ? (instance.health == InstanceHealth.healthy
+                              ? l10n.statusOnline
+                              : l10n.statusOffline)
+                          : l10n.statusHealthy,
+                      color: Colors.green,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -797,46 +828,132 @@ class _Tag extends StatelessWidget {
   }
 }
 
-/// Dashboard 运行概览卡：
-/// 顶部大数字统计 4 格（适配器 / 模块 / 在线机器人 / 事件总数，可点击跳转）
-/// + 版本行（ErisPulse · Python）+ 系统资源（CPU/内存告警变色 + 运行时长）
-class _OverviewCard extends StatelessWidget {
-  const _OverviewCard({
+/// 状态徽章
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 12, color: color)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hero 大数字：适配器 / 模块 / 在线机器人 / 事件总数（点击跳转）。
+class _HeroGrid extends StatelessWidget {
+  const _HeroGrid({
     required this.loading,
     required this.modules,
     required this.adapters,
-    required this.sys,
-    required this.error,
     required this.onlineBots,
     required this.totalEvents,
-    required this.frameworkInfo,
     required this.onTileTap,
+    this.isWide = false,
   });
 
   final bool loading;
   final List<ModuleInfo> modules;
   final List<AdapterInfo> adapters;
-  final SystemInfo? sys;
-  final String? error;
   final int onlineBots;
   final int totalEvents;
-  final Map<String, dynamic>? frameworkInfo;
   final ValueChanged<String> onTileTap;
+  final bool isWide;
 
-  /// CPU / 内存告警变色（对齐 Dashboard：>60% 橙 / >85% 红）
-  static Color _levelColor(int percent, Color base) {
-    if (percent > 85) return Colors.red;
-    if (percent > 60) return Colors.orange;
-    return base;
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final enabledModules = modules.where((m) => m.enabled).length;
+    final runningAdapters = adapters.where((a) => a.running).length;
+    final tiles = <Widget>[
+      _StatTile(
+        icon: Icons.devices_outlined,
+        value: '${adapters.length}',
+        label: l10n.detailAdapters,
+        subtitle: l10n.detailRunningCount(runningAdapters),
+        onTap: () => onTileTap('adapters'),
+      ),
+      _StatTile(
+        icon: Icons.extension_outlined,
+        value: '${modules.length}',
+        label: l10n.detailModules,
+        subtitle: l10n.detailEnabledCount(enabledModules),
+        onTap: () => onTileTap('modules'),
+      ),
+      _StatTile(
+        icon: Icons.smart_toy_outlined,
+        value: '$onlineBots',
+        label: l10n.detailOnlineBots,
+        onTap: () => onTileTap('bots'),
+      ),
+      _StatTile(
+        icon: Icons.event_note_outlined,
+        value: '$totalEvents',
+        label: l10n.detailTotalEvents,
+        onTap: () => onTileTap('events'),
+      ),
+    ];
+    return GridView.count(
+      crossAxisCount: isWide ? 4 : 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: isWide ? 1.5 : 1.15,
+      children: tiles,
+    );
   }
+}
+
+/// 系统资源：CPU / 内存大进度 + uptime / PID / 线程 + 框架版本。
+class _ResourceOverview extends StatelessWidget {
+  const _ResourceOverview({
+    required this.loading,
+    required this.sys,
+    required this.frameworkInfo,
+    required this.error,
+    this.isWide = false,
+  });
+
+  final bool loading;
+  final SystemInfo? sys;
+  final Map<String, dynamic>? frameworkInfo;
+  final String? error;
+  final bool isWide;
+
+  static Color _level(int percent, Color base) => percent > 85
+      ? Colors.red
+      : percent > 60
+          ? Colors.orange
+          : base;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final enabledModules = modules.where((m) => m.enabled).length;
-    final runningAdapters = adapters.where((a) => a.running).length;
+    final scheme = theme.colorScheme;
+    final s = sys;
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -845,12 +962,189 @@ class _OverviewCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.query_stats,
+                  Icons.monitor_heart_outlined,
                   size: 18,
-                  color: theme.colorScheme.primary,
+                  color: scheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(l10n.detailOverview, style: theme.textTheme.titleSmall),
+                const Spacer(),
+                if (loading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (error != null)
+              Text(
+                error!,
+                style: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
+              )
+            else if (s == null)
+              Text(
+                l10n.detailResourceHint,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              )
+            else ...[
+              _ResourceMeter(
+                icon: Icons.memory,
+                label: l10n.detailMemory,
+                detail: '${s.memoryMb.toStringAsFixed(0)} MB',
+                percent: s.memoryPercentInt,
+                color: _level(s.memoryPercentInt, Colors.green),
+              ),
+              const SizedBox(height: 14),
+              _ResourceMeter(
+                icon: Icons.speed,
+                label: 'CPU',
+                detail: '',
+                percent: s.cpuPercentInt,
+                color: _level(s.cpuPercentInt, Colors.blue),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 20,
+                runSpacing: 8,
+                children: [
+                  _ResourceValue(
+                    label: l10n.detailUptime,
+                    value: s.uptimeReadable,
+                  ),
+                  _ResourceValue(label: 'PID', value: '${s.pid ?? '-'}'),
+                  _ResourceValue(
+                    label: l10n.detailThreads,
+                    value: '${s.threadCount ?? '-'}',
+                  ),
+                ],
+              ),
+              if (frameworkInfo != null) ...[
+                const Divider(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _FrameworkChip(
+                      label: 'ErisPulse v${frameworkInfo!['version'] ?? '?'}',
+                    ),
+                    _FrameworkChip(
+                      label:
+                          'Python ${frameworkInfo!['python_version'] ?? '?'}',
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 资源计量（图标 + 标签 + 大进度 + 详情）。
+class _ResourceMeter extends StatelessWidget {
+  const _ResourceMeter({
+    required this.icon,
+    required this.label,
+    required this.detail,
+    required this.percent,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String detail;
+  final int percent;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              '$percent%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: percent / 100,
+            minHeight: 10,
+            backgroundColor: color.withValues(alpha: 0.12),
+            valueColor: AlwaysStoppedAnimation(color),
+          ),
+        ),
+        if (detail.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              detail,
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// 机器人平台分布：按 platform 分组展示在线/总数。
+class _BotPlatformCard extends StatelessWidget {
+  const _BotPlatformCard({
+    required this.loading,
+    required this.bots,
+    required this.error,
+  });
+  final bool loading;
+  final List<Map<String, dynamic>> bots;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final scheme = theme.colorScheme;
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final b in bots) {
+      final p = (b['platform'] ?? 'unknown').toString();
+      groups.putIfAbsent(p, () => []).add(b);
+    }
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.people_outline, size: 18, color: scheme.primary),
+                const SizedBox(width: 8),
+                Text(l10n.detailTabBots, style: theme.textTheme.titleSmall),
                 const Spacer(),
                 if (loading)
                   const SizedBox(
@@ -865,114 +1159,18 @@ class _OverviewCard extends StatelessWidget {
               Text(
                 error!,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
+                  color: scheme.error,
                 ),
               )
-            else if (modules.isEmpty && adapters.isEmpty && sys == null)
+            else if (groups.isEmpty)
               Text(
-                l10n.detailResourceHint,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                l10n.detailNoEvents,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
               )
-            else ...[
-              // 大数字统计 4 格（宽屏 1 行，窄屏 2x2），点击跳转对应视图
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 420;
-                  final tiles = <Widget>[
-                    _StatTile(
-                      icon: Icons.devices_outlined,
-                      value: '${adapters.length}',
-                      label: l10n.detailAdapters,
-                      subtitle: l10n.detailRunningCount(runningAdapters),
-                      onTap: () => onTileTap('adapters'),
-                    ),
-                    _StatTile(
-                      icon: Icons.extension_outlined,
-                      value: '${modules.length}',
-                      label: l10n.detailModules,
-                      subtitle: l10n.detailEnabledCount(enabledModules),
-                      onTap: () => onTileTap('modules'),
-                    ),
-                    _StatTile(
-                      icon: Icons.smart_toy_outlined,
-                      value: '$onlineBots',
-                      label: l10n.detailOnlineBots,
-                      onTap: () => onTileTap('bots'),
-                    ),
-                    _StatTile(
-                      icon: Icons.event_note_outlined,
-                      value: '$totalEvents',
-                      label: l10n.detailTotalEvents,
-                      onTap: () => onTileTap('events'),
-                    ),
-                  ];
-                  if (wide) {
-                    return Row(
-                      children: [
-                        for (var i = 0; i < tiles.length; i++) ...[
-                          Expanded(child: tiles[i]),
-                          if (i < tiles.length - 1) const SizedBox(width: 8),
-                        ],
-                      ],
-                    );
-                  }
-                  return Column(
-                    children: [
-                      Row(children: [tiles[0], tiles[1]]),
-                      const SizedBox(height: 4),
-                      Row(children: [tiles[2], tiles[3]]),
-                    ],
-                  );
-                },
-              ),
-              if (frameworkInfo != null) ...[
-                const Divider(height: 16),
-                Text(
-                  'ErisPulse v${frameworkInfo!['version'] ?? '?'}'
-                  ' · Python ${frameworkInfo!['python_version'] ?? '?'}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-              if (sys != null) ...[
-                const SizedBox(height: 12),
-                _ResourceBar(
-                  label: 'CPU',
-                  percent: sys!.cpuPercentInt,
-                  color: _levelColor(sys!.cpuPercentInt, Colors.blue),
-                ),
-                const SizedBox(height: 10),
-                _ResourceBar(
-                  label:
-                      '${l10n.detailMemory} (${sys!.memoryOfSystemReadable})',
-                  percent: sys!.memoryPercentInt,
-                  color: _levelColor(sys!.memoryPercentInt, Colors.green),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    _ResourceValue(
-                      label: l10n.detailUptime,
-                      value: sys!.uptimeReadable,
-                    ),
-                    _ResourceValue(
-                      label: 'PID',
-                      value: '${sys!.pid ?? '-'}',
-                    ),
-                    _ResourceValue(
-                      label: l10n.detailThreads,
-                      value: '${sys!.threadCount ?? '-'}',
-                    ),
-                  ],
-                ),
-              ],
-            ],
+            else
+              for (final g in groups.entries)
+                _BotPlatformRow(platform: g.key, bots: g.value),
           ],
         ),
       ),
@@ -980,7 +1178,104 @@ class _OverviewCard extends StatelessWidget {
   }
 }
 
-/// 大数字统计格（对齐 Dashboard statCard：图标 + 大数字 + 标签 + 副文本）
+/// 单平台机器人行
+class _BotPlatformRow extends StatelessWidget {
+  const _BotPlatformRow({required this.platform, required this.bots});
+  final String platform;
+  final List<Map<String, dynamic>> bots;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final online =
+        bots.where((b) => (b['status']?.toString() == 'online')).length;
+    final cap = bots.first['capabilities'] ?? '';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          _platformIcon(platform),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              platform,
+              style: theme.textTheme.titleSmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (cap is List && cap.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(
+                '${cap.length}',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color:
+                  (online > 0 ? Colors.green : scheme.surfaceContainerHighest)
+                      .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$online/${bots.length}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: online > 0 ? Colors.green : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _platformIcon(String p) {
+    switch (p) {
+      case 'qq':
+        return const Icon(Icons.chat_bubble_outline, size: 20);
+      case 'telegram':
+        return const Icon(Icons.send_outlined, size: 20);
+      case 'discord':
+        return const Icon(Icons.forum_outlined, size: 20);
+      default:
+        return const Icon(Icons.smart_toy_outlined, size: 20);
+    }
+  }
+}
+
+/// 框架版本小标签（monospace，自动换行，避免窄列溢出）
+class _FrameworkChip extends StatelessWidget {
+  const _FrameworkChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: c.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: c.onSurfaceVariant,
+          fontFamily: 'monospace',
+        ),
+      ),
+    );
+  }
+}
+
+/// 大数字统计格（对齐 Dashboard statCard：图标 + 大数字 + 标签 + 副文本）。
+/// 纵向布局：顶部图标点缀、中部大数字（视觉重点）、底部标签与副文本，
+/// 适配窄屏 2×2 网格，宽屏单行亦一致。
 class _StatTile extends StatelessWidget {
   const _StatTile({
     required this.icon,
@@ -1002,111 +1297,52 @@ class _StatTile extends StatelessWidget {
     final c = theme.colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: c.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: c.primary),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: c.onSurfaceVariant,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: c.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: c.surfaceContainerHigh.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
-  }
-}
-
-/// 资源进度条
-class _ResourceBar extends StatelessWidget {
-  const _ResourceBar({
-    required this.label,
-    required this.percent,
-    required this.color,
-  });
-
-  final String label;
-  final int percent;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // label 占整行（左侧名称/右侧百分比），进度条独占下一整行：
-    // 内存 label 较长（如 `内存 (85.5 MB / 15 GB)`），窄列布局会换行
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            Icon(icon, size: 20, color: c.primary),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
               child: Text(
-                label,
+                value,
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 2),
             Text(
-              '$percent%',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.bold,
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: c.onSurfaceVariant,
               ),
             ),
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: c.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+              ),
           ],
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percent / 100,
-            minHeight: 8,
-            backgroundColor: color.withValues(alpha: 0.12),
-            valueColor: AlwaysStoppedAnimation(color),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1549,16 +1785,21 @@ class _StatChips extends StatelessWidget {
       runSpacing: 4,
       children: [
         for (final e in map.entries)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${e.key} · ${e.value}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${e.key} · ${e.value}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),

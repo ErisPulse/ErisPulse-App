@@ -151,6 +151,30 @@ abstract class AppLocalizations {
   /// **'Start'**
   String get commonStart;
 
+  /// No description provided for @detailInstanceNotRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Instance is not running'**
+  String get detailInstanceNotRunning;
+
+  /// No description provided for @detailInstanceNotRunningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the instance to access its data.'**
+  String get detailInstanceNotRunningHint;
+
+  /// No description provided for @detailStartupWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to instance…'**
+  String get detailStartupWait;
+
+  /// No description provided for @exitStoppingInstances.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait, stopping instances…\nDo not force close this program'**
+  String get exitStoppingInstances;
+
   /// No description provided for @commonStop.
   ///
   /// In en, this message translates to:

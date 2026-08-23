@@ -9,16 +9,16 @@
 // 主题：Material 3 + 跟随系统（dynamic_color）。
 
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, exit;
 import 'dart:ui' show AppExitResponse;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
+import 'models/enums.dart';
 import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/debug_page.dart';
@@ -27,6 +27,8 @@ import 'services/instance_manager.dart';
 import 'services/runtime/background_service.dart';
 import 'services/runtime/native_lib.dart';
 import 'services/runtime/runtime_controller.dart';
+import 'services/window/window_service.dart';
+import 'theme/app_theme.dart';
 import 'views/builtin_views.dart';
 import 'views/instance_view.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -88,6 +90,9 @@ Future<void> main() async {
   final detailViewRegistry = DetailViewRegistry();
   registerBuiltinViews(detailViewRegistry);
 
+  // 桌面：初始化无边框窗口 + 系统托盘（window_manager / tray_manager）
+  await WindowService.instance.ensureInitialized();
+
   runApp(
     MultiProvider(
       providers: [
@@ -114,20 +119,16 @@ class ErisPulseApp extends StatelessWidget {
               navigatorKey: rootNavigatorKey,
               title: 'ErisPulse',
               debugShowCheckedModeBanner: false,
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: lightDynamic ??
+              theme: AppTheme.light(
+                lightDynamic ??
                     ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
-                brightness: Brightness.light,
               ),
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                colorScheme: darkDynamic ??
+              darkTheme: AppTheme.dark(
+                darkDynamic ??
                     ColorScheme.fromSeed(
                       seedColor: const Color(0xFF6750A4),
                       brightness: Brightness.dark,
                     ),
-                brightness: Brightness.dark,
               ),
               themeMode: settings.themeMode,
               locale: settings.locale,
@@ -153,11 +154,11 @@ class ErisPulseApp extends StatelessWidget {
 
 /// 桌面平台退出处理。
 ///
-/// Windows：原生层拦截窗口关闭（WM_CLOSE）与托盘退出，经
-/// `erispulse/window` 通道回调本组件——
-///   - `onCloseRequest`（点 X / Alt+F4）：按用户设置直接最小化到托盘或
+/// 桌面（Windows / macOS / Linux）：`WindowService` 拦截系统关闭信号
+/// （`onWindowClose`）与托盘退出（`onTrayExit`）——
+///   - 关闭（点 X / Alt+F4 / 自绘关闭按钮）：按用户设置直接最小化到托盘或
 ///     停止全部实例并退出；未设置时弹窗询问（可记住选择）
-///   - `onExitRequest`（托盘菜单退出）：直接停止全部实例并退出
+///   - 托盘「退出」：直接停止全部实例并退出
 /// 其它桌面：保持 App 退出时终止全部实例进程，避免 python 残留。
 class _ExitHandler extends StatefulWidget {
   const _ExitHandler({required this.child});
@@ -168,22 +169,26 @@ class _ExitHandler extends StatefulWidget {
 }
 
 class _ExitHandlerState extends State<_ExitHandler> {
-  static const _windowChannel = MethodChannel('erispulse/window');
   AppLifecycleListener? _listener;
   bool _closing = false;
 
   @override
   void initState() {
     super.initState();
-    if (Platform.isWindows) {
-      _windowChannel.setMethodCallHandler((call) async {
-        switch (call.method) {
-          case 'onCloseRequest':
-            await _handleCloseRequest();
-          case 'onExitRequest':
-            await _exitApp();
-        }
-      });
+    final window = WindowService.instance;
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      // 窗口关闭（点 X / Alt+F4 / 自绘关闭）：关闭确认，可最小化到托盘或退出
+      window.onCloseRequest = _handleCloseRequest;
+      // 托盘「退出」
+      window.onTrayExit = _exitApp;
+      // 托盘「显示主界面」
+      window.onTrayShow = () async {
+        await window.show();
+      };
+      // 拦截原生关闭信号，交由 onCloseRequest 决定
+      window.setPreventClose(true);
+      // 初始化托盘
+      window.initTray();
     }
     // 桌面：Dart 侧主动退出（exitApplication）时杀全部实例进程；
     // 移动端实例由 FGS 保活，退出 UI 不清进程
@@ -216,30 +221,95 @@ class _ExitHandlerState extends State<_ExitHandler> {
       action = choice;
     }
     if (action == 'tray') {
-      await _invoke('hideToTray');
+      await WindowService.instance.hide();
     } else if (action == 'exit') {
       await _exitApp();
     }
   }
 
-  /// 停止全部实例后真正退出（通知原生销毁窗口）
+  /// 停止全部实例后真正退出。
+  ///
+  /// 退出不依赖 window_manager.destroy()：其原生实现是 PostQuitMessage(0)，
+  /// 会触发引擎拆除与平台通道回复的竞争（回复可能永远丢失，Dart 侧无限
+  /// 等待）。改为停止完成后直接 exit(0) 同步终止进程，确定性退出。
+  ///
+  /// 两条路径：
+  ///   - 无本地运行实例：不弹过渡页，隐藏窗口后立即退出（<100ms）
+  ///   - 有本地运行实例：过渡页最短展示 250ms（与实际停止耗时取最大值）
   Future<void> _exitApp() async {
     if (_closing) return;
     _closing = true;
+    final runtime = context.read<RuntimeController>();
+    final mgr = context.read<InstanceManager>();
+    // 仅本地（非远程）且 运行中/启动中 的实例需要真正停止
+    final hasLocalRunning = mgr.instances.any(
+      (i) =>
+          !i.isRemote &&
+          (i.status == InstanceStatus.running ||
+              i.status == InstanceStatus.starting),
+    );
     try {
-      await context.read<RuntimeController>().stopAll();
+      if (hasLocalRunning) {
+        // 弹出不可关闭的过渡提示，等至少一帧渲染后再开始停止
+        unawaited(_showStoppingDialog());
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+        // 并行：停止全部实例（≤8s，单实例内部已各自 5s 超时）
+        // 与 过渡页最短展示 250ms，取两者中较长的
+        await Future.wait([
+          runtime
+              .stopAll()
+              .timeout(const Duration(seconds: 8), onTimeout: () {}),
+          Future<void>.delayed(const Duration(milliseconds: 250)),
+        ]);
+      } else {
+        // 无需停止：直接快速退出
+        await runtime
+            .stopAll()
+            .timeout(const Duration(seconds: 2), onTimeout: () {});
+      }
     } finally {
-      await _invoke('quit');
-      _closing = false;
+      // 先隐藏窗口再退出：exit(0) 引擎拆除需要时间，窗口若仍可见会残留
+      // 冻结的最后一帧（表现为动画卡住后才关闭）。先 hide（原生 SW_HIDE，
+      // 瞬时生效）让用户看不到任何冻结帧，进程随后结束
+      try {
+        await WindowService.instance.hide();
+      } catch (_) {}
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      exit(0);
     }
   }
 
-  Future<void> _invoke(String method) async {
-    try {
-      await _windowChannel.invokeMethod(method);
-    } catch (_) {
-      // 原生侧不可用（非 Windows 运行等）：忽略
-    }
+  /// 「正在停止实例」过渡对话框：全屏遮罩 + 转圈 + 提示文案。
+  Future<void> _showStoppingDialog() {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null) return Future.value();
+    final l10n = AppLocalizations.of(ctx);
+    return showDialog<void>(
+      context: ctx,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.exitStoppingInstances,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// 关闭行为询问对话框：返回 (选择, 是否记住)。取消返回 (null, false)。

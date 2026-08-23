@@ -33,6 +33,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonStart => '启动';
 
   @override
+  String get detailInstanceNotRunning => '实例未启动';
+
+  @override
+  String get detailInstanceNotRunningHint => '启动实例后才能查看其数据。';
+
+  @override
+  String get detailStartupWait => '正在连接实例…';
+
+  @override
+  String get exitStoppingInstances => '请稍等，正在停止实例…\n请不要强行关闭本程序';
+
+  @override
   String get commonStop => '停止';
 
   @override
@@ -1274,6 +1286,18 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get commonStart => '啟動';
+
+  @override
+  String get detailInstanceNotRunning => '實例未啟動';
+
+  @override
+  String get detailInstanceNotRunningHint => '啟動實例後才能查看其資料。';
+
+  @override
+  String get detailStartupWait => '正在連接實例…';
+
+  @override
+  String get exitStoppingInstances => '請稍等，正在停止實例…\n請不要強行關閉本程式';
 
   @override
   String get commonStop => '停止';

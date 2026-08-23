@@ -33,6 +33,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonStart => 'Start';
 
   @override
+  String get detailInstanceNotRunning => 'Instance is not running';
+
+  @override
+  String get detailInstanceNotRunningHint =>
+      'Start the instance to access its data.';
+
+  @override
+  String get detailStartupWait => 'Connecting to instance…';
+
+  @override
+  String get exitStoppingInstances =>
+      'Please wait, stopping instances…\nDo not force close this program';
+
+  @override
   String get commonStop => 'Stop';
 
   @override

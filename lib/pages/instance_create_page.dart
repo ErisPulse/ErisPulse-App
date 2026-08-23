@@ -104,57 +104,62 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 680;
             if (wide) {
-              // PC：两栏铺满（左：引导/类型/名称；右：连接或环境 + 创建）
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CreateHeader(),
-                                const SizedBox(height: 20),
-                                _typeSelector(l10n),
-                                const SizedBox(height: 16),
-                                _nameField(l10n),
-                              ],
+              // PC：两栏铺满，但整体限制最大宽度避免超宽屏拉伸失衡
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1040),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(20),
+                          children: [
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const _CreateHeader(),
+                                    const SizedBox(height: 20),
+                                    _typeSelector(l10n),
+                                    const SizedBox(height: 16),
+                                    _nameField(l10n),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (isRemote)
-                                  ..._remoteFields(l10n)
-                                else
-                                  ..._localFields(l10n, localInstances),
-                              ],
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(20),
+                          children: [
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (isRemote)
+                                      ..._remoteFields(l10n)
+                                    else
+                                      ..._localFields(l10n, localInstances),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 20),
+                            _submitSection(l10n, isRemote),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-                        _submitSection(l10n, isRemote),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               );
             }
             // 移动端：单列

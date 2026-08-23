@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "ru",
   "appName": "ErisPulse",
   "commonCancel": "Отмена",
@@ -8,6 +8,10 @@
   "commonSave": "Сохранить",
   "commonDelete": "Удалить",
   "commonStart": "Запуск",
+  "detailInstanceNotRunning": "Экземпляр не запущен",
+  "detailInstanceNotRunningHint": "Запустите экземпляр, чтобы получить доступ к его данным.",
+  "detailStartupWait": "Подключение к экземпляру…",
+  "exitStoppingInstances": "Подождите, идёт остановка экземпляров…\nНе закрывайте программу принудительно",
   "commonStop": "Остановить",
   "commonRestart": "Перезапуск",
   "commonCreate": "Создать",

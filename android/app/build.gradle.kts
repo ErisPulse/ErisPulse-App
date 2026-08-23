@@ -27,6 +27,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // 仅打包 arm64-v8a：runtime 二进制（proot/busybox 等）只有 aarch64 构建，
+        // 且纯 64 位设备（骁龙 8 Gen 3 / 天玑 9300 等）的 ROM 会拒绝安装含
+        // 32 位 native lib 的 APK。abiFilters 过滤所有来源（Flutter 引擎 /
+        // 插件 AAR / jniLibs），--target-platform 只过滤引擎，管不到
+        // libdartjni.so / libdatastore_shared_counter.so 等插件 AAR 库。
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     signingConfigs {

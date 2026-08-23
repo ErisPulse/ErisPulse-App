@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "zh",
   "appName": "ErisPulse",
   "commonCancel": "取消",
@@ -8,6 +8,10 @@
   "commonSave": "保存",
   "commonDelete": "删除",
   "commonStart": "启动",
+  "detailInstanceNotRunning": "实例未启动",
+  "detailInstanceNotRunningHint": "启动实例后才能查看其数据。",
+  "detailStartupWait": "正在连接实例…",
+  "exitStoppingInstances": "请稍等，正在停止实例…\n请不要强行关闭本程序",
   "commonStop": "停止",
   "commonRestart": "重启",
   "commonCreate": "创建",
