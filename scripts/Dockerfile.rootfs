@@ -19,15 +19,21 @@ RUN bash /build-rootfs.sh
 
 # termux proot 工具链（bionic 编译，Android 上无 clone3 SIGSYS 问题）。
 # 含四个文件：proot 主程序 + ptrace loader + 动态依赖 libtalloc.so.2 + libandroid-shmem.so。
-# 版本号对应 termux 仓库当前构建；升级时同步更新 URL。
+# 版本号不写死：构建时从 Termux Packages 索引解析各包当前 Filename，仓库重建后自动适配。
 RUN apt-get update -qq && \
     apt-get install -y -qq --no-install-recommends \
-      curl dpkg && \
-    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.1.107.90_aarch64.deb" -o /tmp/proot.deb && \
+      curl dpkg gzip && \
+    curl -fsSL "https://packages.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages.gz" -o /tmp/Packages.gz && \
+    TERMUX_BASE="https://packages.termux.dev/apt/termux-main" && \
+    getfname() { gzip -dc /tmp/Packages.gz | awk -v p="$1" '$1=="Package:"{n=$2} $1=="Filename:" && n==p {print $2; exit}'; } && \
+    PROOT_URL="$TERMUX_BASE/$(getfname proot)" && \
+    TALLOC_URL="$TERMUX_BASE/$(getfname libtalloc)" && \
+    SHMEM_URL="$TERMUX_BASE/$(getfname libandroid-shmem)" && \
+    curl -fsSL "$PROOT_URL" -o /tmp/proot.deb && \
     dpkg-deb -x /tmp/proot.deb /tmp/proot-pkg && \
-    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/libtalloc_2.4.3_aarch64.deb" -o /tmp/talloc.deb && \
+    curl -fsSL "$TALLOC_URL" -o /tmp/talloc.deb && \
     dpkg-deb -x /tmp/talloc.deb /tmp/talloc-pkg && \
-    curl -fsSL "https://packages.termux.dev/apt/termux-main/pool/main/liba/libandroid-shmem/libandroid-shmem_0.7_aarch64.deb" -o /tmp/shmem.deb && \
+    curl -fsSL "$SHMEM_URL" -o /tmp/shmem.deb && \
     dpkg-deb -x /tmp/shmem.deb /tmp/shmem-pkg && \
     PREFIX=/tmp/proot-pkg/data/data/com.termux/files/usr && \
     cp "$PREFIX/bin/proot" /proot-aarch64 && \
@@ -35,7 +41,7 @@ RUN apt-get update -qq && \
     cp /tmp/talloc-pkg/data/data/com.termux/files/usr/lib/libtalloc.so.2 /libtalloc.so.2-aarch64 && \
     cp /tmp/shmem-pkg/data/data/com.termux/files/usr/lib/libandroid-shmem.so /libandroid-shmem.so-aarch64 && \
     chmod +x /proot-aarch64 /loader-aarch64 /libandroid-shmem.so-aarch64 && \
-    rm -rf /tmp/proot.deb /tmp/talloc.deb /tmp/shmem.deb /tmp/proot-pkg /tmp/talloc-pkg /tmp/shmem-pkg
+    rm -rf /tmp/proot.deb /tmp/talloc.deb /tmp/shmem.deb /tmp/proot-pkg /tmp/talloc-pkg /tmp/shmem-pkg /tmp/Packages.gz
 
 # 获取 busybox-static（Alpine 的 aarch64 静态二进制）
 RUN curl -fsSL "$(curl -fsSL 'https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/' \
