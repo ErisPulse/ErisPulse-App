@@ -252,10 +252,10 @@ job build-rootfs→ 检查 v{version} release 是否已有 rootfs
 job build-apk   → 矩阵 [online, offline]（各自独立 job，可单独重试）
                  → 下载 runtime-assets
                  → online: 不含 rootfs；offline: 内置 rootfs
-                 → flutter build apk --split-per-abi + universal
+                 → flutter build apk --release（abiFilters 纯 arm64-v8a）
                  → 重命名 + upload artifact
   ↓
-job release     → 收集全部产物（8 APK + rootfs + proot + busybox）
+job release     → 收集全部产物（2 APK + rootfs + proot + busybox）
                  → 创建/更新 v{version} release（notes 从 CHANGELOG.md 提取）
 ```
 
@@ -263,9 +263,6 @@ job release     → 收集全部产物（8 APK + rootfs + proot + busybox）
 
 ```
 ErisPulse-App-0.2.0-online-arm64-v8a.apk
-ErisPulse-App-0.2.0-online-armeabi-v7a.apk
-ErisPulse-App-0.2.0-online-x86_64.apk
-ErisPulse-App-0.2.0-online-universal.apk
 ErisPulse-App-0.2.0-offline-arm64-v8a.apk      （offline 内置 rootfs，更大）
 ...
 ErisPulse-App-0.2.0-rootfs-aarch64.tar.gz
