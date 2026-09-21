@@ -153,6 +153,13 @@ Both install the same way:
 
 > Pick the build for your platform from [Releases](https://github.com/ErisPulse/ErisPulse-App/releases): Windows `setup.exe` (or portable `zip`), Linux `tar.gz`, macOS `zip`.
 
+> [!NOTE]
+> **Linux:** the `tar.gz` does not bundle system libraries — install GTK3 first or you'll get `libgtk-3.so.0: cannot open shared object file`:
+> ```bash
+> sudo apt install -y libgtk-3-0 libayatana-appindicator3-1 libwebkit2gtk-4.1-0
+> ```
+> Newer archives ship `install-deps.sh` which does this for you (detects apt / dnf / pacman / zypper). WSL2 users need WSLg for the GUI (enabled by default on Windows 11).
+
 1. Install and launch.
 2. Choose an ErisPulse SDK version on the welcome screen (latest is preselected) and install it.
 3. Create an instance and start it.

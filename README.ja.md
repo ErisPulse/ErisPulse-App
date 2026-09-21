@@ -149,6 +149,13 @@ GitHub Releases は地域によって遅い・到達不能なことがありま�
 
 > [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) からプラットフォームに合わせてダウンロード：Windows `setup.exe`（またはポータブル `zip`）、Linux `tar.gz`、macOS `zip`。
 
+> [!NOTE]
+> **Linux：** `tar.gz` にはシステムライブラリが同梱されていません。GTK3 が未インストールだと `libgtk-3.so.0: cannot open shared object file` と表示されます。先に依存関係をインストールしてください：
+> ```bash
+> sudo apt install -y libgtk-3-0 libayatana-appindicator3-1 libwebkit2gtk-4.1-0
+> ```
+> 新しいアーカイブには `install-deps.sh` が同梱され、ワンクリックでインストールできます（apt / dnf / pacman / zypper 自動判別）。WSL2 で GUI を表示するには WSLg が必要です（Windows 11 では既定で有効）。
+
 1. インストールして起動します。
 2. ようこそ画面でインストールする ErisPulse SDK のバージョンを選択し（デフォルトで最新が選択済み）、インストールします。
 3. インスタンスを作成して起動します。

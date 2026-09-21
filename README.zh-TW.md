@@ -149,6 +149,13 @@ GitHub Releases 在部分網路環境緩慢或不可達——在設定頁一鍵�
 
 > 從 [Releases](https://github.com/ErisPulse/ErisPulse-App/releases) 依平台選擇下載：Windows `setup.exe`（或免安裝 `zip`）、Linux `tar.gz`、macOS `zip`。
 
+> [!NOTE]
+> **Linux：** `tar.gz` 不打包系統函式庫，未安裝 GTK3 會報 `libgtk-3.so.0: cannot open shared object file`，請先安裝依賴：
+> ```bash
+> sudo apt install -y libgtk-3-0 libayatana-appindicator3-1 libwebkit2gtk-4.1-0
+> ```
+> 新版壓縮包已內建 `install-deps.sh` 一鍵安裝（自動識別 apt / dnf / pacman / zypper）。WSL2 下需要 WSLg 才能顯示介面（Windows 11 預設啟用）。
+
 1. 安裝並啟動。
 2. 在歡迎頁選擇要安裝的 ErisPulse SDK 版本（預設選中最新）並安裝。
 3. 建立一個實例並啟動。

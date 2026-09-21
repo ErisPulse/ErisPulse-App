@@ -366,9 +366,37 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           V="${{ steps.version.outputs.version }}"
-          mkdir -p out
+          BUNDLE="build/linux/${{ matrix.build_arch }}/release/bundle"
+          # Linux 不打包系统库（GTK3 等），随包附依赖安装脚本：
+          # 首次运行前执行 ./install-deps.sh，缺库时报 libgtk-3.so.0 之类的错
+          cat > "$BUNDLE/install-deps.sh" <<'EOF'
+          #!/usr/bin/env bash
+          # ErisPulse-App Linux 系统依赖一键安装（GTK3 / 托盘指示器 / WebView）
+          set -e
+          if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+
+          if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update
+            # webkit2gtk 4.1 为 22.04+ 包名，旧版回落 4.0
+            $SUDO apt-get install -y libgtk-3-0 libayatana-appindicator3-1 \
+              libwebkit2gtk-4.1-0 \
+              || $SUDO apt-get install -y libwebkit2gtk-4.0-37
+          elif command -v dnf >/dev/null 2>&1; then
+            $SUDO dnf install -y gtk3 libappindicator-gtk3 webkit2gtk4.1
+          elif command -v pacman >/dev/null 2>&1; then
+            $SUDO pacman -Sy --needed gtk3 libayatana-appindicator webkit2gtk-4.1
+          elif command -v zypper >/dev/null 2>&1; then
+            $SUDO zypper install -y gtk3 libayatana-appindicator3-1 \
+              libwebkit2gtk-4_1-0
+          else
+            echo "未识别的包管理器：请手动安装 GTK3 / libappindicator / webkit2gtk"
+            exit 1
+          fi
+          echo "依赖安装完成，可运行 ./ErisPulseApp"
+          EOF
+          chmod +x "$BUNDLE/install-deps.sh"
           tar -czf "out/ErisPulse-App-${V}-linux-${{ matrix.build_arch }}.tar.gz" \
-            -C build/linux/${{ matrix.build_arch }}/release/bundle .
+            -C "$BUNDLE" .
 
       - name: Package macOS
         if: runner.os == 'macOS'

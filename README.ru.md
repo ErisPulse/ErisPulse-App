@@ -149,6 +149,13 @@ GitHub Releases может быть медленным или недоступн
 
 > Скачайте сборку для своей платформы со страницы [Releases](https://github.com/ErisPulse/ErisPulse-App/releases): Windows `setup.exe` (или портативный `zip`), Linux `tar.gz`, macOS `zip`.
 
+> [!NOTE]
+> **Linux:** архив `tar.gz` не содержит системных библиотек — без GTK3 появится ошибка `libgtk-3.so.0: cannot open shared object file`. Сначала установите зависимости:
+> ```bash
+> sudo apt install -y libgtk-3-0 libayatana-appindicator3-1 libwebkit2gtk-4.1-0
+> ```
+> В новых архивах есть скрипт `install-deps.sh`, который делает это автоматически (apt / dnf / pacman / zypper). Для GUI в WSL2 требуется WSLg (включён по умолчанию в Windows 11).
+
 1. Установите и запустите.
 2. На экране приветствия выберите версию SDK ErisPulse для установки (по умолчанию выбрана последняя) и установите.
 3. Создайте экземпляр и запустите его.
