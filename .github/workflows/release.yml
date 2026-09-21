@@ -395,6 +395,7 @@ jobs:
           echo "依赖安装完成，可运行 ./ErisPulseApp"
           EOF
           chmod +x "$BUNDLE/install-deps.sh"
+          mkdir -p out
           tar -czf "out/ErisPulse-App-${V}-linux-${{ matrix.build_arch }}.tar.gz" \
             -C "$BUNDLE" .
 
