@@ -88,25 +88,40 @@ class WindowService with WindowListener {
   /// 初始化系统托盘（桌面平台）。
   ///
   /// [showLabel] / [exitLabel]：右键菜单文案，由调用方按用户语言传入。
+  ///
+  /// 托盘不可用时静默降级（仅 debugPrint）：Linux 无 D-Bus 会话总线
+  /// （WSL / 最小化桌面常见）会让 appindicator 注册失败、
+  /// tray_manager 通道抛 MissingPluginException——不应影响主功能。
   Future<void> initTray({
     String showLabel = 'Show',
     String exitLabel = 'Quit',
   }) async {
     if (!_isDesktop) return;
-    await ensureInitialized();
-    trayManager.addListener(_TrayListener(this));
-    // Windows 托盘需 ICO 图标（LoadImage(IMAGE_ICON)）；路径基于 flutter_assets
-    await trayManager.setIcon('assets/images/app_icon.ico');
-    await trayManager.setToolTip('ErisPulse');
-    await trayManager.setContextMenu(
-      Menu(
-        items: [
-          MenuItem(key: 'show', label: showLabel),
-          MenuItem.separator(),
-          MenuItem(key: 'exit', label: exitLabel),
-        ],
-      ),
-    );
+    // 无 D-Bus 会话总线时托盘必然不可用（Linux 托盘经 appindicator 走
+    // StatusNotifierItem / D-Bus），直接跳过，省去一串 GTK 告警
+    if (Platform.isLinux &&
+        !Platform.environment.containsKey('DBUS_SESSION_BUS_ADDRESS')) {
+      debugPrint('WindowService.initTray: 未检测到 D-Bus 会话总线，跳过托盘初始化');
+      return;
+    }
+    try {
+      await ensureInitialized();
+      trayManager.addListener(_TrayListener(this));
+      // Windows 托盘需 ICO 图标（LoadImage(IMAGE_ICON)）；路径基于 flutter_assets
+      await trayManager.setIcon('assets/images/app_icon.ico');
+      await trayManager.setToolTip('ErisPulse');
+      await trayManager.setContextMenu(
+        Menu(
+          items: [
+            MenuItem(key: 'show', label: showLabel),
+            MenuItem.separator(),
+            MenuItem(key: 'exit', label: exitLabel),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint('WindowService.initTray 失败（托盘不可用，主功能不受影响）: $e');
+    }
   }
 
   // ── 窗口控制 ──
