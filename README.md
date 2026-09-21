@@ -22,6 +22,12 @@ An official multi-platform client for [ErisPulse](https://github.com/ErisPulse/E
 
 ---
 
+## Screenshots
+
+| Desktop · Windows | Mobile · Android |
+|:---:|:---:|
+| <img src=".github/assets/screenshot-desktop.png" width="600" alt="Instance list on Windows" /> | <img src=".github/assets/screenshot-mobile.jpg" width="250" alt="Instance list on Android" /> |
+
 ## Core Features
 
 <div align="center">

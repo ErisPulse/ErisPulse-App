@@ -313,13 +313,15 @@ class RuntimeController extends ChangeNotifier {
   Future<int> _awaitInstanceEnv(String instanceId) {
     final completer = Completer<int>();
     StreamSubscription<Map<String, dynamic>?>? sub;
+    Timer? timeout;
     sub = _service!.on('instanceEnv').listen((e) {
       if (e?['id'] != instanceId) return;
       sub?.cancel();
+      timeout?.cancel();
       final ready = e?['ready'] == true;
       completer.complete(ready ? 0 : 1);
     });
-    Timer(const Duration(minutes: 5), () {
+    timeout = Timer(const Duration(minutes: 5), () {
       sub?.cancel();
       if (!completer.isCompleted) completer.complete(1);
     });
@@ -363,6 +365,18 @@ class RuntimeController extends ChangeNotifier {
   void stopInstance(String id) {
     if (_isDesktop) {
       _desktop?.stopInstance(id);
+      return;
+    }
+    _invoke('stopInstance', {'id': id});
+  }
+
+  /// 停止实例并等待其退出。
+  ///
+  /// 桌面端等待进程真正退出（删除实例前必须先等端口释放，
+  /// 否则收养/端口探测会把新实例对上旧进程）；移动端为异步指令，立即返回。
+  Future<void> stopInstanceAndWait(String id) async {
+    if (_isDesktop) {
+      await _desktop?.stopInstance(id);
       return;
     }
     _invoke('stopInstance', {'id': id});

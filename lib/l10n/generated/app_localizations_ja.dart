@@ -76,6 +76,103 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonRetry => '再試行';
 
   @override
+  String get errorTitle => 'エラーが発生しました';
+
+  @override
+  String get trayShow => 'メイン画面を表示';
+
+  @override
+  String get trayExit => '終了';
+
+  @override
+  String get notifChannelName => 'ErisPulse 実行中';
+
+  @override
+  String get notifChannelDesc => 'ErisPulse バックグラウンド保持サービス通知';
+
+  @override
+  String get createLoadingSdkVersions => 'SDK バージョンを読み込み中…';
+
+  @override
+  String get createSdkVersionsUnavailable => 'バージョン一覧を取得できないため、既定のバージョンを使用します';
+
+  @override
+  String get detailTabPerformance => 'パフォーマンス';
+
+  @override
+  String get perfCpu => 'CPU 使用率（プロセス）';
+
+  @override
+  String get perfMemory => 'メモリ使用率';
+
+  @override
+  String get perfLegendProcess => 'プロセス';
+
+  @override
+  String get perfLegendSystem => 'システム';
+
+  @override
+  String get detailTabTopology => 'トポロジ';
+
+  @override
+  String get topoUnsupported => 'トポロジを利用できません';
+
+  @override
+  String get topoUnsupportedHint =>
+      '接続先の ErisPulse SDK が古く get_topology に対応していません';
+
+  @override
+  String get topoStatModules => 'モジュール';
+
+  @override
+  String get topoStatAdapters => 'アダプター';
+
+  @override
+  String get topoStatBots => 'Bot';
+
+  @override
+  String get topoFilterResources => 'リソース';
+
+  @override
+  String get topoFilterDepends => '依存関係';
+
+  @override
+  String get topoSectionAdapters => 'アダプター';
+
+  @override
+  String get topoSectionModules => 'モジュール';
+
+  @override
+  String get topoAdapterDisabled => '無効';
+
+  @override
+  String get topoModuleLoaded => 'ロード済み';
+
+  @override
+  String get topoModuleNotLoaded => '未ロード';
+
+  @override
+  String get topoTypeCommands => 'コマンド';
+
+  @override
+  String get topoTypeServices => 'サービス';
+
+  @override
+  String get topoTypeHandlers => 'イベントハンドラー';
+
+  @override
+  String get topoTypeRoutes => 'ルート';
+
+  @override
+  String get topoTypeLifecycleHooks => 'ライフサイクルフック';
+
+  @override
+  String get topoTypeDepends => '依存';
+
+  @override
+  String get topoScopeApplies => 'このモジュールにはスコープルールが適用されています';
+
+  @override
   String get commonInitialize => '初期化';
 
   @override

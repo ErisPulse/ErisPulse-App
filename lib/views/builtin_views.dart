@@ -18,6 +18,7 @@ import 'instance_commands_view.dart';
 import 'instance_events_view.dart';
 import 'instance_monitor_view.dart';
 import 'instance_store_view.dart';
+import 'instance_topology_view.dart';
 import 'instance_view.dart';
 
 /// 注册全部内置视图（分组与顺序对齐 Dashboard 侧边栏）
@@ -31,6 +32,14 @@ void registerBuiltinViews(DetailViewRegistry registry) {
         icon: Icons.smart_toy_outlined,
         title: (l) => l.detailTabBots,
         builder: (_, inst) => InstanceBotsView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'topology',
+        icon: Icons.hub_outlined,
+        title: (l) => l.detailTabTopology,
+        builder: (_, inst) => InstanceTopologyView(instance: inst),
       ),
     )
     // ── 事件 ──

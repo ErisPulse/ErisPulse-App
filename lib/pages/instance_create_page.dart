@@ -327,18 +327,18 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
       if (_envMode == _EnvMode.fresh) ...[
         const SizedBox(height: 4),
         if (_versionsLoading)
-          const ListTile(
-            leading: SizedBox(
+          ListTile(
+            leading: const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            title: Text('加载 SDK 版本…'),
+            title: Text(l10n.createLoadingSdkVersions),
           )
         else if (_versions.isEmpty)
-          const ListTile(
-            leading: Icon(Icons.cloud_off_outlined),
-            title: Text('无法获取版本列表，将使用默认版本'),
+          ListTile(
+            leading: const Icon(Icons.cloud_off_outlined),
+            title: Text(l10n.createSdkVersionsUnavailable),
           )
         else
           DropdownButtonFormField<String>(

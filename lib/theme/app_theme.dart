@@ -32,6 +32,19 @@ abstract final class AppRadius {
   static BorderRadius get chip => BorderRadius.circular(s);
 }
 
+/// ErisPulse 品牌色（对齐 Dashboard base.css 的 --accent：
+/// 亮色 #4aa3dd / 暗色 #6a9df0）。
+///
+/// 仅作为 dynamic_color 取色失败时的回退 seed；
+/// Android 12+ 仍优先跟随系统 Material You 动态取色。
+abstract final class AppBrand {
+  /// 浅色主题回退 seed
+  static const Color seedLight = Color(0xFF4AA3DD);
+
+  /// 深色主题回退 seed
+  static const Color seedDark = Color(0xFF6A9DF0);
+}
+
 /// 应用主题构建器
 class AppTheme {
   AppTheme._();

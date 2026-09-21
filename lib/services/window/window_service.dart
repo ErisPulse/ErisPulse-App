@@ -86,7 +86,12 @@ class WindowService with WindowListener {
   }
 
   /// 初始化系统托盘（桌面平台）。
-  Future<void> initTray() async {
+  ///
+  /// [showLabel] / [exitLabel]：右键菜单文案，由调用方按用户语言传入。
+  Future<void> initTray({
+    String showLabel = 'Show',
+    String exitLabel = 'Quit',
+  }) async {
     if (!_isDesktop) return;
     await ensureInitialized();
     trayManager.addListener(_TrayListener(this));
@@ -96,9 +101,9 @@ class WindowService with WindowListener {
     await trayManager.setContextMenu(
       Menu(
         items: [
-          MenuItem(key: 'show', label: '显示主界面'),
+          MenuItem(key: 'show', label: showLabel),
           MenuItem.separator(),
-          MenuItem(key: 'exit', label: '退出'),
+          MenuItem(key: 'exit', label: exitLabel),
         ],
       ),
     );

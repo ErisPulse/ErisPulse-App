@@ -188,6 +188,10 @@ class DesktopRuntime {
         environment: {
           // 让后端 PackageManager 的 uv 命中本实例 venv，装包不会回落系统环境
           'VIRTUAL_ENV': venvDir.path,
+          // 强制子进程 stdio 用 UTF-8：Windows 下管道输出默认跟随系统本地
+          // 编码（中文 Windows = GBK），日志一旦含中文就会让解码端炸掉
+          'PYTHONUTF8': '1',
+          'PYTHONIOENCODING': 'utf-8',
         },
       );
       final tracker = _DesktopProc(data, process: proc);
@@ -325,14 +329,22 @@ class DesktopRuntime {
       _logFiles[id]?.writeln(line);
     }
 
+    // allowMalformed：坏字节替换为 U+FFFD 而不是抛异常——
+    // 解码异常会杀死整个订阅，导致该进程后续日志全部丢失（"日志不全"）
     proc.stdout
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen(onLine);
+        .listen(
+          onLine,
+          onError: (Object e) => onLine('[stdout 解码异常: $e]'),
+        );
     proc.stderr
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen(onLine);
+        .listen(
+          onLine,
+          onError: (Object e) => onLine('[stderr 解码异常: $e]'),
+        );
   }
 
   Future<void> _waitReady(_DesktopProc tracker, InstanceData data) async {

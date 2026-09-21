@@ -252,8 +252,8 @@ job build-rootfs→ 检查 v{version} release 是否已有 rootfs
 job build-apk   → 矩阵 [online, offline]（各自独立 job，可单独重试）
                  → 下载 runtime-assets
                  → online: 不含 rootfs；offline: 内置 rootfs
-                 → flutter build apk --release（abiFilters 纯 arm64-v8a）
-                 → 重命名 + upload artifact
+                 → flutter build apk --release --split-per-abi + universal
+                 → 只发布 arm64-v8a 分片（分片仅含该 ABI，无 32 位库）+ upload artifact
   ↓
 job release     → 收集全部产物（2 APK + rootfs + proot + busybox）
                  → 创建/更新 v{version} release（notes 从 CHANGELOG.md 提取）
@@ -269,6 +269,15 @@ ErisPulse-App-0.2.0-rootfs-aarch64.tar.gz
 ErisPulse-App-0.2.0-proot-aarch64
 ErisPulse-App-0.2.0-busybox-aarch64
 ```
+
+### 7.3.1 versionCode 策略（单调递增）
+
+`versionCode` 由 `android/app/build.gradle.kts` 自动生成：`maxOf(pubspec 的 +N, 天数×100)`。
+- 天数 = `System.currentTimeMillis() / 86400000`，乘以 100 后必然大于任何历史版本号
+  （2026 年起约为 206 万），跨天发布必然递增。
+- 同一天多次构建 code 相同，可覆盖重装（非降级），不会触发
+  `INSTALL_FAILED_VERSION_DOWNGRADE`。
+- 不要依赖 pubspec 的 `+N`（曾长期停在 `+1`，设备残留高 code 时被系统拒装）。
 
 ### 7.4 触发发布
 

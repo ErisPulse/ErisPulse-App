@@ -75,6 +75,102 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonRetry => '重试';
 
   @override
+  String get errorTitle => '出错了';
+
+  @override
+  String get trayShow => '显示主界面';
+
+  @override
+  String get trayExit => '退出';
+
+  @override
+  String get notifChannelName => 'ErisPulse 运行中';
+
+  @override
+  String get notifChannelDesc => 'ErisPulse 后台保活服务通知';
+
+  @override
+  String get createLoadingSdkVersions => '加载 SDK 版本…';
+
+  @override
+  String get createSdkVersionsUnavailable => '无法获取版本列表，将使用默认版本';
+
+  @override
+  String get detailTabPerformance => '性能';
+
+  @override
+  String get perfCpu => 'CPU 占用（进程）';
+
+  @override
+  String get perfMemory => '内存占用';
+
+  @override
+  String get perfLegendProcess => '进程';
+
+  @override
+  String get perfLegendSystem => '系统';
+
+  @override
+  String get detailTabTopology => '拓扑';
+
+  @override
+  String get topoUnsupported => '拓扑不可用';
+
+  @override
+  String get topoUnsupportedHint => '所连接的 ErisPulse SDK 版本过旧，暂不支持 get_topology';
+
+  @override
+  String get topoStatModules => '模块';
+
+  @override
+  String get topoStatAdapters => '适配器';
+
+  @override
+  String get topoStatBots => 'Bot';
+
+  @override
+  String get topoFilterResources => '资源';
+
+  @override
+  String get topoFilterDepends => '依赖';
+
+  @override
+  String get topoSectionAdapters => '适配器';
+
+  @override
+  String get topoSectionModules => '模块';
+
+  @override
+  String get topoAdapterDisabled => '已禁用';
+
+  @override
+  String get topoModuleLoaded => '已加载';
+
+  @override
+  String get topoModuleNotLoaded => '未加载';
+
+  @override
+  String get topoTypeCommands => '命令';
+
+  @override
+  String get topoTypeServices => '服务';
+
+  @override
+  String get topoTypeHandlers => '事件处理器';
+
+  @override
+  String get topoTypeRoutes => '路由';
+
+  @override
+  String get topoTypeLifecycleHooks => '生命周期钩子';
+
+  @override
+  String get topoTypeDepends => '依赖';
+
+  @override
+  String get topoScopeApplies => '该模块受作用域规则管控';
+
+  @override
   String get commonInitialize => '初始化';
 
   @override
@@ -1328,6 +1424,102 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get commonRetry => '重試';
+
+  @override
+  String get errorTitle => '發生錯誤';
+
+  @override
+  String get trayShow => '顯示主介面';
+
+  @override
+  String get trayExit => '結束';
+
+  @override
+  String get notifChannelName => 'ErisPulse 執行中';
+
+  @override
+  String get notifChannelDesc => 'ErisPulse 背景保活服務通知';
+
+  @override
+  String get createLoadingSdkVersions => '載入 SDK 版本…';
+
+  @override
+  String get createSdkVersionsUnavailable => '無法取得版本清單，將使用預設版本';
+
+  @override
+  String get detailTabPerformance => '效能';
+
+  @override
+  String get perfCpu => 'CPU 佔用（行程）';
+
+  @override
+  String get perfMemory => '記憶體佔用';
+
+  @override
+  String get perfLegendProcess => '行程';
+
+  @override
+  String get perfLegendSystem => '系統';
+
+  @override
+  String get detailTabTopology => '拓撲';
+
+  @override
+  String get topoUnsupported => '拓撲不可用';
+
+  @override
+  String get topoUnsupportedHint => '所連線的 ErisPulse SDK 版本過舊，暫不支援 get_topology';
+
+  @override
+  String get topoStatModules => '模組';
+
+  @override
+  String get topoStatAdapters => '轉接器';
+
+  @override
+  String get topoStatBots => 'Bot';
+
+  @override
+  String get topoFilterResources => '資源';
+
+  @override
+  String get topoFilterDepends => '依賴';
+
+  @override
+  String get topoSectionAdapters => '轉接器';
+
+  @override
+  String get topoSectionModules => '模組';
+
+  @override
+  String get topoAdapterDisabled => '已停用';
+
+  @override
+  String get topoModuleLoaded => '已載入';
+
+  @override
+  String get topoModuleNotLoaded => '未載入';
+
+  @override
+  String get topoTypeCommands => '命令';
+
+  @override
+  String get topoTypeServices => '服務';
+
+  @override
+  String get topoTypeHandlers => '事件處理器';
+
+  @override
+  String get topoTypeRoutes => '路由';
+
+  @override
+  String get topoTypeLifecycleHooks => '生命週期鉤子';
+
+  @override
+  String get topoTypeDepends => '依賴';
+
+  @override
+  String get topoScopeApplies => '該模組受作用域規則管控';
 
   @override
   String get commonInitialize => '初始化';

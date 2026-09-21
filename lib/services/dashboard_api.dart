@@ -184,6 +184,13 @@ class DashboardApi {
   /// 简要状态（用于卡片）
   Future<Map<String, dynamic>> getStatus() => _getJson('/status');
 
+  // 拓扑（归属关系）
+
+  /// 拓扑树：模块归属资源（命令/服务/处理器/路由）+ 适配器/Bot + 作用域。
+  ///
+  /// 后端 SDK 过旧不含 get_topology 时返回 {'supported': false}。
+  Future<Map<String, dynamic>> getTopology() => _getJson('/topology');
+
   // 生命周期 / 事件
 
   /// 最近事件列表（支持服务端类型/平台过滤，对齐后端 /events 查询参数）。
@@ -534,7 +541,8 @@ class DashboardApi {
   /// 列目录（browse 端点，解析 entries）
   Future<List<Map<String, dynamic>>> listFiles({String? path}) async {
     final p = (path == null || path.isEmpty) ? '.' : path;
-    final json = await _getJson('/files/browse?path=$p');
+    // 路径含空格 / # / % / & 时必须编码，否则查询参数会被截断或错乱
+    final json = await _getJson('/files/browse?path=${Uri.encodeComponent(p)}');
     final list = json['entries'] as List? ?? [];
     return list
         .map((e) => e is Map<String, dynamic> ? e : null)
@@ -544,7 +552,8 @@ class DashboardApi {
 
   /// 读文件文本
   Future<String> readFile(String path) async {
-    final json = await _getJson('/files/read?path=$path');
+    final json =
+        await _getJson('/files/read?path=${Uri.encodeComponent(path)}');
     return json['content'] as String? ?? '';
   }
 

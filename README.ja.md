@@ -22,6 +22,12 @@
 
 ---
 
+## スクリーンショット
+
+| デスクトップ · Windows | モバイル · Android |
+|:---:|:---:|
+| <img src=".github/assets/screenshot-desktop.png" width="600" alt="Windows のインスタンス一覧" /> | <img src=".github/assets/screenshot-mobile.jpg" width="250" alt="Android のインスタンス一覧" /> |
+
 ## 主な機能
 
 <table>

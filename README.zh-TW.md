@@ -22,6 +22,12 @@
 
 ---
 
+## 應用截圖
+
+| 桌面版 · Windows | 行動版 · Android |
+|:---:|:---:|
+| <img src=".github/assets/screenshot-desktop.png" width="600" alt="Windows 實例列表" /> | <img src=".github/assets/screenshot-mobile.jpg" width="250" alt="Android 實例列表" /> |
+
 ## 核心功能
 
 <table>

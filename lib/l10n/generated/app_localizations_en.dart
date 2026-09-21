@@ -77,6 +77,105 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRetry => 'Retry';
 
   @override
+  String get errorTitle => 'Something went wrong';
+
+  @override
+  String get trayShow => 'Show Main Window';
+
+  @override
+  String get trayExit => 'Quit';
+
+  @override
+  String get notifChannelName => 'ErisPulse Running';
+
+  @override
+  String get notifChannelDesc =>
+      'Keeps ErisPulse instances running in the background';
+
+  @override
+  String get createLoadingSdkVersions => 'Loading SDK versions…';
+
+  @override
+  String get createSdkVersionsUnavailable =>
+      'Couldn\'t fetch the version list, the default will be used';
+
+  @override
+  String get detailTabPerformance => 'Performance';
+
+  @override
+  String get perfCpu => 'CPU (process)';
+
+  @override
+  String get perfMemory => 'Memory usage';
+
+  @override
+  String get perfLegendProcess => 'Process';
+
+  @override
+  String get perfLegendSystem => 'System';
+
+  @override
+  String get detailTabTopology => 'Topology';
+
+  @override
+  String get topoUnsupported => 'Topology not available';
+
+  @override
+  String get topoUnsupportedHint =>
+      'The connected ErisPulse SDK is too old for get_topology';
+
+  @override
+  String get topoStatModules => 'Modules';
+
+  @override
+  String get topoStatAdapters => 'Adapters';
+
+  @override
+  String get topoStatBots => 'Bots';
+
+  @override
+  String get topoFilterResources => 'Resources';
+
+  @override
+  String get topoFilterDepends => 'Dependencies';
+
+  @override
+  String get topoSectionAdapters => 'Adapters';
+
+  @override
+  String get topoSectionModules => 'Modules';
+
+  @override
+  String get topoAdapterDisabled => 'disabled';
+
+  @override
+  String get topoModuleLoaded => 'loaded';
+
+  @override
+  String get topoModuleNotLoaded => 'not loaded';
+
+  @override
+  String get topoTypeCommands => 'Commands';
+
+  @override
+  String get topoTypeServices => 'Services';
+
+  @override
+  String get topoTypeHandlers => 'Handlers';
+
+  @override
+  String get topoTypeRoutes => 'Routes';
+
+  @override
+  String get topoTypeLifecycleHooks => 'Lifecycle hooks';
+
+  @override
+  String get topoTypeDepends => 'Depends on';
+
+  @override
+  String get topoScopeApplies => 'Scope rules apply to this module';
+
+  @override
   String get commonInitialize => 'Initialize';
 
   @override

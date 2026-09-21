@@ -138,33 +138,7 @@ class Instance {
 
   /// 展示用地址
   String get displayAddress =>
-      isRemote ? (remoteUrl ?? '远程') : '127.0.0.1:$port';
-
-  /// 状态对应的简短中文标签
-  String get statusLabel => switch (status) {
-        InstanceStatus.stopped => '已停止',
-        InstanceStatus.starting => '启动中',
-        InstanceStatus.running => '运行中',
-        InstanceStatus.error => '异常',
-        InstanceStatus.destroying => '销毁中',
-      };
-
-  /// 展示用状态标签。
-  ///
-  /// 远程实例没有本地进程，状态由健康度表达（在线/离线/连接中）；
-  /// 本地实例用进程状态。
-  String get displayStatusLabel {
-    if (isRemote) {
-      return switch (health) {
-        InstanceHealth.healthy => '在线',
-        InstanceHealth.booting => '连接中',
-        InstanceHealth.unreachable => '离线',
-        InstanceHealth.unauthorized => 'Token 无效',
-        InstanceHealth.unknown => '未知',
-      };
-    }
-    return statusLabel;
-  }
+      isRemote ? (remoteUrl ?? '—') : '127.0.0.1:$port';
 
   Instance copyWith({
     String? name,

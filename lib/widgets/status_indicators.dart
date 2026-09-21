@@ -3,6 +3,50 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/enums.dart';
 
+/// 实例状态 / 健康度 → 语义色（全项目唯一来源）。
+///
+/// 配色对齐 Dashboard base.css 的语义芯片（--ok / --pr / --wr / --er），
+/// 明暗主题分别取对应色值；未知/停止用中性灰。
+Color instanceStateColor(
+  BuildContext context, {
+  InstanceStatus? status,
+  InstanceHealth? health,
+}) {
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  final (ok, pr, wr, er) = dark
+      ? (
+          const Color(0xFF6FD6A1),
+          const Color(0xFF7FA8F0),
+          const Color(0xFFF5B95D),
+          const Color(0xFFFF8B95),
+        )
+      : (
+          const Color(0xFF178A52),
+          const Color(0xFF2E88C4),
+          const Color(0xFFC77F16),
+          const Color(0xFFD9404E),
+        );
+  final neutral = dark ? const Color(0xFF5F6875) : const Color(0xFF9AA4B1);
+
+  final h = health;
+  if (h != null) {
+    return switch (h) {
+      InstanceHealth.healthy => ok,
+      InstanceHealth.booting => pr,
+      InstanceHealth.unauthorized => wr,
+      InstanceHealth.unreachable => er,
+      InstanceHealth.unknown => neutral,
+    };
+  }
+  return switch (status!) {
+    InstanceStatus.running => ok,
+    InstanceStatus.starting => pr,
+    InstanceStatus.error => er,
+    InstanceStatus.destroying => wr,
+    InstanceStatus.stopped => neutral,
+  };
+}
+
 /// 实例状态指示点。
 ///
 /// 远程实例没有本地进程，[status] 固定为 stopped，此时传入 [health]
@@ -23,24 +67,26 @@ class StatusDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = health;
     final l10n = AppLocalizations.of(context);
-    final (color, tooltip) = h != null
+    final tooltip = h != null
         ? switch (h) {
-            InstanceHealth.healthy => (Colors.green, l10n.statusOnline),
-            InstanceHealth.booting => (Colors.blue, l10n.statusConnecting),
-            InstanceHealth.unauthorized => (
-                Colors.orange,
-                l10n.statusTokenInvalid,
-              ),
-            InstanceHealth.unreachable => (Colors.red, l10n.statusOffline),
-            InstanceHealth.unknown => (Colors.grey, l10n.statusUnknown),
+            InstanceHealth.healthy => l10n.statusOnline,
+            InstanceHealth.booting => l10n.statusConnecting,
+            InstanceHealth.unauthorized => l10n.statusTokenInvalid,
+            InstanceHealth.unreachable => l10n.statusOffline,
+            InstanceHealth.unknown => l10n.statusUnknown,
           }
         : switch (status) {
-            InstanceStatus.running => (Colors.green, l10n.statusRunning),
-            InstanceStatus.starting => (Colors.blue, l10n.statusStarting),
-            InstanceStatus.error => (Colors.red, l10n.statusError),
-            InstanceStatus.destroying => (Colors.orange, l10n.statusDestroying),
-            InstanceStatus.stopped => (Colors.grey, l10n.statusStopped),
+            InstanceStatus.running => l10n.statusRunning,
+            InstanceStatus.starting => l10n.statusStarting,
+            InstanceStatus.error => l10n.statusError,
+            InstanceStatus.destroying => l10n.statusDestroying,
+            InstanceStatus.stopped => l10n.statusStopped,
           };
+    final color = instanceStateColor(
+      context,
+      status: status,
+      health: health,
+    );
     return Tooltip(
       message: tooltip,
       child: Container(
@@ -69,16 +115,20 @@ class HealthBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final (label, color) = switch (health) {
-      InstanceHealth.healthy => (l10n.statusHealthy, Colors.green),
-      InstanceHealth.booting => (l10n.statusConnecting, Colors.blue),
-      InstanceHealth.unauthorized => (l10n.statusTokenInvalid, Colors.orange),
-      InstanceHealth.unreachable => (l10n.statusOffline, Colors.red),
-      InstanceHealth.unknown => (l10n.statusRemoteUnknown, Colors.grey),
+    final label = switch (health) {
+      InstanceHealth.healthy => l10n.statusHealthy,
+      InstanceHealth.booting => l10n.statusConnecting,
+      InstanceHealth.unauthorized => l10n.statusTokenInvalid,
+      InstanceHealth.unreachable => l10n.statusOffline,
+      InstanceHealth.unknown => l10n.statusRemoteUnknown,
     };
     return Chip(
       label: Text(label),
-      avatar: Icon(Icons.circle, color: color, size: 10),
+      avatar: Icon(
+        Icons.circle,
+        color: instanceStateColor(context, health: health),
+        size: 10,
+      ),
       padding: EdgeInsets.zero,
       labelPadding: const EdgeInsets.symmetric(horizontal: 4),
       visualDensity: VisualDensity.compact,

@@ -195,17 +195,21 @@ jobs:
         run: |
           flutter clean
           flutter pub get
+          flutter build apk --release --split-per-abi --dart-define=FLAVOR=${{ matrix.flavor }}
+          # universal 亦保留用于下载/内部测试（含 32 位库，纯 64 位设备不可用）
           flutter build apk --release --dart-define=FLAVOR=${{ matrix.flavor }}
 
-      - name: Rename APK (arm64-v8a only)
+      - name: Rename APKs (arm64-v8a + universal)
         run: |
           mkdir -p out
           V=$(grep '^version' pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
           F="${{ matrix.flavor }}"
           SRC="build/app/outputs/flutter-apk"
-          # 纯 arm64-v8a：abiFilters 过滤所有来源（引擎/插件 AAR/jniLibs），
-          # universal 即 arm64-only，不再提供 multi-abi universal 胖包
-          cp "$SRC/app-release.apk" "out/ErisPulse-App-${V}-${F}-arm64-v8a.apk"
+          # 主产物：arm64-v8a 分片，仅含该 ABI 的引擎/插件/jniLibs，无 32 位库，
+          # 纯 64 位设备（骁龙 8 Gen 3 等）可安装。
+          cp "$SRC/app-arm64-v8a-release.apk" "out/ErisPulse-App-${V}-${F}-arm64-v8a.apk"
+          # universal 兜底发布（含 32 位库，纯 64 位设备不可用，供其它设备/内测）
+          cp "$SRC/app-release.apk"           "out/ErisPulse-App-${V}-${F}-universal.apk"
           ls -lh out/
 
       - name: Upload APKs

@@ -10,7 +10,7 @@
 
 import 'dart:async';
 import 'dart:io' show Platform, exit;
-import 'dart:ui' show AppExitResponse;
+import 'dart:ui' show AppExitResponse, PlatformDispatcher;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +39,12 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 先加载用户语言偏好：通知渠道名等启动期文案需要本地化
+  final appSettings = AppSettings();
+  await appSettings.load();
+  final initL10n = await AppLocalizations.delegate
+      .load(appSettings.locale ?? PlatformDispatcher.instance.locale);
+
   // ── Android 专用：通知权限 + 前台服务 + native lib 缓存 ──
   if (Platform.isAndroid) {
     // 通知权限（Android 13+）
@@ -51,11 +57,11 @@ Future<void> main() async {
 
     // 创建 FGS 通知渠道（必须与 configureBackgroundService 的
     // notificationChannelId 一致，且要在 startService 之前创建）
-    const AndroidNotificationChannel runtimeChannel =
+    final AndroidNotificationChannel runtimeChannel =
         AndroidNotificationChannel(
       'erispulse_runtime',
-      'ErisPulse 运行中',
-      description: 'ErisPulse 后台保活服务通知',
+      initL10n.notifChannelName,
+      description: initL10n.notifChannelDesc,
       importance: Importance.low,
     );
     await notifications
@@ -79,9 +85,6 @@ Future<void> main() async {
 
   final instanceManager = InstanceManager();
   await instanceManager.load();
-
-  final appSettings = AppSettings();
-  await appSettings.load();
 
   final runtime = RuntimeController(instanceManager: instanceManager);
   await runtime.init();
@@ -121,12 +124,12 @@ class ErisPulseApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light(
                 lightDynamic ??
-                    ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4)),
+                    ColorScheme.fromSeed(seedColor: AppBrand.seedLight),
               ),
               darkTheme: AppTheme.dark(
                 darkDynamic ??
                     ColorScheme.fromSeed(
-                      seedColor: const Color(0xFF6750A4),
+                      seedColor: AppBrand.seedDark,
                       brightness: Brightness.dark,
                     ),
               ),
@@ -143,6 +146,16 @@ class ErisPulseApp extends StatelessWidget {
               routes: {
                 SettingsPage.routeName: (_) => const SettingsPage(),
                 DebugPage.routeName: (_) => const DebugPage(),
+              },
+              // 桌面无边框窗口：全局裁出圆角（其余平台窗口由系统自带圆角）
+              builder: (context, child) {
+                final desktop =
+                    Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+                if (!desktop || child == null) return child ?? const SizedBox();
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: child,
+                );
               },
             ),
           );
@@ -187,8 +200,18 @@ class _ExitHandlerState extends State<_ExitHandler> {
       };
       // 拦截原生关闭信号，交由 onCloseRequest 决定
       window.setPreventClose(true);
-      // 初始化托盘
-      window.initTray();
+      // 初始化托盘（菜单文案按用户语言本地化）
+      AppLocalizations.delegate
+          .load(
+            context.read<AppSettings>().locale ??
+                PlatformDispatcher.instance.locale,
+          )
+          .then(
+            (l10n) => window.initTray(
+              showLabel: l10n.trayShow,
+              exitLabel: l10n.trayExit,
+            ),
+          );
     }
     // 桌面：Dart 侧主动退出（exitApplication）时杀全部实例进程；
     // 移动端实例由 FGS 保活，退出 UI 不清进程

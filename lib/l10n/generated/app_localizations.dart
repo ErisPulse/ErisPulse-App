@@ -235,6 +235,198 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetry;
 
+  /// No description provided for @errorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get errorTitle;
+
+  /// No description provided for @trayShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Main Window'**
+  String get trayShow;
+
+  /// No description provided for @trayExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get trayExit;
+
+  /// No description provided for @notifChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'ErisPulse Running'**
+  String get notifChannelName;
+
+  /// No description provided for @notifChannelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps ErisPulse instances running in the background'**
+  String get notifChannelDesc;
+
+  /// No description provided for @createLoadingSdkVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading SDK versions…'**
+  String get createLoadingSdkVersions;
+
+  /// No description provided for @createSdkVersionsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t fetch the version list, the default will be used'**
+  String get createSdkVersionsUnavailable;
+
+  /// No description provided for @detailTabPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get detailTabPerformance;
+
+  /// No description provided for @perfCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU (process)'**
+  String get perfCpu;
+
+  /// No description provided for @perfMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory usage'**
+  String get perfMemory;
+
+  /// No description provided for @perfLegendProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Process'**
+  String get perfLegendProcess;
+
+  /// No description provided for @perfLegendSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get perfLegendSystem;
+
+  /// No description provided for @detailTabTopology.
+  ///
+  /// In en, this message translates to:
+  /// **'Topology'**
+  String get detailTabTopology;
+
+  /// No description provided for @topoUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Topology not available'**
+  String get topoUnsupported;
+
+  /// No description provided for @topoUnsupportedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The connected ErisPulse SDK is too old for get_topology'**
+  String get topoUnsupportedHint;
+
+  /// No description provided for @topoStatModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Modules'**
+  String get topoStatModules;
+
+  /// No description provided for @topoStatAdapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapters'**
+  String get topoStatAdapters;
+
+  /// No description provided for @topoStatBots.
+  ///
+  /// In en, this message translates to:
+  /// **'Bots'**
+  String get topoStatBots;
+
+  /// No description provided for @topoFilterResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources'**
+  String get topoFilterResources;
+
+  /// No description provided for @topoFilterDepends.
+  ///
+  /// In en, this message translates to:
+  /// **'Dependencies'**
+  String get topoFilterDepends;
+
+  /// No description provided for @topoSectionAdapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapters'**
+  String get topoSectionAdapters;
+
+  /// No description provided for @topoSectionModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Modules'**
+  String get topoSectionModules;
+
+  /// No description provided for @topoAdapterDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get topoAdapterDisabled;
+
+  /// No description provided for @topoModuleLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'loaded'**
+  String get topoModuleLoaded;
+
+  /// No description provided for @topoModuleNotLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'not loaded'**
+  String get topoModuleNotLoaded;
+
+  /// No description provided for @topoTypeCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get topoTypeCommands;
+
+  /// No description provided for @topoTypeServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get topoTypeServices;
+
+  /// No description provided for @topoTypeHandlers.
+  ///
+  /// In en, this message translates to:
+  /// **'Handlers'**
+  String get topoTypeHandlers;
+
+  /// No description provided for @topoTypeRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get topoTypeRoutes;
+
+  /// No description provided for @topoTypeLifecycleHooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifecycle hooks'**
+  String get topoTypeLifecycleHooks;
+
+  /// No description provided for @topoTypeDepends.
+  ///
+  /// In en, this message translates to:
+  /// **'Depends on'**
+  String get topoTypeDepends;
+
+  /// No description provided for @topoScopeApplies.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope rules apply to this module'**
+  String get topoScopeApplies;
+
   /// No description provided for @commonInitialize.
   ///
   /// In en, this message translates to:

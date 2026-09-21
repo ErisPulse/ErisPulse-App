@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/generated/app_localizations.dart';
+
 /// 通用空状态占位
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -80,6 +82,7 @@ class ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -92,7 +95,7 @@ class ErrorView extends StatelessWidget {
               color: theme.colorScheme.error,
             ),
             const SizedBox(height: 16),
-            Text('出错啦', style: theme.textTheme.titleMedium),
+            Text(l10n.errorTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               message,
@@ -104,7 +107,7 @@ class ErrorView extends StatelessWidget {
               FilledButton.tonalIcon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('重试'),
+                label: Text(l10n.commonRetry),
               ),
             ],
           ],

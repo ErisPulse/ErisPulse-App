@@ -25,17 +25,21 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        // versionName 来自 pubspec（如 0.2.5）
         versionName = flutter.versionName
+        // versionCode 单调递增：以"天数×100"为基数，永远大于历史版本号。
+        // 原因：pubspec 的 +N（如 0.2.5+1）长期未递增，设备上残留高
+        // versionCode（如 2002）时会被拒装（INSTALL_FAILED_VERSION_DOWNGRADE）。
+        // 同一天多次构建 code 相同，可覆盖重装（非降级）；跨天必然递增。
+        versionCode =
+            maxOf(flutter.versionCode, (System.currentTimeMillis() / 86400000 * 100).toInt())
 
-        // 仅打包 arm64-v8a：runtime 二进制（proot/busybox 等）只有 aarch64 构建，
-        // 且纯 64 位设备（骁龙 8 Gen 3 / 天玑 9300 等）的 ROM 会拒绝安装含
-        // 32 位 native lib 的 APK。abiFilters 过滤所有来源（Flutter 引擎 /
-        // 插件 AAR / jniLibs），--target-platform 只过滤引擎，管不到
-        // libdartjni.so / libdatastore_shared_counter.so 等插件 AAR 库。
-        ndk {
-            abiFilters += "arm64-v8a"
-        }
+        // arm64-only 由 CI 的 --split-per-abi 实现：只发布 arm64-v8a 分片 APK
+        // （分片只含该 ABI 的引擎 / 插件 AAR / jniLibs）。注意不能用
+        // ndk.abiFilters 过滤 universal：实测它对 Flutter 引擎 / 插件 AAR 库
+        // 不生效（包内仍混入 32 位库），且与 --split-per-abi 冲突。
+        // 纯 64 位设备（骁龙 8 Gen 3 / 天玑 9300 等）的 ROM 会拒绝安装含
+        // 32 位 native lib 的 APK，因此必须保证产物无 32 位库。
     }
 
     signingConfigs {

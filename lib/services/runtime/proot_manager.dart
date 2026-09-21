@@ -505,15 +505,20 @@ class ProotManager {
   }
 
   /// 转发 stdout/stderr 为日志事件
+  ///
+  /// allowMalformed + onError：与桌面端同理，坏字节/解码异常
+  /// 不能杀死订阅，否则该实例后续日志全部丢失
   void _streamLines(Process proc, String id) {
+    void onLine(String line) => onEvent(ProcessLogEvent(id, line).toJson());
+
     proc.stdout
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen((line) => onEvent(ProcessLogEvent(id, line).toJson()));
+        .listen(onLine, onError: (Object e) => onLine('[stdout 解码异常: $e]'));
     proc.stderr
-        .transform(const Utf8Decoder())
+        .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen((line) => onEvent(ProcessLogEvent(id, line).toJson()));
+        .listen(onLine, onError: (Object e) => onLine('[stderr 解码异常: $e]'));
   }
 
   /// 轮询健康直到就绪或超时

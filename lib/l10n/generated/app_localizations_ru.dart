@@ -77,6 +77,105 @@ class AppLocalizationsRu extends AppLocalizations {
   String get commonRetry => 'Повторить';
 
   @override
+  String get errorTitle => 'Что-то пошло не так';
+
+  @override
+  String get trayShow => 'Показать главное окно';
+
+  @override
+  String get trayExit => 'Выход';
+
+  @override
+  String get notifChannelName => 'ErisPulse работает';
+
+  @override
+  String get notifChannelDesc =>
+      'Фоновая служба удержания экземпляров ErisPulse';
+
+  @override
+  String get createLoadingSdkVersions => 'Загрузка версий SDK…';
+
+  @override
+  String get createSdkVersionsUnavailable =>
+      'Не удалось получить список версий, будет использована версия по умолчанию';
+
+  @override
+  String get detailTabPerformance => 'Производительность';
+
+  @override
+  String get perfCpu => 'CPU (процесс)';
+
+  @override
+  String get perfMemory => 'Использование памяти';
+
+  @override
+  String get perfLegendProcess => 'Процесс';
+
+  @override
+  String get perfLegendSystem => 'Система';
+
+  @override
+  String get detailTabTopology => 'Топология';
+
+  @override
+  String get topoUnsupported => 'Топология недоступна';
+
+  @override
+  String get topoUnsupportedHint =>
+      'Подключённый ErisPulse SDK не поддерживает get_topology';
+
+  @override
+  String get topoStatModules => 'Модули';
+
+  @override
+  String get topoStatAdapters => 'Адаптеры';
+
+  @override
+  String get topoStatBots => 'Боты';
+
+  @override
+  String get topoFilterResources => 'Ресурсы';
+
+  @override
+  String get topoFilterDepends => 'Зависимости';
+
+  @override
+  String get topoSectionAdapters => 'Адаптеры';
+
+  @override
+  String get topoSectionModules => 'Модули';
+
+  @override
+  String get topoAdapterDisabled => 'отключён';
+
+  @override
+  String get topoModuleLoaded => 'загружен';
+
+  @override
+  String get topoModuleNotLoaded => 'не загружен';
+
+  @override
+  String get topoTypeCommands => 'Команды';
+
+  @override
+  String get topoTypeServices => 'Сервисы';
+
+  @override
+  String get topoTypeHandlers => 'Обработчики';
+
+  @override
+  String get topoTypeRoutes => 'Маршруты';
+
+  @override
+  String get topoTypeLifecycleHooks => 'Хуки жизненного цикла';
+
+  @override
+  String get topoTypeDepends => 'Зависит от';
+
+  @override
+  String get topoScopeApplies => 'На модуль действуют правила scope';
+
+  @override
   String get commonInitialize => 'Инициализировать';
 
   @override

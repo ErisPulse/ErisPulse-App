@@ -21,6 +21,7 @@ import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
+import '../services/window/window_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/states.dart';
@@ -112,62 +113,82 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 桌面布局（WinUI3 风格）：顶部一体标题栏横贯 + 左侧导航列 + 右侧内容区
+  ///
+  /// 桌面快捷键：F5 / Ctrl+R 刷新；Ctrl+1/2/3 切换导航；Ctrl+W 请求关窗
   Widget _buildDesktop(BuildContext context, AppLocalizations l10n) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // 顶栏横贯全宽（含标题 + 拖拽区 + 窗口控制按钮），与标题栏同高
-          WindowTitleBar(
-            title: _paneTitle(l10n),
-            leading: Image.asset(
-              'assets/images/logo.png',
-              height: 28,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.bolt,
-                size: 24,
-                color: Theme.of(context).colorScheme.primary,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.f5): _refreshStatus,
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+            _refreshStatus,
+        const SingleActivator(LogicalKeyboardKey.digit1, control: true): () =>
+            _onNavSelected(0),
+        const SingleActivator(LogicalKeyboardKey.digit2, control: true): () =>
+            _onNavSelected(1),
+        const SingleActivator(LogicalKeyboardKey.digit3, control: true): () =>
+            _onNavSelected(2),
+        const SingleActivator(LogicalKeyboardKey.keyW, control: true): () =>
+            unawaited(WindowService.instance.close()),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: Column(
+            children: [
+              // 顶栏横贯全宽（含标题 + 拖拽区 + 窗口控制按钮），与标题栏同高
+              WindowTitleBar(
+                title: _paneTitle(l10n),
+                leading: Image.asset(
+                  'assets/images/logo.png',
+                  height: 28,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.bolt,
+                    size: 24,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: l10n.commonRefresh,
+                    onPressed: _refreshStatus,
+                  ),
+                ],
               ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: l10n.commonRefresh,
-                onPressed: _refreshStatus,
+              const Divider(height: 1),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 左侧导航列（WinUI3 风格导航项）
+                    _SideNav(
+                      index: _navIndex,
+                      onSelected: _onNavSelected,
+                    ),
+                    const VerticalDivider(width: 1, thickness: 1),
+                    // 右侧主区域：实例 / 设置 / 调试 随导航切换（IndexedStack 保活）
+                    Expanded(
+                      child: IndexedStack(
+                        index: _navIndex,
+                        children: [
+                          _buildAdaptiveContent(context, l10n),
+                          const SettingsPage(embedded: true),
+                          const DebugPage(embedded: true),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 左侧导航列（WinUI3 风格导航项）
-                _SideNav(
-                  index: _navIndex,
-                  onSelected: _onNavSelected,
-                ),
-                const VerticalDivider(width: 1, thickness: 1),
-                // 右侧主区域：实例 / 设置 / 调试 随导航切换（IndexedStack 保活）
-                Expanded(
-                  child: IndexedStack(
-                    index: _navIndex,
-                    children: [
-                      _buildAdaptiveContent(context, l10n),
-                      const SettingsPage(embedded: true),
-                      const DebugPage(embedded: true),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _navigateToCreate,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.commonCreateInstance),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToCreate,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.commonCreateInstance),
+        ),
       ),
     );
   }
@@ -448,22 +469,12 @@ class _HealthChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final h = health;
-    final color = h != null
-        ? switch (h) {
-            InstanceHealth.healthy => Colors.green,
-            InstanceHealth.booting => Colors.blue,
-            InstanceHealth.unauthorized => Colors.orange,
-            InstanceHealth.unreachable => Colors.red,
-            InstanceHealth.unknown => Colors.grey,
-          }
-        : switch (status!) {
-            InstanceStatus.running => Colors.green,
-            InstanceStatus.starting => Colors.blue,
-            InstanceStatus.error => Colors.red,
-            InstanceStatus.destroying => Colors.orange,
-            InstanceStatus.stopped => Colors.grey,
-          };
+    // 状态色统一走 status_indicators 的映射（Dashboard 语义色）
+    final color = instanceStateColor(
+      context,
+      status: status,
+      health: health,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -777,7 +788,10 @@ class _InstanceTile extends StatelessWidget {
                 final runtime = context.read<RuntimeController>();
                 final ok = await _confirmDelete(context);
                 if (ok == true) {
-                  runtime.stopInstance(instance.id);
+                  // 等进程退出再清理环境，最后删元数据：
+                  // 同名重建时才不会撞上残留目录/进程
+                  await runtime.stopInstanceAndWait(instance.id);
+                  await runtime.removeInstanceEnvironment(instance.id);
                   await mgr.removeInstance(instance.id);
                 }
               },
@@ -921,7 +935,8 @@ class _InstanceTile extends StatelessWidget {
     final mgr = context.read<InstanceManager>();
     final ok = await _confirmDelete(context);
     if (ok == true) {
-      runtime.stopInstance(instance.id);
+      await runtime.stopInstanceAndWait(instance.id);
+      await runtime.removeInstanceEnvironment(instance.id);
       await mgr.removeInstance(instance.id);
     }
   }

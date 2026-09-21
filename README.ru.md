@@ -22,6 +22,12 @@
 
 ---
 
+## Скриншоты
+
+| Десктоп · Windows | Мобильный · Android |
+|:---:|:---:|
+| <img src=".github/assets/screenshot-desktop.png" width="600" alt="Список инстансов на Windows" /> | <img src=".github/assets/screenshot-mobile.jpg" width="250" alt="Список инстансов на Android" /> |
+
 ## Основные возможности
 
 <table>
