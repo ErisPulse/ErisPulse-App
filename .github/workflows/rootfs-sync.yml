@@ -1,0 +1,82 @@
+# 框架发版联动：重建 rootfs（烘焙指定框架版本）并覆盖 latest release 资产。
+# 通知源：ErisPulse/ErisPulse auto-tag-release 的 repository_dispatch（仅正式版）。
+# APK / 桌面包不受影响；App 版本号不随本工作流变化。
+
+name: Rootfs Sync
+
+on:
+  repository_dispatch:
+    types: [framework-released]
+  workflow_dispatch:
+    inputs:
+      framework_version:
+        description: "ErisPulse 框架版本（如 1.4.2，留空装最新）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rootfs-sync
+  cancel-in-progress: true
+
+jobs:
+  rebuild-rootfs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve framework version
+        id: fw
+        run: |
+          V="${{ github.event.client_payload.version }}${{ github.event.inputs.framework_version }}"
+          V="${V#v}"
+          if [ -z "$V" ]; then V="latest"; fi
+          echo "version=$V" >> $GITHUB_OUTPUT
+
+      - name: Build rootfs image (arm64)
+        run: |
+          docker buildx build --platform linux/arm64 --load \
+            --build-arg ERISPULSE_VERSION=${{ steps.fw.outputs.version }} \
+            -t erispulse-rootfs:sync -f scripts/Dockerfile.rootfs .
+
+      - name: Export rootfs
+        run: |
+          docker create --platform linux/arm64 --name rootfs-sync erispulse-rootfs:sync
+          docker export rootfs-sync -o rootfs.tar
+          mkdir -p /tmp/clean
+          tar -xf rootfs.tar -C /tmp/clean \
+            --exclude=proot-aarch64 --exclude=busybox-aarch64 \
+            --exclude=loader-aarch64 --exclude=libtalloc.so.2-aarch64 \
+            --exclude=libandroid-shmem.so-aarch64 \
+            --exclude=build-rootfs.sh
+          tar -cf - -C /tmp/clean . | gzip -9 > rootfs.tar.gz
+          docker rm rootfs-sync
+          rm -rf /tmp/clean rootfs.tar
+
+      - name: Apply custom rootfs packages (custom/rootfs)
+        run: |
+          if [ -d custom/rootfs ]; then
+            sudo -E bash scripts/customize-rootfs.sh rootfs.tar.gz rootfs.tar.gz
+          else
+            echo "no custom/rootfs — keep base rootfs"
+          fi
+
+      - name: Upload to latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName)
+          cp rootfs.tar.gz erispulse-rootfs-aarch64.tar.gz
+          gh release upload "$TAG" erispulse-rootfs-aarch64.tar.gz \
+            --repo "${{ github.repository }}" --clobber
+          echo "rootfs（ErisPulse ${{ steps.fw.outputs.version }}）已覆盖到 release $TAG"

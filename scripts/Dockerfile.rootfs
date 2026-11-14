@@ -10,6 +10,12 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 
+# 框架/Dashboard 版本固定（rootfs-sync 传入框架发布版本；默认 latest）
+ARG ERISPULSE_VERSION=latest
+ARG DASHBOARD_VERSION=latest
+ENV ERISPULSE_VERSION=${ERISPULSE_VERSION} \
+    DASHBOARD_VERSION=${DASHBOARD_VERSION}
+
 # 安装 Python + ErisPulse（预烘焙进 rootfs）
 COPY scripts/build-rootfs.sh /build-rootfs.sh
 RUN bash /build-rootfs.sh

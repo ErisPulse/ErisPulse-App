@@ -16,9 +16,21 @@ apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # 安装 ErisPulse 与 Dashboard（含依赖，全部预烘焙进镜像）
+# 版本由环境变量固定（rootfs-sync 传入框架发布版本）；latest 或留空装最新
+ERISPULSE_VERSION="${ERISPULSE_VERSION:-latest}"
+DASHBOARD_VERSION="${DASHBOARD_VERSION:-latest}"
+
+pkg_spec() {
+  if [ "$1" = "latest" ]; then
+    echo "$2"
+  else
+    echo "$2==$1"
+  fi
+}
+
 pip3 install --break-system-packages --no-cache-dir \
-  ErisPulse \
-  ErisPulse-Dashboard
+  "$(pkg_spec "$ERISPULSE_VERSION" ErisPulse)" \
+  "$(pkg_spec "$DASHBOARD_VERSION" ErisPulse-Dashboard)"
 
 # 允许运行时系统级 pip 安装（PEP 668）：Dashboard 的包管理功能装包时不报错
 printf '[global]\nbreak-system-packages = true\n' > /etc/pip.conf
