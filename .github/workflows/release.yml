@@ -471,6 +471,13 @@ jobs:
           cp artifacts/runtime-assets/loader-aarch64             "out/ErisPulse-App-${V}-loader-aarch64"
           cp artifacts/runtime-assets/libtalloc.so.2-aarch64     "out/ErisPulse-App-${V}-libtalloc.so.2-aarch64"
           cp artifacts/runtime-assets/libandroid-shmem.so-aarch64 "out/ErisPulse-App-${V}-libandroid-shmem.so-aarch64"
+          # 无版本固定名副本（ErisPulse-App-<V>-x → ErisPulse-App-x）：发版
+          # 直链指向 latest release 的固定名资产，随发版 --clobber 滚动
+          prefix="ErisPulse-App-${V}-"
+          for f in out/${prefix}*; do
+            rest="${f#"out/$prefix"}"
+            cp "$f" "out/ErisPulse-App-${rest}"
+          done
           ls -lh out/
 
       - name: Create / update GitHub release
