@@ -23,6 +23,21 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    // 插件模块 compileSdk 提升至 36：AAR 元数据检查要求插件 compileSdk 不低于其
+    // 依赖 AAR 的 minCompileSdk（如 file_picker 8.3.7 硬编码 34，而
+    // flutter_plugin_android_lifecycle 2.0.35 的 AAR minCompileSdk 为 36）
+    val bumpCompileSdk: () -> Unit = {
+        extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)?.let { lib ->
+            if ((lib.compileSdk ?: 0) < 36) {
+                lib.compileSdk = 36
+            }
+        }
+    }
+    if (state.executed) {
+        bumpCompileSdk()
+    } else {
+        afterEvaluate { bumpCompileSdk() }
+    }
     project.evaluationDependsOn(":app")
 }
 

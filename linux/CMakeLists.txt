@@ -41,7 +41,11 @@ endif()
 # of modifying this function.
 function(APPLY_STANDARD_SETTINGS TARGET)
   target_compile_features(${TARGET} PUBLIC cxx_std_14)
-  target_compile_options(${TARGET} PRIVATE -Wall -Werror)
+  # tray_manager / flutter_secure_storage（内嵌 json.hpp）的源码在较新 GCC 下
+  # 发出 deprecated-declarations 与 deprecated-literal-operator 告警，属三方
+  # 源码；这两类降级为不告警，其余保持 -Werror
+  target_compile_options(${TARGET} PRIVATE -Wall -Werror
+    -Wno-deprecated-declarations -Wno-deprecated-literal-operator)
   target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
   target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 endfunction()
