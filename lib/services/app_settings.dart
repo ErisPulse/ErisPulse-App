@@ -87,7 +87,11 @@ class AppSettings extends ChangeNotifier {
   }
 
   Future<void> setRefreshSeconds(int v) => _set(
-      _kRefreshSeconds, v, (x) => _refreshSeconds = x, () => _refreshSeconds,);
+        _kRefreshSeconds,
+        v,
+        (x) => _refreshSeconds = x,
+        () => _refreshSeconds,
+      );
   Future<void> setDynamicColor(bool v) =>
       _set(_kDynamicColor, v, (x) => _dynamicColor = x, () => _dynamicColor);
   Future<void> setPrivacyMode(bool v) =>
@@ -98,7 +102,11 @@ class AppSettings extends ChangeNotifier {
       _set(_kNotifyOnCrash, v, (x) => _notifyOnCrash = x, () => _notifyOnCrash);
 
   Future<void> _set<T>(
-      String key, T value, void Function(T) assign, T Function() read,) async {
+    String key,
+    T value,
+    void Function(T) assign,
+    T Function() read,
+  ) async {
     if (read() == value) return;
     assign(value);
     notifyListeners();

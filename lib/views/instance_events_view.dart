@@ -193,9 +193,13 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
     if (!privacy) return raw;
     return raw
         .replaceAllMapped(
-            RegExp(r'(user=)(\d+)'), (m) => '${m[1]}${_mask(m[2]!)}',)
+          RegExp(r'(user=)(\d+)'),
+          (m) => '${m[1]}${_mask(m[2]!)}',
+        )
         .replaceAllMapped(
-            RegExp(r'(group=)(\d+)'), (m) => '${m[1]}${_mask(m[2]!)}',);
+          RegExp(r'(group=)(\d+)'),
+          (m) => '${m[1]}${_mask(m[2]!)}',
+        );
   }
 
   static String _mask(String id) {
