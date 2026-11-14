@@ -7,6 +7,7 @@
 // 包管理 / 框架更新已迁移至商店视图（views/instance_store_view.dart）。
 // 鉴权失败（401/403）统一显示"访问令牌无效"引导。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -16,8 +17,11 @@ import '../models/adapter_info.dart';
 import '../models/instance.dart';
 import '../models/module_info.dart';
 import '../services/dashboard_api.dart';
+import '../services/log_stream.dart';
 import 'adapter_config_page.dart';
 import 'schema_config_page.dart';
+import 'storage_tab.dart';
+import '../widgets/states.dart';
 
 /// 模块管理 Tab
 class ModulesTab extends StatefulWidget {
@@ -30,11 +34,33 @@ class ModulesTab extends StatefulWidget {
 
 class _ModulesTabState extends State<ModulesTab> {
   late Future<List<ModuleInfo>> _future;
+  StreamSubscription<DashboardSignal>? _sub;
+  Stream<DashboardSignal>? _signals;
+  String _query = '';
+  String _statusFilter = 'all';
 
   @override
   void initState() {
     super.initState();
     _future = DashboardApi(widget.instance).getModules();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final signals = SignalScope.maybeOf(context)?.signals;
+    if (identical(signals, _signals)) return;
+    unawaited(_sub?.cancel());
+    _signals = signals;
+    _sub = signals?.listen((s) {
+      if (s.type == 'module_changed') _reload();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sub?.cancel());
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -48,6 +74,30 @@ class _ModulesTabState extends State<ModulesTab> {
 
   Future<void> _reloadModule(ModuleInfo m) async {
     await DashboardApi(widget.instance).setModuleAction(m.name, 'reload');
+    await _reload();
+  }
+
+  Future<void> _uninstall(ModuleInfo m) async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.commonDelete),
+        content: Text('${l10n.commonDelete}: ${m.name}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonConfirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await DashboardApi(widget.instance).setModuleAction(m.name, 'uninstall');
     await _reload();
   }
 
@@ -76,19 +126,79 @@ class _ModulesTabState extends State<ModulesTab> {
         if (snap.hasError) {
           return _ErrorView(onRetry: _reload, error: snap.error);
         }
-        final modules = (snap.data ?? []).where((m) => m.isModule).toList();
-        if (modules.isEmpty) return _EmptyView(l10n.detailTabEmpty);
+        final all = (snap.data ?? []).where((m) => m.isModule).toList();
+        final modules = all.where((m) {
+          if (_query.isNotEmpty &&
+              !m.name.toLowerCase().contains(_query.toLowerCase())) {
+            return false;
+          }
+          return switch (_statusFilter) {
+            'active' => m.loaded && m.enabled,
+            'inactive' => !m.loaded,
+            'disabled' => !m.enabled,
+            _ => true,
+          };
+        }).toList();
         return RefreshIndicator(
           onRefresh: _reload,
           child: ListView(
             children: [
-              for (final m in modules)
-                _ModuleTile(
-                  module: m,
-                  onToggle: (v) => _toggle(m, v),
-                  onReload: m.loaded ? () => _reloadModule(m) : null,
-                  onConfig: m.hasConfig ? () => _openConfig(m) : null,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (v) => setState(() => _query = v),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: l10n.storeSearch,
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _statusFilter,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'all',
+                            child: Text(l10n.logsFilterAll),
+                          ),
+                          DropdownMenuItem(
+                            value: 'active',
+                            child: Text(l10n.statusRunning),
+                          ),
+                          DropdownMenuItem(
+                            value: 'inactive',
+                            child: Text(l10n.statusStopped),
+                          ),
+                          DropdownMenuItem(
+                            value: 'disabled',
+                            child: Text(l10n.statusStopped),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _statusFilter = v ?? 'all'),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              if (modules.isEmpty)
+                _EmptyView(l10n.detailTabEmpty)
+              else
+                for (final m in modules)
+                  _ModuleTile(
+                    module: m,
+                    onToggle: (v) => _toggle(m, v),
+                    onReload: m.loaded ? () => _reloadModule(m) : null,
+                    onConfig: m.hasConfig ? () => _openConfig(m) : null,
+                    onUninstall: () => _uninstall(m),
+                  ),
             ],
           ),
         );
@@ -102,16 +212,19 @@ class _ModuleTile extends StatelessWidget {
   final ValueChanged<bool> onToggle;
   final VoidCallback? onReload;
   final VoidCallback? onConfig;
+  final VoidCallback? onUninstall;
 
   const _ModuleTile({
     required this.module,
     required this.onToggle,
     this.onReload,
     this.onConfig,
+    this.onUninstall,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ListTile(
       leading: Switch(
         value: module.enabled,
@@ -139,10 +252,28 @@ class _ModuleTile extends StatelessWidget {
               tooltip: 'Reload',
               onPressed: onReload,
             ),
-          Icon(
-            module.loaded ? Icons.check_circle : Icons.pause_circle_outline,
-            color: module.loaded ? Colors.green : null,
-            size: 18,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 20),
+            itemBuilder: (_) => [
+              if (onUninstall != null)
+                PopupMenuItem(
+                  value: 'uninstall',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.commonDelete),
+                    ],
+                  ),
+                ),
+            ],
+            onSelected: (action) {
+              if (action == 'uninstall') onUninstall?.call();
+            },
           ),
         ],
       ),
@@ -359,7 +490,31 @@ class _ConfigTabState extends State<ConfigTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return _buildRender(theme, l10n);
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: l10n.detailTabConfig),
+              Tab(text: l10n.configSourceTab),
+              Tab(text: l10n.storageTables),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildRender(theme, l10n),
+                _ConfigSourceTab(instance: widget.instance),
+                StorageTab(instance: widget.instance),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRender(ThemeData theme, AppLocalizations l10n) {
@@ -616,6 +771,110 @@ class _ErrorView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 配置源码模式：raw TOML 编辑 + 保存（POST /config/source）
+class _ConfigSourceTab extends StatefulWidget {
+  final Instance instance;
+  const _ConfigSourceTab({required this.instance});
+
+  @override
+  State<_ConfigSourceTab> createState() => _ConfigSourceTabState();
+}
+
+class _ConfigSourceTabState extends State<_ConfigSourceTab>
+    with AutomaticKeepAliveClientMixin {
+  final _ctrl = TextEditingController();
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final content = await DashboardApi(widget.instance).getConfigSource();
+      if (!mounted) return;
+      setState(() {
+        _ctrl.text = content;
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await DashboardApi(widget.instance).saveConfigSource(_ctrl.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).configSourceSaved,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
+    if (mounted) setState(() => _saving = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    if (_loading) return const LoadingView();
+    if (_error != null) return ErrorView(message: _error!, onRetry: _load);
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: Text(
+                AppLocalizations.of(context).commonSave,
+              ),
+            ),
+          ],
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: TextField(
+              controller: _ctrl,
+              maxLines: null,
+              expands: true,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

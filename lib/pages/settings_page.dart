@@ -19,6 +19,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../services/app_settings.dart';
+import '../services/distribution.dart';
 import '../services/runtime/assets.dart';
 import '../services/runtime/runtime_controller.dart';
 import 'runtime_manager_page.dart';
@@ -82,6 +83,66 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     }
+  }
+
+  void _showDistributionDialog(BuildContext context) {
+    final dist = Distribution.instance;
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(dist.name),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${l10n.distVendorLabel}: ${dist.vendor}'),
+                if (dist.preinstalled.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.distPreinstalledTitle,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  for (final item in dist.preinstalled)
+                    Text(
+                      '· ${item.name}'
+                      '${item.version == null ? '' : ' ${item.version}'}',
+                    ),
+                ],
+                if (dist.homepage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(l10n.distHomepageLabel),
+                  InkWell(
+                    onTap: () => _openUrl(Uri.parse(dist.homepage!)),
+                    child: Text(
+                      dist.homepage!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+                if (dist.contact != null) ...[
+                  const SizedBox(height: 12),
+                  Text('${l10n.distContactLabel}: ${dist.contact}'),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(l10n.commonGotIt),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 桌面：运行时管理区（内置 Python 状态 + 环境管理入口）
@@ -155,6 +216,11 @@ class _SettingsPageState extends State<SettingsPage> {
         (kPypiSourceOfficial, l10n.settingsPypiOfficial),
         (kPypiSourceTsinghua, l10n.settingsPypiTsinghua),
         (kPypiSourceAliyun, l10n.settingsPypiAliyun),
+        if (Distribution.instance.customPypiIndexUrl != null)
+          (
+            kPypiSourceCustom,
+            Distribution.instance.customPypiLabel ?? l10n.settingsPypiCustom,
+          ),
       ];
 
   @override
@@ -167,8 +233,9 @@ class _SettingsPageState extends State<SettingsPage> {
           final isDesktop = !Platform.isAndroid && !Platform.isIOS;
           // 宽屏下设置内容居中限宽，避免左侧贴边、右侧大片留白
           final Widget content = ListView(
+            padding: const EdgeInsets.only(bottom: 24),
             children: [
-              // Logo（横版按比例完整展示）
+              // Logo
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
                 child: Center(
@@ -182,182 +249,262 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               ),
-              _SectionHeader(
-                title: l10n.settingsAppearance,
+              // Display
+              _SettingsCard(
+                title: l10n.settingsDisplay,
                 icon: Icons.palette_outlined,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SegmentedButton<ThemeMode>(
-                  segments: [
-                    ButtonSegment(
-                      value: ThemeMode.system,
-                      label: Text(l10n.settingsThemeSystem),
-                    ),
-                    ButtonSegment(
-                      value: ThemeMode.light,
-                      label: Text(l10n.settingsThemeLight),
-                    ),
-                    ButtonSegment(
-                      value: ThemeMode.dark,
-                      label: Text(l10n.settingsThemeDark),
-                    ),
-                  ],
-                  selected: {settings.themeMode},
-                  onSelectionChanged: (sel) => settings.setThemeMode(sel.first),
-                  showSelectedIcon: false,
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.language_outlined),
-                title: Text(l10n.settingsLanguage),
-                trailing: DropdownButton<String>(
-                  value: _localeCode(settings.locale),
-                  underline: const SizedBox.shrink(),
-                  items: [
-                    for (final (code, label) in _localeOptions(l10n))
-                      DropdownMenuItem(value: code, child: Text(label)),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) settings.setLocale(v);
-                  },
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.cloud_download_outlined),
-                title: Text(l10n.settingsDownloadSource),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final (code, label)
-                            in _downloadSourceOptions(l10n)) ...[
-                          ChoiceChip(
-                            label: Text(label),
-                            selected: settings.downloadSource == code,
-                            onSelected: (_) => settings.setDownloadSource(code),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: SegmentedButton<ThemeMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text(l10n.settingsThemeSystem),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text(l10n.settingsThemeLight),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text(l10n.settingsThemeDark),
+                        ),
                       ],
+                      selected: {settings.themeMode},
+                      onSelectionChanged: (sel) =>
+                          settings.setThemeMode(sel.first),
+                      showSelectedIcon: false,
                     ),
                   ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.storage_outlined),
-                title: Text(l10n.settingsPypiSource),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final (code, label)
-                            in _pypiSourceOptions(l10n)) ...[
-                          ChoiceChip(
-                            label: Text(label),
-                            selected: settings.pypiSource == code,
-                            onSelected: (_) => settings.setPypiSource(code),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                  SwitchListTile(
+                    secondary: const Icon(Icons.colorize_outlined),
+                    title: Text(l10n.settingsDynamicColor),
+                    subtitle: Text(l10n.settingsDynamicColorDesc),
+                    value: settings.dynamicColor,
+                    onChanged: settings.setDynamicColor,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.language_outlined),
+                    title: Text(l10n.settingsLanguage),
+                    trailing: DropdownButton<String>(
+                      value: _localeCode(settings.locale),
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        for (final (code, label) in _localeOptions(l10n))
+                          DropdownMenuItem(value: code, child: Text(label)),
                       ],
+                      onChanged: (v) {
+                        if (v != null) settings.setLocale(v);
+                      },
                     ),
                   ),
-                ),
+                ],
               ),
-              _SectionHeader(
+              // Behavior
+              _SettingsCard(
+                title: l10n.settingsBehavior,
+                icon: Icons.tune_outlined,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text(l10n.settingsRefreshInterval),
+                    trailing: DropdownButton<int>(
+                      value: settings.refreshSeconds,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        for (final sec in const [3, 5, 8, 15, 30])
+                          DropdownMenuItem(
+                            value: sec,
+                            child: Text(l10n.refreshUnitSec(sec)),
+                          ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) settings.setRefreshSeconds(v);
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.format_list_numbered_outlined),
+                    title: Text(l10n.settingsEventLimit),
+                    trailing: DropdownButton<int>(
+                      value: settings.eventLimit,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        for (final n in const [100, 200, 500])
+                          DropdownMenuItem(value: n, child: Text('$n')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) settings.setEventLimit(v);
+                      },
+                    ),
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.visibility_off_outlined),
+                    title: Text(l10n.settingsPrivacyMode),
+                    subtitle: Text(l10n.settingsPrivacyModeDesc),
+                    value: settings.privacyMode,
+                    onChanged: settings.setPrivacyMode,
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.notifications_outlined),
+                    title: Text(l10n.settingsNotifyOnCrash),
+                    subtitle: Text(l10n.settingsNotifications),
+                    value: settings.notifyOnCrash,
+                    onChanged: settings.setNotifyOnCrash,
+                  ),
+                  if (Platform.isWindows)
+                    ListTile(
+                      leading: const Icon(Icons.close_fullscreen_outlined),
+                      title: Text(l10n.settingsCloseBehavior),
+                      subtitle: Text(
+                        switch (settings.closeAction) {
+                          'tray' => l10n.closeMinimizeTray,
+                          'exit' => l10n.closeStopExit,
+                          _ => l10n.closeActionAsk,
+                        },
+                      ),
+                      trailing: DropdownButton<String>(
+                        value: settings.closeAction,
+                        underline: const SizedBox.shrink(),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'ask',
+                            child: Text(l10n.closeActionAsk),
+                          ),
+                          DropdownMenuItem(
+                            value: 'tray',
+                            child: Text(l10n.closeMinimizeTray),
+                          ),
+                          DropdownMenuItem(
+                            value: 'exit',
+                            child: Text(l10n.closeStopExit),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) settings.setCloseAction(v);
+                        },
+                      ),
+                    ),
+                ],
+              ),
+              // Downloads & mirrors
+              _SettingsCard(
+                title: l10n.settingsNetwork,
+                icon: Icons.cloud_download_outlined,
+                children: [
+                  ListTile(
+                    title: Text(l10n.settingsDownloadSource),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final (code, label)
+                                in _downloadSourceOptions(l10n)) ...[
+                              ChoiceChip(
+                                label: Text(label),
+                                selected: settings.downloadSource == code,
+                                onSelected: (_) =>
+                                    settings.setDownloadSource(code),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  ListTile(
+                    title: Text(l10n.settingsPypiSource),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final (code, label)
+                                in _pypiSourceOptions(l10n)) ...[
+                              ChoiceChip(
+                                label: Text(label),
+                                selected: settings.pypiSource == code,
+                                onSelected: (_) => settings.setPypiSource(code),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Runtime
+              _SettingsCard(
                 title: l10n.settingsRuntime,
                 icon: Icons.settings_suggest_outlined,
-              ),
-              if (isDesktop)
-                _buildDesktopRuntime(context, theme, l10n, settings, runtime)
-              else ...[
-                ListTile(
-                  leading: Icon(
-                    runtime.rootfsReady
-                        ? Icons.folder_zip_outlined
-                        : Icons.download_outlined,
-                  ),
-                  title: Text(l10n.settingsRootfsTitle),
-                  subtitle: Text(
-                    runtime.rootfsError ??
-                        runtime.rootfsMessage ??
-                        (runtime.rootfsReady
-                            ? l10n.settingsRootfsReady
-                            : l10n.settingsRootfsNotReady),
-                  ),
-                  trailing: runtime.rootfsReady
-                      ? const Icon(Icons.check_circle, color: Colors.green)
-                      : TextButton(
-                          onPressed: runtime.ensureRootfs,
-                          child: Text(l10n.commonInitialize),
-                        ),
-                ),
-                const Divider(height: 1),
-              ],
-              SwitchListTile(
-                secondary: const Icon(Icons.autorenew),
-                title: Text(l10n.settingsAutoRestart),
-                subtitle: Text(l10n.settingsAutoRestartDesc),
-                value: runtime.autoRestart,
-                onChanged: runtime.setAutoRestart,
-              ),
-              const Divider(height: 1),
-              // Windows：窗口关闭行为（托盘 / 退出 / 每次询问）
-              if (Platform.isWindows)
-                ListTile(
-                  leading: const Icon(Icons.close_fullscreen_outlined),
-                  title: Text(l10n.settingsCloseBehavior),
-                  subtitle: Text(
-                    switch (settings.closeAction) {
-                      'tray' => l10n.closeMinimizeTray,
-                      'exit' => l10n.closeStopExit,
-                      _ => l10n.closeActionAsk,
-                    },
-                  ),
-                  trailing: DropdownButton<String>(
-                    value: settings.closeAction,
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'ask',
-                        child: Text(l10n.closeActionAsk),
+                children: [
+                  if (isDesktop)
+                    _buildDesktopRuntime(
+                      context,
+                      theme,
+                      l10n,
+                      settings,
+                      runtime,
+                    )
+                  else ...[
+                    ListTile(
+                      leading: Icon(
+                        runtime.rootfsReady
+                            ? Icons.folder_zip_outlined
+                            : Icons.download_outlined,
                       ),
-                      DropdownMenuItem(
-                        value: 'tray',
-                        child: Text(l10n.closeMinimizeTray),
+                      title: Text(l10n.settingsRootfsTitle),
+                      subtitle: Text(
+                        runtime.rootfsError ??
+                            runtime.rootfsMessage ??
+                            (runtime.rootfsReady
+                                ? l10n.settingsRootfsReady
+                                : l10n.settingsRootfsNotReady),
                       ),
-                      DropdownMenuItem(
-                        value: 'exit',
-                        child: Text(l10n.closeStopExit),
-                      ),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) settings.setCloseAction(v);
-                    },
+                      trailing: runtime.rootfsReady
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : TextButton(
+                              onPressed: runtime.ensureRootfs,
+                              child: Text(l10n.commonInitialize),
+                            ),
+                    ),
+                  ],
+                  SwitchListTile(
+                    secondary: const Icon(Icons.autorenew),
+                    title: Text(l10n.settingsAutoRestart),
+                    subtitle: Text(l10n.settingsAutoRestartDesc),
+                    value: runtime.autoRestart,
+                    onChanged: runtime.setAutoRestart,
                   ),
-                ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.stop_circle_outlined),
-                title: Text(l10n.settingsStopAll),
-                subtitle: Text(l10n.settingsStopAllDesc),
-                onTap: () => _confirmStopAll(runtime),
+                  ListTile(
+                    leading: const Icon(Icons.stop_circle_outlined),
+                    title: Text(l10n.settingsStopAll),
+                    subtitle: Text(l10n.settingsStopAllDesc),
+                    onTap: () => _confirmStopAll(runtime),
+                  ),
+                ],
               ),
-              _SectionHeader(
-                title: l10n.settingsData,
+              // Data & maintenance
+              _SettingsCard(
+                title: l10n.settingsMaintenance,
                 icon: Icons.storage_outlined,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.delete_sweep_outlined),
+                    title: Text(l10n.settingsClearLogs),
+                    subtitle: Text(l10n.settingsClearLogsDesc),
+                    onTap: runtime.debugLog.clear,
+                  ),
+                ],
               ),
-              ListTile(
-                leading: const Icon(Icons.delete_sweep_outlined),
-                title: Text(l10n.settingsClearLogs),
-                subtitle: Text(l10n.settingsClearLogsDesc),
-                onTap: runtime.debugLog.clear,
-              ),
+              // About
               _SectionHeader(
                 title: l10n.settingsAbout,
                 icon: Icons.info_outline,
@@ -365,23 +512,33 @@ class _SettingsPageState extends State<SettingsPage> {
               ListTile(
                 leading: const Icon(Icons.label_outline),
                 title: Text(l10n.settingsVersion),
-                subtitle: Text('ErisPulse-App $_appVersion'),
+                subtitle:
+                    Text('${Distribution.instance.displayTitle} $_appVersion'),
               ),
-              const Divider(height: 1),
+              if (!Distribution.instance.isOfficial) ...[
+                ListTile(
+                  leading: const Icon(Icons.inventory_2_outlined),
+                  title: Text(l10n.settingsDistribution),
+                  subtitle: Text(
+                    '${Distribution.instance.name} · ${Distribution.instance.vendor}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showDistributionDialog(context),
+                ),
+              ],
               ListTile(
                 leading: const Icon(Icons.code),
                 title: Text(l10n.settingsOpenSource),
                 subtitle: const Text(kOpenSourceUrl),
                 onTap: () => _openUrl(Uri.parse(kOpenSourceUrl)),
               ),
-              const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.description_outlined),
                 title: Text(l10n.settingsAboutApp),
                 subtitle: Text(l10n.settingsAboutSubtitle),
                 onTap: () => showAboutDialog(
                   context: context,
-                  applicationName: 'ErisPulse-App',
+                  applicationName: Distribution.instance.displayTitle,
                   applicationVersion: _appVersion,
                   applicationIcon: const Icon(Icons.bolt, size: 48),
                   children: [
@@ -436,6 +593,52 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 设置分节卡片：卡内小标题 + 内容行
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Icon(icon, size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...children,
+          ],
+        ),
       ),
     );
   }

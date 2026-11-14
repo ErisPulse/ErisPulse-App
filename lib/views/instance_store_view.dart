@@ -17,6 +17,9 @@ import '../l10n/generated/app_localizations.dart';
 import '../models/instance.dart';
 import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
+import '../services/log_stream.dart';
+import '../services/task_center.dart';
+import 'package:file_picker/file_picker.dart';
 import '../widgets/states.dart';
 
 /// 商店视图：商店浏览 + 包管理
@@ -59,19 +62,31 @@ class InstanceStoreView extends StatelessWidget {
 
 /// 安装/升级任务选项（确认框返回值）
 class _TaskOptions {
-  const _TaskOptions({this.indexUrl, this.force = false});
+  const _TaskOptions({this.indexUrl, this.force = false, this.extraArgs});
   final String? indexUrl;
   final bool force;
+  final String? extraArgs;
 }
 
-/// 安装/升级确认框：可选 pip 镜像源 + 强制重装（升级任务无 force）
+/// pip 镜像预设（对齐 Dashboard store.js mirrorOptionsHtml）
+const _mirrorPresets = <(String, String)>[
+  ('PyPI', ''),
+  ('Tsinghua', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
+  ('Aliyun', 'https://mirrors.aliyun.com/pypi/simple'),
+  ('Douban', 'https://pypi.doubanio.com/simple'),
+  ('Huawei', 'https://mirrors.huaweicloud.com/repository/pypi/simple'),
+];
+
+/// 安装/升级确认框：镜像预设下拉（默认镜像预选）+ 强制重装 + extra_args
 class _OptionsDialog extends StatefulWidget {
   const _OptionsDialog({
+    required this.api,
     required this.title,
     required this.packages,
     required this.upgrade,
   });
 
+  final DashboardApi api;
   final String title;
   final List<String> packages;
   final bool upgrade;
@@ -81,13 +96,55 @@ class _OptionsDialog extends StatefulWidget {
 }
 
 class _OptionsDialogState extends State<_OptionsDialog> {
+  String? _preset; // null = 自定义
   final _mirrorCtrl = TextEditingController();
+  final _extraCtrl = TextEditingController();
   bool _force = false;
+  bool _advanced = false;
+  bool _defaultLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDefaultMirror();
+  }
+
+  /// 读实例配置的默认镜像（ErisPulse_Dashboard.default_mirror）预选
+  Future<void> _loadDefaultMirror() async {
+    String? def;
+    try {
+      final cfg = await widget.api.getConfig();
+      final v = cfg['ErisPulse_Dashboard.default_mirror'];
+      if (v is String && v.isNotEmpty) def = v;
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _defaultLoaded = true;
+      if (def != null) {
+        final hit = _mirrorPresets.where((m) => m.$2 == def).toList();
+        if (hit.isNotEmpty) {
+          _preset = def;
+        } else {
+          _preset = '__custom__';
+          _mirrorCtrl.text = def;
+        }
+      } else {
+        _preset = '';
+      }
+    });
+  }
 
   @override
   void dispose() {
     _mirrorCtrl.dispose();
+    _extraCtrl.dispose();
     super.dispose();
+  }
+
+  String? get _effectiveIndexUrl {
+    if (_preset == null) return null;
+    if (_preset == '__custom__') return _mirrorCtrl.text.trim();
+    return _preset!.isEmpty ? null : _preset;
   }
 
   @override
@@ -104,15 +161,46 @@ class _OptionsDialogState extends State<_OptionsDialog> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _mirrorCtrl,
-            decoration: InputDecoration(
+          if (!_defaultLoaded)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: _preset,
               isDense: true,
-              labelText: l10n.storeMirror,
-              hintText: 'https://pypi.tuna.tsinghua.edu.cn/simple',
-              border: const OutlineInputBorder(),
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: l10n.storeMirror,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                for (final (name, url) in _mirrorPresets)
+                  DropdownMenuItem(value: url, child: Text(name)),
+                const DropdownMenuItem(
+                  value: '__custom__',
+                  child: Text('Custom'),
+                ),
+              ],
+              onChanged: (v) => setState(() => _preset = v),
             ),
-          ),
+          if (_preset == '__custom__') ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _mirrorCtrl,
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: l10n.storeMirror,
+                hintText: 'https://…/simple',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
           if (!widget.upgrade)
             SwitchListTile(
               dense: true,
@@ -120,6 +208,25 @@ class _OptionsDialogState extends State<_OptionsDialog> {
               title: Text(l10n.storeForce),
               value: _force,
               onChanged: (v) => setState(() => _force = v),
+            ),
+          // 高级：extra_args
+          TextButton.icon(
+            onPressed: () => setState(() => _advanced = !_advanced),
+            icon: Icon(
+              _advanced ? Icons.expand_less : Icons.expand_more,
+              size: 18,
+            ),
+            label: const Text('pip args'),
+          ),
+          if (_advanced)
+            TextField(
+              controller: _extraCtrl,
+              decoration: const InputDecoration(
+                isDense: true,
+                labelText: 'extra_args',
+                hintText: '--no-cache-dir --timeout 60',
+                border: OutlineInputBorder(),
+              ),
             ),
         ],
       ),
@@ -131,7 +238,11 @@ class _OptionsDialogState extends State<_OptionsDialog> {
         FilledButton(
           onPressed: () => Navigator.pop(
             context,
-            _TaskOptions(indexUrl: _mirrorCtrl.text.trim(), force: _force),
+            _TaskOptions(
+              indexUrl: _effectiveIndexUrl,
+              force: _force,
+              extraArgs: _extraCtrl.text.trim(),
+            ),
           ),
           child: Text(
             widget.upgrade ? l10n.storeUpgrade : l10n.detailPackageInstall,
@@ -286,6 +397,7 @@ class _TaskProgressDialogState extends State<_TaskProgressDialog> {
 Future<void> _runTaskFlow(
   BuildContext context, {
   required DashboardApi api,
+  required Instance instance,
   required String title,
   required List<String> packages,
   required bool upgrade,
@@ -294,13 +406,25 @@ Future<void> _runTaskFlow(
 }) async {
   final opts = await showDialog<_TaskOptions>(
     context: context,
-    builder: (ctx) =>
-        _OptionsDialog(title: title, packages: packages, upgrade: upgrade),
+    builder: (ctx) => _OptionsDialog(
+      api: api,
+      title: title,
+      packages: packages,
+      upgrade: upgrade,
+    ),
   );
   if (opts == null) return;
   try {
     final taskId = await submit(opts);
     if (!context.mounted) return;
+    // 登记全局任务中心：关闭进度框后任务仍可查看
+    if (taskId.isNotEmpty) {
+      TaskCenter.instance.track(
+        instance: instance,
+        taskId: taskId,
+        label: title,
+      );
+    }
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -474,6 +598,7 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
   Future<void> _install(_StorePkg p) => _runTaskFlow(
         context,
         api: _api,
+        instance: widget.instance,
         title: p.name,
         packages: [p.package],
         upgrade: false,
@@ -481,6 +606,7 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
           [p.package],
           force: opts.force,
           indexUrl: opts.indexUrl,
+          extraArgs: opts.extraArgs,
         ),
         onDone: () => _load(force: true),
       );
@@ -488,13 +614,87 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
   Future<void> _upgrade(_StorePkg p) => _runTaskFlow(
         context,
         api: _api,
+        instance: widget.instance,
         title: p.name,
         packages: [p.package],
         upgrade: true,
-        submit: (opts) =>
-            _api.upgradePackages([p.package], indexUrl: opts.indexUrl),
+        submit: (opts) => _api.upgradePackages(
+          [p.package],
+          indexUrl: opts.indexUrl,
+          extraArgs: opts.extraArgs,
+        ),
         onDone: () => _load(force: true),
       );
+
+  /// 离线包安装：选文件 → 上传（token）→ 选项确认 → upload/install 任务流
+  Future<void> _uploadAndInstall() async {
+    final l10n = AppLocalizations.of(context);
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['whl', 'zip'],
+    );
+    final path = picked?.files.single.path;
+    final name = picked?.files.single.name;
+    if (path == null || path.isEmpty || name == null) return;
+
+    setState(() => _loading = true);
+    String token;
+    try {
+      token = await _api.uploadStorePackage(path);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    if (token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.storeUploadInstall)),
+      );
+      return;
+    }
+
+    // 选项确认（复用镜像/force/extra_args），确认后启动安装任务
+    final opts = await showDialog<_TaskOptions>(
+      context: context,
+      builder: (ctx) => _OptionsDialog(
+        api: _api,
+        title: name,
+        packages: [l10n.storeUploadPicked(name)],
+        upgrade: false,
+      ),
+    );
+    if (opts == null || !mounted) return;
+    try {
+      final taskId = await _api.uploadStoreInstall(
+        token,
+        force: opts.force,
+        indexUrl: opts.indexUrl,
+        extraArgs: opts.extraArgs,
+      );
+      if (taskId.isNotEmpty) {
+        TaskCenter.instance.track(
+          instance: widget.instance,
+          taskId: taskId,
+          label: name,
+        );
+      }
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _TaskProgressDialog(api: _api, taskId: taskId),
+      );
+      await _load(force: true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
 
   Future<void> _openDetail(_StorePkg p) async {
     await showDialog<void>(
@@ -550,6 +750,11 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
                   ],
                   onChanged: (v) => setState(() => _type = v ?? 'all'),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.upload_file_outlined),
+                tooltip: l10n.storeUploadInstall,
+                onPressed: _uploadAndInstall,
               ),
               IconButton(
                 icon: const Icon(Icons.refresh),
@@ -656,12 +861,30 @@ class _StoreBrowseTabState extends State<_StoreBrowseTab>
     );
   }
 
+  /// 语义版本比较（对齐 Dashboard cmpVer）：a > b 返回 true。
+  /// 点分数字逐段比较，非数字段按字符串比；解析失败回退字符串不等。
+  static bool _verNewer(String a, String b) {
+    if (a == b) return false;
+    final pa = a.split(RegExp(r'[.\-+]'));
+    final pb = b.split(RegExp(r'[.\-+]'));
+    for (var i = 0; i < pa.length.clamp(0, pb.length); i++) {
+      final na = int.tryParse(pa[i].replaceAll(RegExp(r'^v'), ''));
+      final nb = int.tryParse(pb[i].replaceAll(RegExp(r'^v'), ''));
+      if (na != null && nb != null) {
+        if (na != nb) return na > nb;
+      } else if (pa[i] != pb[i]) {
+        return pa[i].compareTo(pb[i]) > 0;
+      }
+    }
+    return pa.length > pb.length;
+  }
+
   Widget _card(_StorePkg p) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final instVer = _installed[p.package.toLowerCase()];
     final installed = instVer != null && instVer.isNotEmpty;
-    final hasUpdate = installed && instVer != p.version;
+    final hasUpdate = installed && _verNewer(p.version, instVer);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -1077,6 +1300,8 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
   bool _loading = true;
   String? _error;
   bool _busy = false;
+  StreamSubscription<DashboardSignal>? _sub;
+  Stream<DashboardSignal>? _signals;
 
   final _newPkgCtrl = TextEditingController();
 
@@ -1090,7 +1315,26 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final signals = SignalScope.maybeOf(context)?.signals;
+    if (identical(signals, _signals)) return;
+    unawaited(_sub?.cancel());
+    _signals = signals;
+    // 安装/升级完成（服务端已热重载受影响模块）后刷新包列表
+    _sub = signals?.listen((s) {
+      if (s.type == 'module_changed' || s.type == 'install_progress') {
+        final status = s.data?['status'];
+        if (status == null || status == 'success' || status == 'upgraded') {
+          _load();
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    unawaited(_sub?.cancel());
     _newPkgCtrl.dispose();
     super.dispose();
   }
@@ -1159,6 +1403,7 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
   Future<void> _upgradeOne(String name, {String? gitUrl}) => _runTaskFlow(
         context,
         api: _api,
+        instance: widget.instance,
         title: name,
         packages: gitUrl != null ? [gitUrl] : [name],
         upgrade: true,
@@ -1174,12 +1419,14 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
   Future<void> _upgradeAll() => _runTaskFlow(
         context,
         api: _api,
+        instance: widget.instance,
         title: AppLocalizations.of(context).pkgUpgradeAll,
         packages: [for (final u in _updates) u['name']?.toString() ?? ''],
         upgrade: true,
         submit: (opts) => _api.upgradePackages(
           [for (final u in _updates) u['name']?.toString() ?? ''],
           indexUrl: opts.indexUrl,
+          extraArgs: opts.extraArgs,
         ),
         onDone: () => _load(force: true),
       );
@@ -1230,6 +1477,7 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
     await _runTaskFlow(
       context,
       api: _api,
+      instance: widget.instance,
       title: l10n.pkgInstallNewTab,
       packages: [spec],
       upgrade: false,
@@ -1238,11 +1486,13 @@ class _StorePackagesTabState extends State<_StorePackagesTab>
               [spec],
               force: opts.force,
               indexUrl: opts.indexUrl,
+              extraArgs: opts.extraArgs,
             )
           : _api.storeInstall(
               [spec],
               force: opts.force,
               indexUrl: opts.indexUrl,
+              extraArgs: opts.extraArgs,
             ),
       onDone: () {
         _newPkgCtrl.clear();

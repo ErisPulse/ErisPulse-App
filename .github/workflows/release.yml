@@ -106,6 +106,15 @@ jobs:
           cp /tmp/extract/libandroid-shmem.so-aarch64 libandroid-shmem.so-aarch64
           rm -rf /tmp/extract /tmp/clean rootfs.tar
 
+      - name: Apply custom rootfs packages (custom/rootfs)
+        if: steps.rootfs.outputs.exists == 'false'
+        run: |
+          if [ -d custom/rootfs ]; then
+            sudo -E bash scripts/customize-rootfs.sh rootfs.tar.gz rootfs.tar.gz
+          else
+            echo "no custom/rootfs — keep base rootfs"
+          fi
+
       - name: Download existing rootfs assets
         if: steps.rootfs.outputs.exists == 'true'
         run: |
@@ -152,6 +161,9 @@ jobs:
         flavor: [online, offline]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Merge custom manifest
+        run: bash scripts/gen-manifest.sh
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -243,6 +255,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Merge custom manifest
+        shell: bash
+        run: bash scripts/gen-manifest.sh
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2

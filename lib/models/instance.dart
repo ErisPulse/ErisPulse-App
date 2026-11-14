@@ -59,6 +59,15 @@ class Instance {
   /// 安装版本；框架更新后由 PackagesTab 同步）。Android 端忽略此字段。
   String? runtimeVersion;
 
+  /// 来自集群：源实例（origin）的集群节点 id；null 表示非集群导入
+  String? clusterNodeId;
+
+  /// 来自集群：源实例 id（API 经 origin 的 /cluster/proxy 转发）
+  String? originInstanceId;
+
+  /// 来自集群：源实例 Dashboard 基址（http://host:port）
+  String? originBaseUrl;
+
   Instance({
     required this.id,
     required this.name,
@@ -74,6 +83,9 @@ class Instance {
     this.pid,
     this.errorMessage,
     this.runtimeVersion,
+    this.clusterNodeId,
+    this.originInstanceId,
+    this.originBaseUrl,
   });
 
   factory Instance.fromJson(Map<String, dynamic> json) {
@@ -88,6 +100,9 @@ class Instance {
       remoteUrl: json['remoteUrl'] as String?,
       lastStartedAt: json['lastStartedAt'] as String?,
       runtimeVersion: json['runtimeVersion'] as String?,
+      clusterNodeId: json['clusterNodeId'] as String?,
+      originInstanceId: json['originInstanceId'] as String?,
+      originBaseUrl: json['originBaseUrl'] as String?,
       // 桌面端持久化的进程 PID（重启后用于识别仍在运行的实例，避免重复启动）
       pid: (json['pid'] as num?)?.toInt(),
     );
@@ -103,30 +118,50 @@ class Instance {
         if (remoteUrl != null) 'remoteUrl': remoteUrl,
         if (lastStartedAt != null) 'lastStartedAt': lastStartedAt,
         if (runtimeVersion != null) 'runtimeVersion': runtimeVersion,
+        if (clusterNodeId != null) 'clusterNodeId': clusterNodeId,
+        if (originInstanceId != null) 'originInstanceId': originInstanceId,
+        if (originBaseUrl != null) 'originBaseUrl': originBaseUrl,
         if (pid != null) 'pid': pid,
       };
 
-  /// Dashboard 基址（本地回环或远程地址）
-  Uri get baseUrl => isRemote
-      ? Uri.parse(remoteUrl ?? '')
-      : Uri.parse('http://127.0.0.1:$port');
+  /// 集群代理前缀；非集群实例为 null
+  String? get _clusterProxyPrefix =>
+      (clusterNodeId != null && originBaseUrl != null)
+          ? '/Dashboard/api/cluster/proxy/$clusterNodeId'
+          : null;
+
+  /// API 经源实例代理转发，WebSocket 不受代理支持
+  bool get supportsWs => _clusterProxyPrefix == null;
+
+  /// Dashboard 基址（本地回环或远程地址；集群实例为源实例地址）
+  Uri get baseUrl => _clusterProxyPrefix != null
+      ? Uri.parse(originBaseUrl!)
+      : (isRemote
+          ? Uri.parse(remoteUrl ?? '')
+          : Uri.parse('http://127.0.0.1:$port'));
 
   /// Dashboard Web 界面地址（WebView 加载）
   Uri get dashboardUri => baseUrl.replace(path: '/Dashboard');
 
-  /// API 完整 URL（拼接路径；支持内嵌 `?query`，拆成真实 query 参数）
-  Uri apiUri(String path) {
+  /// API 完整 URL（拼接路径；支持内嵌 `?query`，拆成真实 query 参数；
+  /// 集群实例经源实例 /cluster/proxy 转发）
+  Uri apiUri(String path, {Map<String, String>? query}) {
     final raw = path.startsWith('/') ? path : '/$path';
-    Map<String, String>? query;
+    Map<String, String>? parsed;
     final q = raw.indexOf('?');
     final p = q >= 0 ? raw.substring(0, q) : raw;
     if (q >= 0) {
-      query = Uri.splitQueryString(raw.substring(q + 1));
+      parsed = Uri.splitQueryString(raw.substring(q + 1));
     }
-    final uri = baseUrl.replace(path: '/Dashboard/api$p');
-    return (query != null && query.isNotEmpty)
-        ? uri.replace(queryParameters: query)
-        : uri;
+    final merged = <String, String>{
+      ...?parsed,
+      ...?query,
+    };
+    final prefix = _clusterProxyPrefix;
+    final fullPath =
+        prefix == null ? '/Dashboard/api$p' : '$prefix/Dashboard/api$p';
+    final uri = baseUrl.replace(path: fullPath);
+    return merged.isNotEmpty ? uri.replace(queryParameters: merged) : uri;
   }
 
   /// Dashboard WebSocket URL（用于日志/事件流）
@@ -153,6 +188,8 @@ class Instance {
     int? pid,
     String? errorMessage,
     String? runtimeVersion,
+    String? clusterNodeId,
+    String? originInstanceId,
     bool clearPid = false,
     bool clearError = false,
     bool clearRuntimeVersion = false,
@@ -173,6 +210,8 @@ class Instance {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       runtimeVersion:
           clearRuntimeVersion ? null : (runtimeVersion ?? this.runtimeVersion),
+      clusterNodeId: clusterNodeId ?? this.clusterNodeId,
+      originInstanceId: originInstanceId ?? this.originInstanceId,
     );
   }
 

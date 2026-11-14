@@ -1364,4 +1364,291 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get closeActionAsk => '毎回確認する';
+
+  @override
+  String distWelcomeTitle(Object name) {
+    return '$name へようこそ';
+  }
+
+  @override
+  String get distPreinstalledTitle => 'プリインストール';
+
+  @override
+  String get distVendorLabel => 'ベンダー';
+
+  @override
+  String get distHomepageLabel => 'ホームページ';
+
+  @override
+  String get distContactLabel => '連絡先';
+
+  @override
+  String get settingsDistribution => 'ディストリビューション';
+
+  @override
+  String get settingsPypiCustom => 'カスタム';
+
+  @override
+  String get commonGotIt => 'OK';
+
+  @override
+  String get settingsThemeStyle => 'テーマスタイル';
+
+  @override
+  String get themeStyleGlass => 'リキッドグラス';
+
+  @override
+  String get themeStyleMd3 => 'クラシック';
+
+  @override
+  String get transcriptTitle => 'トランスクリプト';
+
+  @override
+  String get transcriptEmpty => 'セッションなし';
+
+  @override
+  String get transcriptRetention => '保持ポリシー';
+
+  @override
+  String get transcriptMaxPerSession => 'セッション上限';
+
+  @override
+  String get transcriptTtlHours => '保持期間（時間）';
+
+  @override
+  String get transcriptMsgEmpty => 'メッセージなし';
+
+  @override
+  String get securityTitle => 'API キー';
+
+  @override
+  String get securityEmpty => 'キーなし';
+
+  @override
+  String get securityCreate => 'キー作成';
+
+  @override
+  String get securityName => '名前';
+
+  @override
+  String get securityRole => 'ロール';
+
+  @override
+  String get securityRoleAdmin => '管理者';
+
+  @override
+  String get securityRoleViewer => '閲覧';
+
+  @override
+  String get securityPages => 'ページ許可一覧';
+
+  @override
+  String get securityPagesAll => '全ページ';
+
+  @override
+  String get securityKeyCreated => 'キーを作成しました。一度のみ表示されます';
+
+  @override
+  String get securityRegen => '再生成';
+
+  @override
+  String get securityRegenToken => 'プライマリトークン再生成';
+
+  @override
+  String get securityRegenTokenConfirm => '既存の接続がすべて無効になります。続行しますか？';
+
+  @override
+  String get securityLastUsed => '最終使用';
+
+  @override
+  String get securityEnabled => '有効';
+
+  @override
+  String get securityDeleteConfirm => 'このキーを削除しますか？';
+
+  @override
+  String get securityPrimaryToken => 'プライマリトークン';
+
+  @override
+  String get masterTitle => 'マスター';
+
+  @override
+  String get masterEmpty => 'マスターなし';
+
+  @override
+  String get masterCandidates => '候補';
+
+  @override
+  String get masterAdd => '追加';
+
+  @override
+  String get clusterFromCluster => 'クラスターから';
+
+  @override
+  String get clusterProxyError => 'クラスター プロキシを利用できません。ノードのトークンを設定してください';
+
+  @override
+  String get distPreinstalledLabel => 'プリインストール';
+
+  @override
+  String get commonClose => '閉じる';
+
+  @override
+  String get unsupportedTitle => '機能を利用できません';
+
+  @override
+  String get unsupportedDesc =>
+      'このインスタンスの Dashboard またはフレームワークのバージョンが古く、この機能は利用できません。インスタンスの ErisPulse-Dashboard モジュールを更新（モジュールストア → 検索 → アップグレード）してから再試行してください。';
+
+  @override
+  String get batchMode => '一括操作';
+
+  @override
+  String get batchSelectAll => 'すべて選択';
+
+  @override
+  String get batchStart => '一括起動';
+
+  @override
+  String get batchStop => '一括停止';
+
+  @override
+  String get batchRestart => '一括再起動';
+
+  @override
+  String get batchUpgrade => 'パッケージ一括更新';
+
+  @override
+  String get batchUpdateFramework => 'フレームワーク一括更新';
+
+  @override
+  String batchRunning(Object done, Object total) {
+    return '実行中 $done/$total';
+  }
+
+  @override
+  String get batchResultTitle => '一括結果';
+
+  @override
+  String get batchCancelTask => 'タスク取消';
+
+  @override
+  String get batchConfirmUpgrade =>
+      '選択したインスタンスのパッケージを更新しますか？（インストール後自動ホットリロード）';
+
+  @override
+  String get batchConfirmFramework => '選択したインスタンスのフレームワークを更新しますか？（再起動されます）';
+
+  @override
+  String batchSelectedCount(Object n) {
+    return '$n 件選択中';
+  }
+
+  @override
+  String get configSourceTab => 'TOML ソース';
+
+  @override
+  String get configSourceSaved => 'TOML を保存しました';
+
+  @override
+  String get configSourceInvalid => 'TOML が不正です';
+
+  @override
+  String get storageTables => 'ストレージテーブル';
+
+  @override
+  String get storageTableRows => '行';
+
+  @override
+  String get storageClearTable => 'テーブルをクリア';
+
+  @override
+  String get backupExport => 'バックアップ出力';
+
+  @override
+  String get backupImport => 'バックアップ復元';
+
+  @override
+  String backupDone(Object path) {
+    return '$path に保存しました';
+  }
+
+  @override
+  String get apiRoutesTitle => 'API ルート';
+
+  @override
+  String get clusterTitle => 'クラスター';
+
+  @override
+  String get clusterAddNode => 'ノード追加';
+
+  @override
+  String get clusterPing => 'Ping';
+
+  @override
+  String get clusterRemove => '削除';
+
+  @override
+  String get clusterUrl => 'URL';
+
+  @override
+  String get clusterToken => 'トークン';
+
+  @override
+  String get clusterName => '名前';
+
+  @override
+  String get storeUploadInstall => '.whl / .zip をアップロード';
+
+  @override
+  String storeUploadPicked(Object name) {
+    return '選択：$name';
+  }
+
+  @override
+  String get storeUploadStart => 'アップロードしてインストール';
+
+  @override
+  String get filesUpload => 'ファイルをアップロード';
+
+  @override
+  String get settingsDisplay => '表示';
+
+  @override
+  String get settingsBehavior => '動作';
+
+  @override
+  String get settingsNetwork => 'ダウンロードとミラー';
+
+  @override
+  String get settingsMaintenance => 'データとメンテナンス';
+
+  @override
+  String get settingsDynamicColor => 'システムカラーに追従（Material You）';
+
+  @override
+  String get settingsDynamicColorDesc => 'オフ＝ErisPulse の既定カラー';
+
+  @override
+  String get settingsRefreshInterval => '状態更新間隔';
+
+  @override
+  String get settingsPrivacyMode => 'プライバシーモード';
+
+  @override
+  String get settingsPrivacyModeDesc => 'イベントストリームで ID をマスク';
+
+  @override
+  String get settingsEventLimit => 'イベント表示上限';
+
+  @override
+  String get settingsNotifications => '通知';
+
+  @override
+  String get settingsNotifyOnCrash => 'インスタンス異常時に通知';
+
+  @override
+  String refreshUnitSec(Object n) {
+    return '$n 秒';
+  }
 }

@@ -28,9 +28,12 @@ import '../services/dashboard_api.dart';
 import '../services/instance_manager.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
+import '../services/log_stream.dart';
 import '../views/instance_view.dart';
+import '../views/module_view_host.dart';
 import '../widgets/status_indicators.dart';
 import '../widgets/states.dart';
+import '../widgets/task_center_sheet.dart';
 import '../widgets/window_title_bar.dart';
 import 'dashboard_page.dart';
 
@@ -81,8 +84,30 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   /// 宽屏（PC）已访问过的视图索引集合，用于 IndexedStack 懒实例化
   final Set<int> _visited = {0};
 
+  /// 详情页共享 WS 信号流（module_changed / install_progress → 视图刷新）
+  LogStream? _signalStream;
+
+  /// 可更新包数量（-1 = 未加载；概览更新提示卡用）
+  int _pkgUpdateCount = -1;
+
   Instance? _lookup() =>
       context.read<InstanceManager>().findById(widget.instanceId);
+
+  /// 后端就绪后开启共享 WS（仅消费模块/安装信号，不占用日志缓冲）
+  void _ensureSignalStream(Instance inst) {
+    if (_signalStream != null) return;
+    if (inst.supportsWs == false) return;
+    _signalStream = LogStream(inst)..start();
+  }
+
+  /// 拉取可更新包数量（概览更新提示；失败静默）
+  Future<void> _loadPkgUpdateCount(Instance inst) async {
+    try {
+      final updates = await DashboardApi(inst).getPackageUpdates();
+      if (!mounted) return;
+      setState(() => _pkgUpdateCount = updates.length);
+    } catch (_) {}
+  }
 
   /// 本地实例当前是否已挂起（未启动 / 异常），此时后端不可达。
   bool _notRunning(Instance inst) =>
@@ -125,6 +150,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _signalStream?.dispose();
     super.dispose();
   }
 
@@ -195,6 +221,8 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         _error = null;
         _backendReady = true;
       });
+      _ensureSignalStream(inst);
+      unawaited(_loadPkgUpdateCount(inst));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -210,11 +238,8 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     await _syncModuleViews(api);
   }
 
-  // 模块动态视窗（/api/views → ext-<id> 导航入口）
-  //
-  // 视窗内容不在 App 内渲染：入口点击直接跳转 Dashboard 对应页面
-  // （前端全局 go('ext-<id>')，其内部按 p-ext-<id> 查找页面），
-  // 对齐 Dashboard 的页面切换行为。
+  // 模块动态视窗（/api/views → ext-<id> 导航入口），
+  // 内容经 ModuleViewHost 在 App 内渲染，详情页底部保留 Dashboard 兜底入口。
 
   /// 与后端 /api/views 对齐注册 ext- 视图；集合变化时回概览防索引错位。
   Future<void> _syncModuleViews(DashboardApi api) async {
@@ -331,15 +356,6 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
     return v['group_title']?.toString() ?? v['id'].toString();
   }
 
-  /// 跳转 Dashboard 指定页面（go() 定位）
-  void _openDashboardPage(Instance inst, String page) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => DashboardPage(instance: inst, initialPage: page),
-      ),
-    );
-  }
-
   /// 概览大数字卡跳转到对应注册视图
   void _gotoView(String viewId) {
     final idx = context.read<DetailViewRegistry>().indexOf(viewId);
@@ -438,11 +454,14 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
         final actions = _buildDetailActions(inst, l10n);
         final body = inst == null
             ? Center(child: Text(l10n.detailNotFound))
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= _wideBreakpoint;
-                  return _buildBody(context, l10n, inst, isWide);
-                },
+            : SignalScope(
+                signals: _signalStream?.signals,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= _wideBreakpoint;
+                    return _buildBody(context, l10n, inst, isWide);
+                  },
+                ),
               );
         // 桌面：统一使用无边框自绘顶栏（可拖拽 + 窗口控制），移动端沿用 AppBar
         if (!Platform.isAndroid && !Platform.isIOS) {
@@ -483,6 +502,7 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
   /// 详情页顶栏右侧动作（复制 Token / 刷新 / 右上角启动菜单）
   List<Widget> _buildDetailActions(Instance? inst, AppLocalizations l10n) {
     return [
+      const TaskCenterButton(),
       IconButton(
         icon: const Icon(Icons.copy_outlined),
         tooltip: l10n.dashboardCopyTokenTooltip,
@@ -556,14 +576,6 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
                 views: views,
                 selectedIndex: _tabIndex,
                 onSelect: (i) {
-                  // 模块动态视窗：点击直接跳 Dashboard 对应页面
-                  if (i > 0 && views[i - 1].id.startsWith('ext-')) {
-                    _openDashboardPage(
-                      inst,
-                      'ext-${views[i - 1].id.substring(4)}',
-                    );
-                    return;
-                  }
                   setState(() {
                     _tabIndex = i;
                     _visited.add(i);
@@ -672,6 +684,11 @@ class _InstanceDetailPageState extends State<InstanceDetailPage> {
           // 顶部状态横幅：名称 + 状态/类型/健康大徽章 + 运行时长
           _StatusBanner(instance: inst),
           const SizedBox(height: 14),
+          // 包更新提示（有可更新包时显示，点击跳商店）
+          _UpdateHintCard(
+            count: _pkgUpdateCount,
+            onTap: () => _gotoView('store'),
+          ),
           // Hero 大数字：适配器 / 模块 / 机器人 / 事件（点击跳视图）
           hero,
           const SizedBox(height: 14),
@@ -2155,39 +2172,59 @@ class _ModuleViewEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.extension_outlined,
-              size: 56,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              data['title']?.toString() ?? data['id'].toString(),
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.moduleViewOpenHint,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return Column(
+      children: [
+        Expanded(child: ModuleViewHost(instance: instance, view: data)),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () => _open(context),
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: Text(l10n.moduleViewOpenButton),
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 包更新提示卡（count > 0 时显示；点击跳商店视图）
+class _UpdateHintCard extends StatelessWidget {
+  const _UpdateHintCard({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Card(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            Icons.cloud_download_outlined,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+          title: Text(
+            '$count packages have updates',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _open(context),
-              icon: const Icon(Icons.open_in_new),
-              label: Text(l10n.moduleViewOpenButton),
-            ),
-          ],
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: onTap,
         ),
       ),
     );

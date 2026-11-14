@@ -122,6 +122,12 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
         final platform = b['platform']?.toString() ?? 'unknown';
         final botId = b['bot_id']?.toString() ?? '-';
         final online = _online(b);
+        final info = b['info'] is Map<String, dynamic>
+            ? b['info'] as Map<String, dynamic>
+            : const <String, dynamic>{};
+        final nickname = (info['user_name'] ?? info['nickname'])?.toString();
+        final avatar = info['avatar']?.toString();
+        final adapterStatus = b['adapter_status']?.toString() ?? '';
         final caps = (b['capabilities'] as List? ?? [])
             .map((c) => c.toString())
             .where((c) => c.isNotEmpty)
@@ -131,6 +137,7 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 头像三级回退：avatar → 平台首字母
               Container(
                 width: 36,
                 height: 36,
@@ -140,12 +147,28 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
                       theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Text(
-                  platform.substring(0, platform.length.clamp(1, 2)),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
+                child: (avatar != null && avatar.startsWith('http'))
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.network(
+                          avatar,
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Text(
+                            platform.substring(0, platform.length.clamp(1, 2)),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Text(
+                        platform.substring(0, platform.length.clamp(1, 2)),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -154,10 +177,16 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          platform,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            (nickname != null && nickname.isNotEmpty)
+                                ? nickname
+                                : platform,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -173,38 +202,30 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      botId,
+                      '$platform · $botId',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontFamily: 'monospace',
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    // 适配器五态徽章
+                    if (adapterStatus.isNotEmpty &&
+                        adapterStatus != 'started') ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'adapter: $adapterStatus',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: adapterStatus == 'stopped'
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     if (caps.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 2,
-                        children: [
-                          for (final c in caps)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: Text(
-                                c,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                      _CapsWrap(caps: caps),
                     ],
                   ],
                 ),
@@ -220,6 +241,55 @@ class _InstanceBotsViewState extends State<InstanceBotsView>
           ),
         );
       },
+    );
+  }
+}
+
+/// 能力徽章：前 5 个 + "+N" 点击展开
+class _CapsWrap extends StatefulWidget {
+  const _CapsWrap({required this.caps});
+
+  final List<String> caps;
+
+  @override
+  State<_CapsWrap> createState() => _CapsWrapState();
+}
+
+class _CapsWrapState extends State<_CapsWrap> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final extra = widget.caps.length - 5;
+    final shown =
+        _expanded || extra <= 0 ? widget.caps : widget.caps.take(5).toList();
+    return Wrap(
+      spacing: 4,
+      runSpacing: 2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final c in shown)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              c,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        if (!_expanded && extra > 0)
+          ActionChip(
+            label: Text('+$extra', style: theme.textTheme.labelSmall),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => setState(() => _expanded = true),
+          ),
+      ],
     );
   }
 }

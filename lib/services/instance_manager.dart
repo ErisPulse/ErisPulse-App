@@ -3,6 +3,7 @@
 /// 进程启停由 runtime 层负责，本服务只管实例元数据。
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show InternetAddress, ServerSocket;
 import 'dart:math' show Random;
@@ -13,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/enums.dart';
 import '../models/instance.dart';
+import 'dashboard_api.dart';
 
 const _kInstancesKey = 'erispulse.instances.v2';
 const _kInstancesBackupKey = 'erispulse.instances.v2.corrupt-backup';
@@ -260,6 +262,91 @@ class InstanceManager extends ChangeNotifier {
       if (i.port == port) return i;
     }
     return null;
+  }
+
+  /// 集群探测：对各实例拉取 /cluster/nodes，同步"来自集群"实例。
+  ///
+  /// 新节点创建集群实例（API 经源实例代理转发）；节点消失或停用时移除
+  /// 对应集群实例。返回变更条数。
+  Future<int> syncClusterInstances() async {
+    var changed = 0;
+    final origins = _instances.where((i) => i.clusterNodeId == null).toList();
+    for (final origin in origins) {
+      List<Map<String, dynamic>> nodes;
+      try {
+        final json = await DashboardApi(origin).clusterNodes();
+        nodes = [
+          for (final n in (json['nodes'] as List? ?? []))
+            if (n is Map<String, dynamic>) n,
+        ];
+      } catch (_) {
+        continue;
+      }
+
+      final seenIds = <String>{};
+      for (final node in nodes) {
+        final nodeId = node['id']?.toString();
+        if (nodeId == null || nodeId == 'local') continue;
+        final enabled = node['enabled'] != false;
+        if (!enabled) continue;
+        seenIds.add(nodeId);
+
+        final exists = _instances.any(
+          (i) => i.clusterNodeId == nodeId && i.originInstanceId == origin.id,
+        );
+        if (exists) continue;
+
+        final name = (node['name']?.toString().isNotEmpty ?? false)
+            ? node['name'].toString()
+            : nodeId;
+        try {
+          final inst = await createInstance(
+            name: name,
+            isRemote: true,
+            remoteUrl: node['url']?.toString() ?? origin.originBaseUrl ?? '',
+            token: '',
+          );
+          final idx = _instances.indexWhere((i) => i.id == inst.id);
+          if (idx >= 0) {
+            _instances[idx] = Instance(
+              id: inst.id,
+              name: inst.name,
+              port: 0,
+              workingDir: '',
+              token: '',
+              createdAt: inst.createdAt,
+              isRemote: true,
+              remoteUrl: inst.remoteUrl,
+              clusterNodeId: nodeId,
+              originInstanceId: origin.id,
+              originBaseUrl: origin.baseUrl.toString(),
+            );
+            await _secureStorage.delete(key: _kTokenKeyPrefix + inst.id);
+            await _persist();
+            changed++;
+          }
+        } catch (_) {
+          // 名称冲突等：跳过该节点
+        }
+      }
+
+      // 节点消失 / 停用：移除对应集群实例
+      final stale = _instances
+          .where(
+            (i) =>
+                i.originInstanceId == origin.id &&
+                i.clusterNodeId != null &&
+                !seenIds.contains(i.clusterNodeId),
+          )
+          .map((i) => i.id)
+          .toList();
+      for (final id in stale) {
+        await removeInstance(id);
+        changed++;
+      }
+    }
+    if (changed > 0) notifyListeners();
+    return changed;
   }
 
   Future<void> _persist() async {

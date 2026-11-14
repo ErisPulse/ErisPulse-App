@@ -14,6 +14,8 @@ import '../l10n/generated/app_localizations.dart';
 import '../models/adapter_info.dart';
 import '../models/instance.dart';
 import '../services/dashboard_api.dart';
+import '../services/app_settings.dart';
+import 'package:provider/provider.dart';
 import '../widgets/states.dart';
 
 /// 事件流视图模式：查看 / 构建
@@ -44,6 +46,15 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
   /// 类型过滤（null = 全部）
   String? _typeFilter;
 
+  /// 平台过滤（null = 全部）
+  String? _platformFilter;
+
+  /// 文本搜索
+  String _query = '';
+
+  /// Live 暂停（暂停期间不拉新事件）
+  bool _livePaused = false;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -53,7 +64,7 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
     _load();
     // 事件流自动刷新（对齐前端 event-stream 轮询）
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (_mode == _EventsMode.view) _load();
+      if (_mode == _EventsMode.view && !_livePaused) _load();
     });
   }
 
@@ -63,16 +74,70 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
     super.dispose();
   }
 
+  bool _isHeartbeat(Map<String, dynamic> e) {
+    final type = _type(e).toLowerCase();
+    final detail = (e['detail_type'] ?? '').toString().toLowerCase();
+    return type.contains('heartbeat') ||
+        detail.contains('heartbeat') ||
+        type == 'meta';
+  }
+
+  static String? _platform(Map<String, dynamic> e) =>
+      (e['platform'] as String?)?.trim().isNotEmpty == true
+          ? e['platform'] as String
+          : null;
+
+  /// 过滤 + 相邻同平台心跳合并（×N）
+  List<(Map<String, dynamic>, int)> _buildRows() {
+    Iterable<Map<String, dynamic>> list = _events;
+    if (_typeFilter != null) {
+      list = list.where((e) => _type(e) == _typeFilter);
+    }
+    if (_platformFilter != null) {
+      list = list.where((e) => _platform(e) == _platformFilter);
+    }
+    if (_query.trim().isNotEmpty) {
+      final q = _query.trim().toLowerCase();
+      list = list.where((e) {
+        final haystack = [
+          _type(e),
+          _message(e),
+          e['platform']?.toString() ?? '',
+          e['user_id']?.toString() ?? '',
+          e['group_id']?.toString() ?? '',
+        ].join(' ').toLowerCase();
+        return haystack.contains(q);
+      });
+    }
+    final rows = <(Map<String, dynamic>, int)>[];
+    for (final e in list) {
+      final last = rows.isEmpty ? null : rows.last;
+      if (last != null &&
+          _isHeartbeat(e) &&
+          _isHeartbeat(last.$1) &&
+          _platform(e) == _platform(last.$1)) {
+        rows[rows.length - 1] = (last.$1, last.$2 + 1);
+        continue;
+      }
+      rows.add((e, 1));
+    }
+    return rows;
+  }
+
   Future<void> _load() async {
     final api = DashboardApi(widget.instance);
     try {
-      final result = await api.getEvents(limit: 200);
+      final limit = context.read<AppSettings>().eventLimit;
+      final result = await api.getEvents(limit: limit);
       final events = result.events;
       if (!mounted) return;
       final types = <String>[];
+      final platforms = <String>[];
       for (final e in events) {
         final t = _type(e);
         if (t.isNotEmpty && !types.contains(t)) types.add(t);
+        final p = _platform(e);
+        if (p != null && !platforms.contains(p)) platforms.add(p);
       }
       setState(() {
         _events = events;
@@ -82,6 +147,9 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
         _loading = false;
         _error = null;
       });
+      _knownPlatforms
+        ..clear()
+        ..addAll(platforms);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -90,6 +158,8 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
       });
     }
   }
+
+  final List<String> _knownPlatforms = [];
 
   Future<void> _clear() async {
     try {
@@ -117,6 +187,21 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
 
   static String _type(Map<String, dynamic> e) =>
       (e['type'] ?? e['event'] ?? 'event').toString();
+
+  String _messageMasked(Map<String, dynamic> e, bool privacy) {
+    final raw = _message(e);
+    if (!privacy) return raw;
+    return raw
+        .replaceAllMapped(
+            RegExp(r'(user=)(\d+)'), (m) => '${m[1]}${_mask(m[2]!)}',)
+        .replaceAllMapped(
+            RegExp(r'(group=)(\d+)'), (m) => '${m[1]}${_mask(m[2]!)}',);
+  }
+
+  static String _mask(String id) {
+    if (id.length <= 4) return '****';
+    return '${id.substring(0, 2)}****${id.substring(id.length - 2)}';
+  }
 
   static String _message(Map<String, dynamic> e) {
     final m = e['message'] ?? e['detail'] ?? e['data'];
@@ -180,9 +265,7 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
   /// 查看模式：工具栏 + 事件列表
   Widget _buildView(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final visible = _typeFilter == null
-        ? _events
-        : _events.where((e) => _type(e) == _typeFilter).toList();
+    final rows = _buildRows();
     return Column(
       children: [
         Padding(
@@ -216,13 +299,51 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
                   onChanged: (v) => setState(() => _typeFilter = v),
                 ),
               ),
+              const SizedBox(width: 10),
+              // 平台过滤
+              if (_knownPlatforms.isNotEmpty)
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: _platformFilter,
+                    hint: Text(
+                      'Platform',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    isDense: true,
+                    borderRadius: BorderRadius.circular(8),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(
+                          l10n.logsFilterAll,
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      ),
+                      for (final p in _knownPlatforms)
+                        DropdownMenuItem<String?>(
+                          value: p,
+                          child: Text(p, style: theme.textTheme.labelSmall),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _platformFilter = v),
+                  ),
+                ),
               const Spacer(),
-              if (_loading)
+              if (_loading && !_livePaused)
                 const SizedBox(
                   width: 14,
                   height: 14,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(_livePaused ? Icons.play_arrow : Icons.pause),
+                tooltip: _livePaused ? 'Live' : 'Pause',
+                onPressed: () {
+                  setState(() => _livePaused = !_livePaused);
+                  if (!_livePaused) _load();
+                },
+              ),
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.delete_sweep_outlined),
@@ -232,36 +353,69 @@ class _InstanceEventsViewState extends State<InstanceEventsView>
             ],
           ),
         ),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
+        // 搜索框
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: l10n.logsSearch,
+              prefixIcon: const Icon(Icons.search, size: 18),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
         const Divider(height: 1),
         Expanded(
-          child: _buildBody(visible, l10n),
+          child: _buildBody(rows, l10n),
         ),
       ],
     );
   }
 
-  Widget _buildBody(List<Map<String, dynamic>> events, AppLocalizations l10n) {
+  Widget _buildBody(
+    List<(Map<String, dynamic>, int)> rows,
+    AppLocalizations l10n,
+  ) {
     if (_error != null) {
       return ErrorView(message: _error!, onRetry: _load);
     }
-    if (events.isEmpty) {
+    if (rows.isEmpty) {
       return EmptyState(
         icon: Icons.event_note_outlined,
         title: _loading ? l10n.commonLoading : l10n.detailNoEvents,
       );
     }
+    final privacy = context.read<AppSettings>().privacyMode;
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: events.length,
-      itemBuilder: (context, i) => _EventRow(event: events[i]),
+      itemCount: rows.length,
+      itemBuilder: (context, i) {
+        final (event, count) = rows[i];
+        return _EventRow(
+          event: event,
+          repeat: count,
+          message: _messageMasked(event, privacy),
+        );
+      },
     );
   }
 }
 
 /// 单条事件行
 class _EventRow extends StatelessWidget {
-  const _EventRow({required this.event});
+  const _EventRow({
+    required this.event,
+    required this.message,
+    this.repeat = 1,
+  });
   final Map<String, dynamic> event;
+  final String message;
+
+  /// 相邻同平台心跳合并计数（>1 显示 ×N）
+  final int repeat;
 
   @override
   Widget build(BuildContext context) {
@@ -300,10 +454,18 @@ class _EventRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _InstanceEventsViewState._message(event),
+              message,
               style: theme.textTheme.bodySmall,
             ),
           ),
+          if (repeat > 1)
+            Text(
+              '×$repeat',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontFamily: 'monospace',
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
         ],
       ),
     );

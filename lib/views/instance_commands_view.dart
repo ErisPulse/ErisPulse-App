@@ -44,6 +44,9 @@ class _InstanceCommandsViewState extends State<InstanceCommandsView>
     super.dispose();
   }
 
+  /// 平台候选（/commands 响应的 platforms；编辑对话框 chips 数据源）
+  List<String> _platforms = [];
+
   Future<void> _load() async {
     try {
       final data = await DashboardApi(widget.instance).getCommands();
@@ -53,7 +56,13 @@ class _InstanceCommandsViewState extends State<InstanceCommandsView>
             .whereType<Map<String, dynamic>>()
             .toList();
         _settings = (data['global_settings'] as Map?)?.cast<String, dynamic>();
-        _prefix.text = _settings?['prefix']?.toString() ?? '/';
+        _platforms = [
+          for (final p in (data['platforms'] as List? ?? [])) p.toString(),
+        ];
+        // 多前缀兼容：prefixes 数组优先于 prefix 字符串
+        _prefix.text = _settings?['prefixes'] is List
+            ? (_settings?['prefixes'] as List).join(', ')
+            : _settings?['prefix']?.toString() ?? '/';
         _loading = false;
         _error = null;
       });
@@ -114,7 +123,7 @@ class _InstanceCommandsViewState extends State<InstanceCommandsView>
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => _CommandEditDialog(
-        command: cmd,
+        command: {...cmd, '_platforms': _platforms},
         instance: widget.instance,
       ),
     );
@@ -347,10 +356,23 @@ class _CommandEditDialog extends StatefulWidget {
 
 class _CommandEditDialogState extends State<_CommandEditDialog> {
   late final TextEditingController _aliases;
-  late final TextEditingController _allowed;
-  late final TextEditingController _blocked;
   late final TextEditingController _transform;
   late bool _enabled;
+  late bool _paramMaster;
+  late bool _paramHidden;
+
+  /// 平台允许/阻止（chips 数据源：/commands 返回的 platforms + 已配置值）
+  List<String> _allowedPlatforms = [];
+  List<String> _blockedPlatforms = [];
+  List<String> _allPlatforms = [];
+
+  /// ACL 用户名单（platform:uid）
+  List<String> _aclAllow = [];
+  List<String> _aclDeny = [];
+  final _aclPlatformCtrl = TextEditingController();
+  final _aclUidCtrl = TextEditingController();
+  String _aclTarget = 'allow';
+
   bool _saving = false;
 
   @override
@@ -361,22 +383,42 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
     _aliases = TextEditingController(
       text: _join(cmd['custom_aliases'] as List?),
     );
-    _allowed = TextEditingController(
-      text: _join(cmd['allowed_platforms'] as List?),
-    );
-    _blocked = TextEditingController(
-      text: _join(cmd['blocked_platforms'] as List?),
-    );
+    _allowedPlatforms = [
+      for (final p in (cmd['allowed_platforms'] as List? ?? [])) p.toString(),
+    ];
+    _blockedPlatforms = [
+      for (final p in (cmd['blocked_platforms'] as List? ?? [])) p.toString(),
+    ];
+    final acl = cmd['acl'] is Map<String, dynamic>
+        ? cmd['acl'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    _aclAllow = [
+      for (final a in (acl['allow'] as List? ?? [])) a.toString(),
+    ];
+    _aclDeny = [
+      for (final a in (acl['deny'] as List? ?? [])) a.toString(),
+    ];
+    final params = cmd['params'] is Map<String, dynamic>
+        ? cmd['params'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    _paramMaster = params['master'] == true;
+    _paramHidden = params['hidden'] == true;
     _transform =
         TextEditingController(text: cmd['transform_to']?.toString() ?? '');
+    // 平台候选：命令列表接口返回的 platforms 由打开方注入
+    _allPlatforms = [
+      for (final p in (cmd['_platforms'] as List? ?? [])) p.toString(),
+      ..._allowedPlatforms,
+      ..._blockedPlatforms,
+    ]..sort();
   }
 
   @override
   void dispose() {
     _aliases.dispose();
-    _allowed.dispose();
-    _blocked.dispose();
     _transform.dispose();
+    _aclPlatformCtrl.dispose();
+    _aclUidCtrl.dispose();
     super.dispose();
   }
 
@@ -385,8 +427,28 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
     return list.map((e) => e.toString()).where((e) => e.isNotEmpty).join(', ');
   }
 
-  static List<String> _split(String s) =>
+  static List<String> _splitCmd(String s) =>
       s.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+  void _togglePlatform(List<String> list, String platform) {
+    setState(() {
+      list.contains(platform) ? list.remove(platform) : list.add(platform);
+      list.remove('*');
+      list.insert(0, '*');
+    });
+  }
+
+  void _addAcl(List<String> list) {
+    final p = _aclPlatformCtrl.text.trim();
+    final u = _aclUidCtrl.text.trim();
+    if (u.isEmpty) return;
+    final tag = p.isEmpty || p == '*' ? u : '$p:$u';
+    setState(() {
+      if (!list.contains(tag)) list.add(tag);
+      _aclPlatformCtrl.clear();
+      _aclUidCtrl.clear();
+    });
+  }
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -395,11 +457,13 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
         widget.command['name']?.toString() ?? '',
         {
           'enabled': _enabled,
-          'aliases': _split(_aliases.text),
-          'allowed_platforms': _split(_allowed.text),
-          'blocked_platforms': _split(_blocked.text),
+          'aliases': _splitCmd(_aliases.text),
+          'allowed_platforms': _allowedPlatforms,
+          'blocked_platforms': _blockedPlatforms,
           'transform_to':
               _transform.text.trim().isEmpty ? null : _transform.text.trim(),
+          'acl': {'allow': _aclAllow, 'deny': _aclDeny},
+          'params': {'master': _paramMaster, 'hidden': _paramHidden},
         },
       );
       if (!mounted) return;
@@ -411,6 +475,79 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
     }
   }
 
+  Widget _platformChips(String label, List<String> list) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelSmall),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final p in _allPlatforms)
+              FilterChip(
+                visualDensity: VisualDensity.compact,
+                label: Text(p),
+                selected: list.contains(p),
+                onSelected: (_) => _togglePlatform(list, p),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _aclGroup(String label, List<String> list) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelSmall),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final tag in list)
+              InputChip(
+                visualDensity: VisualDensity.compact,
+                label: Text(tag),
+                onDeleted: () => setState(() => list.remove(tag)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _aclPlatformCtrl,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  labelText: 'Platform (* = all)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _aclUidCtrl,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  labelText: 'UID',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -419,7 +556,7 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
         '${l10n.commandsEditTitle}: ${widget.command['name'] ?? ''}',
       ),
       content: SizedBox(
-        width: 400,
+        width: 420,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -439,29 +576,57 @@ class _CommandEditDialogState extends State<_CommandEditDialog> {
                   hintText: 'alias1, alias2',
                 ),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _allowed,
-                decoration: InputDecoration(
-                  labelText: l10n.commandsAllowedPlatforms,
-                  hintText: 'telegram, discord',
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _blocked,
-                decoration: InputDecoration(
-                  labelText: l10n.commandsBlockedPlatforms,
-                  hintText: 'slack',
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
+              _platformChips(l10n.commandsAllowedPlatforms, _allowedPlatforms),
+              const SizedBox(height: 14),
+              _platformChips(l10n.commandsBlockedPlatforms, _blockedPlatforms),
+              const SizedBox(height: 14),
               TextField(
                 controller: _transform,
                 decoration: InputDecoration(
                   labelText: l10n.commandsTransformTo,
                   hintText: '/other_command',
                 ),
+              ),
+              const Divider(height: 24),
+              Text('ACL', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'allow', label: Text('Allow')),
+                  ButtonSegment(value: 'deny', label: Text('Deny')),
+                ],
+                selected: {_aclTarget},
+                onSelectionChanged: (s) => setState(() => _aclTarget = s.first),
+              ),
+              const SizedBox(height: 8),
+              _aclGroup(
+                _aclTarget == 'allow' ? 'Allow' : 'Deny',
+                _aclTarget == 'allow' ? _aclAllow : _aclDeny,
+              ),
+              const SizedBox(height: 4),
+              FilledButton.tonal(
+                onPressed: () => _addAcl(
+                  _aclTarget == 'allow' ? _aclAllow : _aclDeny,
+                ),
+                child: const Text('Add'),
+              ),
+              const Divider(height: 24),
+              SwitchListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('params.master'),
+                subtitle: const Text('Only bot master can use'),
+                value: _paramMaster,
+                onChanged: (v) => setState(() => _paramMaster = v),
+              ),
+              SwitchListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('params.hidden'),
+                subtitle: const Text('Hide from help listing'),
+                value: _paramHidden,
+                onChanged: (v) => setState(() => _paramHidden = v),
               ),
             ],
           ),

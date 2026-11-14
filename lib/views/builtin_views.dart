@@ -13,12 +13,18 @@ import 'package:flutter/material.dart';
 
 import '../pages/detail_management_tabs.dart';
 import '../pages/files_tab.dart';
+import 'instance_api_routes_view.dart';
 import 'instance_bots_view.dart';
+import 'instance_cluster_view.dart';
+import 'instance_connections_view.dart';
 import 'instance_commands_view.dart';
 import 'instance_events_view.dart';
+import 'instance_master_view.dart';
 import 'instance_monitor_view.dart';
+import 'instance_security_view.dart';
 import 'instance_store_view.dart';
 import 'instance_topology_view.dart';
+import 'instance_transcript_view.dart';
 import 'instance_view.dart';
 
 /// 注册全部内置视图（分组与顺序对齐 Dashboard 侧边栏）
@@ -60,6 +66,14 @@ void registerBuiltinViews(DetailViewRegistry registry) {
         builder: (_, inst) => InstanceCommandsView(instance: inst),
       ),
     )
+    ..register(
+      InstanceView(
+        id: 'transcript',
+        icon: Icons.inbox_outlined,
+        title: (l) => l.transcriptTitle,
+        builder: (_, inst) => InstanceTranscriptView(instance: inst),
+      ),
+    )
     // ── 扩展 ──
     ..register(
       InstanceView(
@@ -96,6 +110,22 @@ void registerBuiltinViews(DetailViewRegistry registry) {
         builder: (_, inst) => ConfigTab(instance: inst),
       ),
     )
+    ..register(
+      InstanceView(
+        id: 'security',
+        icon: Icons.key_outlined,
+        title: (l) => l.securityTitle,
+        builder: (_, inst) => InstanceSecurityView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'master',
+        icon: Icons.verified_user_outlined,
+        title: (l) => l.masterTitle,
+        builder: (_, inst) => InstanceMasterView(instance: inst),
+      ),
+    )
     // ── 运维 ──
     ..register(
       InstanceView(
@@ -112,6 +142,30 @@ void registerBuiltinViews(DetailViewRegistry registry) {
         icon: Icons.folder_outlined,
         title: (l) => l.detailTabFiles,
         builder: (_, inst) => FilesTab(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'cluster',
+        icon: Icons.hub_outlined,
+        title: (l) => l.clusterTitle,
+        builder: (_, inst) => InstanceClusterView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'api-routes',
+        icon: Icons.route_outlined,
+        title: (l) => l.apiRoutesTitle,
+        builder: (_, inst) => InstanceApiRoutesView(instance: inst),
+      ),
+    )
+    ..register(
+      InstanceView(
+        id: 'connections',
+        icon: Icons.link_outlined,
+        title: (l) => l.batchResultTitle,
+        builder: (_, inst) => InstanceConnectionsView(instance: inst),
       ),
     );
 }

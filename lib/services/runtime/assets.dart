@@ -1,8 +1,6 @@
-// 运行时发布资产常量。
-//
-// App 运行 ErisPulse 实例需要 proot / busybox / rootfs 三样资产，
-// 获取优先级：app 私有目录 → APK assets → Releases 下载。
-// 在线 / 离线两个 flavor 的区别只在 assets 是否内置这些文件。
+// 运行时发布资产常量与下载源解析。
+
+import '../distribution.dart';
 
 /// App 构建 flavor。
 enum AppFlavor { online, offline }
@@ -37,6 +35,9 @@ const String kPypiSourceOfficial = 'pypi';
 const String kPypiSourceTsinghua = 'tsinghua';
 const String kPypiSourceAliyun = 'aliyun';
 
+/// PyPI 自定义源（索引 URL 由发行版清单提供）
+const String kPypiSourceCustom = 'custom';
+
 /// PyPI 镜像源 → 索引 URL
 const Map<String, String> kPypiIndexUrl = {
   kPypiSourceOfficial: 'https://pypi.org/simple',
@@ -45,11 +46,17 @@ const Map<String, String> kPypiIndexUrl = {
 };
 
 /// 解析 PyPI 镜像源为索引 URL（未知源回退官方）
-String pypiIndexUrl(String source) =>
-    kPypiIndexUrl[source] ?? kPypiIndexUrl[kPypiSourceOfficial]!;
+String pypiIndexUrl(String source) {
+  if (source == kPypiSourceCustom) {
+    final custom = Distribution.instance.customPypiIndexUrl;
+    if (custom != null) return custom;
+  }
+  return kPypiIndexUrl[source] ?? kPypiIndexUrl[kPypiSourceOfficial]!;
+}
 
-/// 对任意 GitHub 下载 URL 应用下载源镜像前缀（rootfs / 二进制下载）。
+/// 对 GitHub 官方下载 URL 应用镜像前缀；非 github.com URL 原样返回。
 String mirrorUrl(String source, String url) {
+  if (!url.startsWith('https://github.com/')) return url;
   return switch (source) {
     kDownloadSourceGhfast => 'https://ghfast.top/$url',
     kDownloadSourceGhproxy => 'https://gh-proxy.com/$url',
@@ -57,8 +64,13 @@ String mirrorUrl(String source, String url) {
   };
 }
 
-/// 根据下载源解析最终 Releases 基址（镜像 = 前缀 + GitHub 官方地址）。
-String resolveReleaseBase(String source) => mirrorUrl(source, kReleaseBase);
+/// 根据下载源解析最终 Releases 基址。
+/// 发行版清单 [Distribution.releaseBase] 优先（自建镜像直连，不加镜像前缀）。
+String resolveReleaseBase(String source) {
+  final custom = Distribution.instance.releaseBase;
+  if (custom != null) return custom;
+  return mirrorUrl(source, kReleaseBase);
+}
 
 /// rootfs 发行版本（与 CI 构建产物对应）。
 const String kRootfsVersion = '1.0.0';

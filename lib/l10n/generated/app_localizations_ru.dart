@@ -1397,4 +1397,294 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get closeActionAsk => 'Спрашивать каждый раз';
+
+  @override
+  String distWelcomeTitle(Object name) {
+    return 'Добро пожаловать в $name';
+  }
+
+  @override
+  String get distPreinstalledTitle => 'Предустановлено';
+
+  @override
+  String get distVendorLabel => 'Разработчик';
+
+  @override
+  String get distHomepageLabel => 'Сайт';
+
+  @override
+  String get distContactLabel => 'Контакты';
+
+  @override
+  String get settingsDistribution => 'Дистрибутив';
+
+  @override
+  String get settingsPypiCustom => 'Свой';
+
+  @override
+  String get commonGotIt => 'Понятно';
+
+  @override
+  String get settingsThemeStyle => 'Стиль темы';
+
+  @override
+  String get themeStyleGlass => 'Жидкое стекло';
+
+  @override
+  String get themeStyleMd3 => 'Классика';
+
+  @override
+  String get transcriptTitle => 'Транскрипт';
+
+  @override
+  String get transcriptEmpty => 'Нет сессий';
+
+  @override
+  String get transcriptRetention => 'Хранение';
+
+  @override
+  String get transcriptMaxPerSession => 'Лимит на сессию';
+
+  @override
+  String get transcriptTtlHours => 'Срок (часы)';
+
+  @override
+  String get transcriptMsgEmpty => 'Нет сообщений';
+
+  @override
+  String get securityTitle => 'API-ключи';
+
+  @override
+  String get securityEmpty => 'Нет ключей';
+
+  @override
+  String get securityCreate => 'Создать ключ';
+
+  @override
+  String get securityName => 'Имя';
+
+  @override
+  String get securityRole => 'Роль';
+
+  @override
+  String get securityRoleAdmin => 'Админ';
+
+  @override
+  String get securityRoleViewer => 'Чтение';
+
+  @override
+  String get securityPages => 'Белый список страниц';
+
+  @override
+  String get securityPagesAll => 'Все страницы';
+
+  @override
+  String get securityKeyCreated => 'Ключ создан, показывается один раз';
+
+  @override
+  String get securityRegen => 'Пересоздать';
+
+  @override
+  String get securityRegenToken => 'Пересоздать основной токен';
+
+  @override
+  String get securityRegenTokenConfirm =>
+      'Все существующие подключения будут аннулированы. Продолжить?';
+
+  @override
+  String get securityLastUsed => 'Использован';
+
+  @override
+  String get securityEnabled => 'Включён';
+
+  @override
+  String get securityDeleteConfirm => 'Удалить этот ключ?';
+
+  @override
+  String get securityPrimaryToken => 'Основной токен';
+
+  @override
+  String get masterTitle => 'Мастера';
+
+  @override
+  String get masterEmpty => 'Нет мастеров';
+
+  @override
+  String get masterCandidates => 'Кандидаты';
+
+  @override
+  String get masterAdd => 'Добавить';
+
+  @override
+  String get clusterFromCluster => 'Из кластера';
+
+  @override
+  String get clusterProxyError =>
+      'Прокси кластера недоступен; добавьте токен узла';
+
+  @override
+  String get distPreinstalledLabel => 'Предустановлено';
+
+  @override
+  String get commonClose => 'Закрыть';
+
+  @override
+  String get unsupportedTitle => 'Функция недоступна';
+
+  @override
+  String get unsupportedDesc =>
+      'Dashboard или фреймворк на этом экземпляре слишком старые для этой функции. Обновите модуль ErisPulse-Dashboard на экземпляре (Магазин → поиск → обновление) и повторите попытку.';
+
+  @override
+  String get batchMode => 'Массовые операции';
+
+  @override
+  String get batchSelectAll => 'Выбрать все';
+
+  @override
+  String get batchStart => 'Запустить';
+
+  @override
+  String get batchStop => 'Остановить';
+
+  @override
+  String get batchRestart => 'Перезапустить';
+
+  @override
+  String get batchUpgrade => 'Обновить пакеты';
+
+  @override
+  String get batchUpdateFramework => 'Обновить фреймворк';
+
+  @override
+  String batchRunning(Object done, Object total) {
+    return 'Выполняется $done/$total';
+  }
+
+  @override
+  String get batchResultTitle => 'Результаты';
+
+  @override
+  String get batchCancelTask => 'Отменить задачу';
+
+  @override
+  String get batchConfirmUpgrade =>
+      'Обновить пакеты на выбранных экземплярах (после установки автоматически перезагружается)?';
+
+  @override
+  String get batchConfirmFramework =>
+      'Запустить обновление фреймворка на выбранных экземплярах? Экземпляры перезапустятся.';
+
+  @override
+  String batchSelectedCount(Object n) {
+    return 'Выбрано: $n';
+  }
+
+  @override
+  String get configSourceTab => 'TOML-источник';
+
+  @override
+  String get configSourceSaved => 'TOML сохранён';
+
+  @override
+  String get configSourceInvalid => 'Некорректный TOML';
+
+  @override
+  String get storageTables => 'Таблицы хранилища';
+
+  @override
+  String get storageTableRows => 'Строк';
+
+  @override
+  String get storageClearTable => 'Очистить таблицу';
+
+  @override
+  String get backupExport => 'Экспорт бэкапа';
+
+  @override
+  String get backupImport => 'Импорт бэкапа';
+
+  @override
+  String backupDone(Object path) {
+    return 'Сохранено: $path';
+  }
+
+  @override
+  String get apiRoutesTitle => 'API-маршруты';
+
+  @override
+  String get clusterTitle => 'Кластер';
+
+  @override
+  String get clusterAddNode => 'Добавить узел';
+
+  @override
+  String get clusterPing => 'Ping';
+
+  @override
+  String get clusterRemove => 'Удалить';
+
+  @override
+  String get clusterUrl => 'URL';
+
+  @override
+  String get clusterToken => 'Токен';
+
+  @override
+  String get clusterName => 'Имя';
+
+  @override
+  String get storeUploadInstall => 'Загрузить .whl / .zip';
+
+  @override
+  String storeUploadPicked(Object name) {
+    return 'Выбрано: $name';
+  }
+
+  @override
+  String get storeUploadStart => 'Загрузить и установить';
+
+  @override
+  String get filesUpload => 'Загрузить файлы';
+
+  @override
+  String get settingsDisplay => 'Оформление';
+
+  @override
+  String get settingsBehavior => 'Поведение';
+
+  @override
+  String get settingsNetwork => 'Загрузки и зеркала';
+
+  @override
+  String get settingsMaintenance => 'Данные и обслуживание';
+
+  @override
+  String get settingsDynamicColor => 'Системные цвета (Material You)';
+
+  @override
+  String get settingsDynamicColorDesc => 'Выкл = цвета ErisPulse по умолчанию';
+
+  @override
+  String get settingsRefreshInterval => 'Интервал обновления';
+
+  @override
+  String get settingsPrivacyMode => 'Режим приватности';
+
+  @override
+  String get settingsPrivacyModeDesc => 'Скрывать user/group ID в событиях';
+
+  @override
+  String get settingsEventLimit => 'Лимит событий';
+
+  @override
+  String get settingsNotifications => 'Уведомления';
+
+  @override
+  String get settingsNotifyOnCrash => 'Уведомлять при сбое экземпляра';
+
+  @override
+  String refreshUnitSec(Object n) {
+    return '$n с';
+  }
 }

@@ -74,3 +74,4 @@ coverage/
 *.swp
 *.swo
 *~
+.mimosa/

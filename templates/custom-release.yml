@@ -1,0 +1,343 @@
+# ErisPulse-App 自定义发行版 CI 模板
+#
+# 用法：在你自己的仓库里：
+#   1. 复制本文件到 .github/workflows/custom-release.yml
+#   2. 仓库根目录创建 custom/ 目录（结构见 docs/CUSTOM-DISTRIBUTION.md）
+#   3. 推送 v* 标签或手动触发 workflow
+# 产物（含定制 rootfs 的 APK / 桌面包）发布到你自己仓库的 Releases。
+#
+# 流程：拉取官方源码 → 下载官方预构建 rootfs/运行时 → 叠加 custom/ 定制
+#      → 注入发行版清单 → 构建 → 发布。
+# 若在 custom-release inputs 里选 rebuild_rootfs，则在本地从源码重建 rootfs
+#（较慢，仅在需要改底层镜像时使用）。
+
+name: custom release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: "官方源码引用（tag 如 v0.2.6，默认 main）"
+        required: false
+        default: "main"
+      version:
+        description: "版本号（如 0.3.0），留空则从官方 pubspec.yaml 读取"
+        required: false
+      rebuild_rootfs:
+        description: "从源码重建 rootfs（忽略官方预构建）"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  APP_REPO: ErisPulse/ErisPulse-App
+
+jobs:
+  # 官方源码 + 用户 custom/ 合并为构建目录
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout official app source
+        run: |
+          git clone --depth 1 --branch "${{ inputs.app_ref || 'main' }}" \
+            "https://github.com/${APP_REPO}.git" app
+          # 用户 custom/ 覆盖进构建目录
+          if [ -d custom ]; then
+            mkdir -p app/custom
+            cp -r custom/. app/custom/
+          fi
+          ls app/custom 2>/dev/null || echo "no custom/ — official build"
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            V=$(grep '^version' app/pubspec.yaml | head -1 | sed 's/version: *//;s/+.*//')
+            echo "version=$V" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch runtime assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd app
+          if [ "${{ inputs.rebuild_rootfs }}" != "true" ]; then
+            gh release download -R "$APP_REPO" --clobber --pattern "erispulse-rootfs-aarch64.tar.gz"
+            mv erispulse-rootfs-aarch64.tar.gz runtime-rootfs.tar.gz
+            echo "using prebuilt rootfs from official releases"
+          fi
+          # proot / busybox 等运行时二进制始终取官方
+          gh release download -R "$APP_REPO" --clobber \
+            --pattern "proot-aarch64" --pattern "busybox-aarch64" \
+            --pattern "loader-aarch64" --pattern "libtalloc.so.2-aarch64" \
+            --pattern "libandroid-shmem.so-aarch64"
+          ls -lh
+
+      # 可选：从源码重建底层 rootfs（rebuild_rootfs=true，较慢）
+      - name: Rebuild base rootfs from source
+        if: inputs.rebuild_rootfs == true
+        working-directory: app
+        run: |
+          docker buildx build --platform linux/arm64 --load \
+            -t erispulse-rootfs:build -f scripts/Dockerfile.rootfs .
+          docker create --platform linux/arm64 --name rootfs-build erispulse-rootfs:build
+          docker export rootfs-build -o rootfs.tar
+          mkdir -p /tmp/clean
+          tar -xf rootfs.tar -C /tmp/clean \
+            --exclude=proot-aarch64 --exclude=busybox-aarch64 \
+            --exclude=loader-aarch64 --exclude=libtalloc.so.2-aarch64 \
+            --exclude=libandroid-shmem.so-aarch64 \
+            --exclude=build-rootfs.sh
+          tar -cf - -C /tmp/clean . | gzip -9 > runtime-rootfs.tar.gz
+          docker rm rootfs-build
+          rm -rf /tmp/clean rootfs.tar
+
+      # 应用 custom/rootfs 定制（packages.list / requirements.txt / setup.sh）
+      - name: Apply custom rootfs packages
+        if: hashFiles('custom/rootfs/**') != ''
+        run: |
+          cd app
+          sudo -E bash scripts/customize-rootfs.sh runtime-rootfs.tar.gz runtime-rootfs.tar.gz
+
+      - name: Merge custom manifest
+        run: cd app && bash scripts/gen-manifest.sh
+
+      - name: Upload build tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-tree
+          path: app/
+          retention-days: 1
+          include-hidden-files: true
+
+  build-apk:
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      USE_ALIYUN_MIRROR: "false"
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [online, offline]
+    steps:
+      - name: Download build tree
+        uses: actions/download-artifact@v4
+        with:
+          name: build-tree
+          path: app
+
+      - name: Use custom rootfs (offline)
+        if: matrix.flavor == 'offline'
+        run: |
+          # runtime-rootfs.tar.gz 来自 prepare（官方预构建或自建，已含定制层）
+          mkdir -p app/assets/rootfs
+          cp app/runtime-rootfs.tar.gz app/assets/rootfs/erispulse-rootfs-aarch64.tar.gz
+
+      - name: Stage runtime binaries (jniLibs)
+        run: |
+          mkdir -p app/android/app/src/main/jniLibs/arm64-v8a
+          cd app
+          # 运行时二进制在 prepare 阶段已下载到 app 根目录
+          cp proot-aarch64            android/app/src/main/jniLibs/arm64-v8a/libproot.so
+          cp busybox-aarch64          android/app/src/main/jniLibs/arm64-v8a/libbusybox.so
+          cp loader-aarch64           android/app/src/main/jniLibs/arm64-v8a/libloader.so
+          cp libtalloc.so.2-aarch64   android/app/src/main/jniLibs/arm64-v8a/liblibtalloc.so.2.so
+          cp libandroid-shmem.so-aarch64 android/app/src/main/jniLibs/arm64-v8a/libandroid-shmem.so
+          chmod +x android/app/src/main/jniLibs/arm64-v8a/*.so
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.8
+          cache: true
+
+      - name: Build APKs
+        working-directory: app
+        run: |
+          flutter clean
+          flutter pub get
+          dart run flutter_launcher_icons
+          flutter build apk --release --split-per-abi --dart-define=FLAVOR=${{ matrix.flavor }}
+          flutter build apk --release --dart-define=FLAVOR=${{ matrix.flavor }}
+
+      - name: Collect APKs
+        run: |
+          mkdir -p out
+          V="${{ needs.prepare.outputs.version }}"
+          F="${{ matrix.flavor }}"
+          SRC="app/build/app/outputs/flutter-apk"
+          cp "$SRC/app-arm64-v8a-release.apk" "out/ErisPulse-App-${V}-${F}-arm64-v8a.apk"
+          cp "$SRC/app-release.apk"           "out/ErisPulse-App-${V}-${F}-universal.apk"
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.flavor }}
+          path: out/*.apk
+          retention-days: 7
+
+  desktop-build:
+    needs: [prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform_arch: windows-x64
+            build_arch: x64
+            triple: x86_64-pc-windows-msvc
+          - os: ubuntu-latest
+            platform_arch: linux-x64
+            build_arch: x64
+            triple: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download build tree
+        uses: actions/download-artifact@v4
+        with:
+          name: build-tree
+          path: app
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.8
+          cache: true
+
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev \
+            libjsoncpp-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev
+
+      - name: Fetch bundled Python
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: app
+        run: |
+          set -euxo pipefail
+          TRIPLE="${{ matrix.triple }}"
+          RESP=$(curl -sL --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest")
+          ASSET=$(echo "$RESP" | jq -r --arg t "$TRIPLE" \
+            '[.assets[] | select(.name | test("^cpython-3\\.13\\..*" + $t + "-install_only\\.tar\\.gz$"))][0].browser_download_url')
+          [ -n "$ASSET" ] && [ "$ASSET" != "null" ] || { echo "no asset for $TRIPLE"; exit 1; }
+          mkdir -p assets/python
+          curl -sL "$ASSET" -o "assets/python/python-${{ matrix.platform_arch }}.tar.gz"
+
+      - name: Setup NuGet (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command nuget -ErrorAction SilentlyContinue)) {
+            Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile "$env:RUNNER_TOOL_CACHE\nuget.exe"
+            Write-Output "$env:RUNNER_TOOL_CACHE" >> $env:GITHUB_PATH
+          }
+
+      - name: Build
+        working-directory: app
+        shell: bash
+        run: |
+          case "${{ runner.os }}" in
+            Windows) flutter build windows --release ;;
+            Linux)   flutter build linux --release ;;
+            macOS)   flutter build macos --release ;;
+          esac
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: app
+        run: |
+          $V = "${{ needs.prepare.outputs.version }}"
+          New-Item -ItemType Directory -Path ../out -Force | Out-Null
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" `
+            -DestinationPath "../out/ErisPulse-App-$V-windows-x64.zip"
+
+      - name: Ensure Inno Setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: app
+        run: |
+          $V = "${{ needs.prepare.outputs.version }}"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DVersion=$V" "/DArch=x64" windows-installer.iss
+          Copy-Item "Output/*.exe" "../out/"
+
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        working-directory: app
+        run: |
+          V="${{ needs.prepare.outputs.version }}"
+          BUNDLE="build/linux/x64/release/bundle"
+          tar -czf "../out/ErisPulse-App-${V}-linux-x64.tar.gz" -C "$BUNDLE" .
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform_arch }}
+          path: out/
+          retention-days: 7
+
+  release:
+    needs: [prepare, build-apk, desktop-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Collect release assets
+        run: |
+          mkdir -p out
+          cp artifacts/apk-online/*.apk out/ 2>/dev/null || true
+          cp artifacts/apk-offline/*.apk out/ 2>/dev/null || true
+          cp artifacts/desktop-*/* out/ 2>/dev/null || true
+          # 定制 rootfs 一并发布（供其它设备在线下载）
+          if [ -d artifacts/build-tree ]; then
+            cp artifacts/build-tree/app/runtime-rootfs.tar.gz \
+              out/erispulse-rootfs-aarch64.tar.gz 2>/dev/null || true
+          fi
+          ls -lh out/
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.prepare.outputs.version }}"
+          TAG="v$V"
+          if gh release view "$TAG" &>/dev/null; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* \
+              --title "ErisPulse-App $TAG" \
+              --notes "Custom distribution build (${{ inputs.app_ref || 'main' }})"
+          fi

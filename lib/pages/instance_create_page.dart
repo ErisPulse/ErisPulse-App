@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/instance.dart';
 import '../services/app_settings.dart';
+import '../services/distribution.dart';
 import '../services/instance_manager.dart';
 import '../services/runtime/assets.dart';
 import '../services/runtime/desktop_sdk.dart';
@@ -123,6 +124,8 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
                                   children: [
                                     const _CreateHeader(),
                                     const SizedBox(height: 20),
+                                    const _DistNoticeCard(),
+                                    const SizedBox(height: 16),
                                     _typeSelector(l10n),
                                     const SizedBox(height: 16),
                                     _nameField(l10n),
@@ -171,6 +174,8 @@ class _InstanceCreatePageState extends State<InstanceCreatePage> {
                   children: [
                     const _CreateHeader(),
                     const SizedBox(height: 20),
+                    const _DistNoticeCard(),
+                    const SizedBox(height: 16),
                     _typeSelector(l10n),
                     const SizedBox(height: 16),
                     _nameField(l10n),
@@ -539,6 +544,44 @@ class _CreateHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 发行版说明卡（custom/ 定制构建提供 createInstanceNotice 时显示）
+class _DistNoticeCard extends StatelessWidget {
+  const _DistNoticeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final notice = Distribution.instance.createInstanceNotice;
+    if (notice == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 18,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                notice,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

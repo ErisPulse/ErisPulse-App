@@ -32,8 +32,11 @@ class ApiException implements Exception {
   /// 是否为鉴权失败（token 无效/过期）
   bool get isAuth => statusCode == 401 || statusCode == 403;
 
+  /// 是否为实例端服务错误（重试可能恢复）
+  bool get isServerError => statusCode != null && statusCode! >= 500;
+
   @override
-  String toString() => 'ApiException($statusCode, $endpoint): $message';
+  String toString() => message;
 }
 
 class DashboardApi {
@@ -129,8 +132,11 @@ class DashboardApi {
           if (msg is String && msg.isNotEmpty) detail = msg;
         }
       } catch (_) {}
+      final friendly = resp.statusCode >= 500
+          ? '实例服务端错误（$detail）'
+          : 'HTTP ${resp.statusCode}: $detail';
       throw ApiException(
-        'HTTP ${resp.statusCode}: $detail',
+        friendly,
         statusCode: resp.statusCode,
         endpoint: path,
       );
@@ -203,10 +209,14 @@ class DashboardApi {
       })> getEvents({
     int limit = 100,
     String? type,
+    String? platform,
   }) async {
     final q = StringBuffer('/events?limit=$limit');
     if (type != null && type.isNotEmpty) {
       q.write('&type=${Uri.encodeQueryComponent(type)}');
+    }
+    if (platform != null && platform.isNotEmpty) {
+      q.write('&platform=${Uri.encodeQueryComponent(platform)}');
     }
     final json = await _getJson(q.toString());
     final list = (json['events'] as List? ?? [])
@@ -419,6 +429,7 @@ class DashboardApi {
     List<String> names, {
     bool force = false,
     String? indexUrl,
+    String? extraArgs,
   }) async {
     final json = await _postJson(
       '/packages/install',
@@ -426,6 +437,7 @@ class DashboardApi {
         'packages': names,
         'force': force,
         if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+        if (extraArgs != null && extraArgs.isNotEmpty) 'extra_args': extraArgs,
       },
     );
     return json['task_id']?.toString() ?? '';
@@ -446,6 +458,7 @@ class DashboardApi {
     List<String> packages, {
     bool force = false,
     String? indexUrl,
+    String? extraArgs,
   }) async {
     final json = await _postJson(
       '/store/install',
@@ -453,6 +466,7 @@ class DashboardApi {
         'packages': packages,
         'force': force,
         if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+        if (extraArgs != null && extraArgs.isNotEmpty) 'extra_args': extraArgs,
       },
     );
     return json['task_id']?.toString() ?? '';
@@ -485,12 +499,14 @@ class DashboardApi {
   Future<String> upgradePackages(
     List<String> packages, {
     String? indexUrl,
+    String? extraArgs,
   }) async {
     final json = await _postJson(
       '/packages/upgrade',
       body: {
         'packages': packages,
         if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+        if (extraArgs != null && extraArgs.isNotEmpty) 'extra_args': extraArgs,
       },
     );
     return json['task_id']?.toString() ?? '';
@@ -643,5 +659,301 @@ class DashboardApi {
         .map((e) => e is Map<String, dynamic> ? e : null)
         .whereType<Map<String, dynamic>>()
         .toList();
+  }
+
+  // 会话收件箱（/transcript）
+
+  Future<Map<String, dynamic>> transcriptInfo() => _getJson('/transcript/info');
+
+  /// [hours] 时间窗（0.1–720）
+  Future<List<Map<String, dynamic>>> transcriptSessions(double hours) async {
+    final json = await _getJson(
+      '/transcript/sessions?hours=${hours.toStringAsFixed(1)}',
+    );
+    final list = json['sessions'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  /// [session] 形如 `platform:detail_type:target_id`；[n] 1–500
+  Future<List<Map<String, dynamic>>> transcriptMessages(
+    String session, {
+    int n = 100,
+  }) async {
+    final json = await _getJson(
+      '/transcript?session=${Uri.encodeComponent(session)}&n=$n',
+    );
+    final list = json['messages'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> transcriptTrace(String traceId) async {
+    final json = await _getJson(
+      '/transcript/trace?trace_id=${Uri.encodeComponent(traceId)}',
+    );
+    final list = json['messages'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> transcriptRetention() =>
+      _getJson('/transcript/retention');
+
+  Future<Map<String, dynamic>> saveTranscriptRetention({
+    int? maxPerSession,
+    double? ttlHours,
+    bool reset = false,
+  }) =>
+      _putJson(
+        '/transcript/retention',
+        body: {
+          if (maxPerSession != null) 'max_per_session': maxPerSession,
+          if (ttlHours != null) 'ttl_hours': ttlHours,
+          if (reset) 'reset': true,
+        },
+      );
+
+  Future<int> clearTranscript(String session) async {
+    final json = await _postJson(
+      '/transcript/clear',
+      body: {'session': session},
+    );
+    return (json['removed'] as num?)?.toInt() ?? 0;
+  }
+
+  // 安全 / API Key（/security）
+
+  Future<List<Map<String, dynamic>>> securityKeys() async {
+    final json = await _getJson('/security/keys');
+    final list = json['keys'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> securityPages() => _getJson('/security/pages');
+
+  /// 创建 key；返回体含一次性明文 [key] 与 key_info
+  Future<Map<String, dynamic>> createSecurityKey({
+    required String name,
+    required String role,
+    List<String> pages = const [],
+  }) =>
+      _postJson(
+        '/security/keys',
+        body: {'name': name, 'role': role, 'pages': pages},
+      );
+
+  Future<Map<String, dynamic>> updateSecurityKey(
+    String id, {
+    bool? enabled,
+    String? name,
+    String? role,
+    List<String>? pages,
+  }) =>
+      _putJson(
+        '/security/keys/${Uri.encodeComponent(id)}',
+        body: {
+          if (enabled != null) 'enabled': enabled,
+          if (name != null) 'name': name,
+          if (role != null) 'role': role,
+          if (pages != null) 'pages': pages,
+        },
+      );
+
+  Future<void> deleteSecurityKey(String id) async {
+    await _deleteJson('/security/keys/${Uri.encodeComponent(id)}');
+  }
+
+  /// 重新生成 key；返回体含一次性新明文
+  Future<Map<String, dynamic>> regenerateSecurityKey(String id) =>
+      _postJson('/security/keys/${Uri.encodeComponent(id)}/regenerate');
+
+  Future<void> regeneratePrimaryToken() =>
+      _postJson('/security/token/regenerate');
+
+  // 管理员（/master）
+
+  Future<Map<String, dynamic>> masterConfig() => _getJson('/master');
+
+  Future<Map<String, dynamic>> saveMasterUsers(dynamic users) =>
+      _putJson('/master', body: {'users': users});
+
+  Future<List<Map<String, dynamic>>> masterCandidates() async {
+    final json = await _getJson('/master/candidates');
+    final list = json['candidates'] as List? ?? [];
+    return list
+        .map((e) => e is Map<String, dynamic> ? e : null)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  // 集群（/cluster）
+
+  Future<Map<String, dynamic>> clusterNodes() => _getJson('/cluster/nodes');
+
+  Future<Map<String, dynamic>> clusterOverview() =>
+      _getJson('/cluster/overview');
+
+  /// 生成经源实例代理访问节点的 URL（`/cluster/proxy/{node}/{path}`）
+  Uri clusterProxyUri(
+    String nodeId,
+    String path, {
+    Map<String, String>? query,
+  }) {
+    final encoded = path
+        .split('/')
+        .where((s) => s.isNotEmpty)
+        .map(Uri.encodeComponent)
+        .join('/');
+    return instance.apiUri(
+      '/cluster/proxy/${Uri.encodeComponent(nodeId)}/$encoded',
+      query: query,
+    );
+  }
+
+  // 存储表（/storage/tables）
+
+  Future<Map<String, dynamic>> getStorageTables() =>
+      _getJson('/storage/tables');
+
+  Future<Map<String, dynamic>> getStorageTable(
+    String name, {
+    int page = 1,
+    int size = 20,
+  }) =>
+      _getJson(
+        '/storage/table?name=${Uri.encodeComponent(name)}&page=$page&size=$size',
+      );
+
+  Future<void> clearStorageTable(String name) => _postJson(
+        '/storage/table/clear',
+        body: {'name': name},
+      );
+
+  // 备份（/backup）
+
+  Future<Map<String, dynamic>> exportBackup() => _getJson('/backup/export');
+
+  Future<Map<String, dynamic>> importBackup(Map<String, dynamic> payload) =>
+      _postJson('/backup/import', body: payload);
+
+  // API 路由清单（/routes）
+
+  Future<Map<String, dynamic>> getRoutes() => _getJson('/routes');
+
+  // 集群节点管理（/cluster/nodes）
+
+  Future<Map<String, dynamic>> clusterAddNode({
+    required String name,
+    required String url,
+    required String token,
+    String? id,
+  }) =>
+      _postJson(
+        '/cluster/nodes',
+        body: {
+          if (id != null && id.isNotEmpty) 'id': id,
+          'name': name,
+          'url': url,
+          'token': token,
+        },
+      );
+
+  Future<void> clusterDeleteNode(String nodeId) =>
+      _deleteJson('/cluster/nodes/${Uri.encodeComponent(nodeId)}');
+
+  Future<Map<String, dynamic>> clusterPingNode(String nodeId) =>
+      _postJson('/cluster/nodes/${Uri.encodeComponent(nodeId)}/ping');
+
+  // 连接注册表（/connections）
+
+  Future<Map<String, dynamic>> getConnections() => _getJson('/connections');
+
+  Future<void> closeConnection(String connId) => _postJson(
+        '/connections/close',
+        body: {'id': connId},
+      );
+
+  // 文件：新建 / 重命名
+
+  Future<void> mkdir(String path) =>
+      _postJson('/files/mkdir', body: {'path': path});
+
+  Future<void> renameFile(String path, String newName) => _postJson(
+        '/files/rename',
+        body: {'path': path, 'new_name': newName},
+      );
+
+  // 上传（multipart）：商店离线包两段式 + 文件上传
+
+  /// 商店离线包第一阶段：上传 .whl/.zip，返回安装 token（1 小时有效）
+  Future<String> uploadStorePackage(String filePath) async {
+    final req = http.MultipartRequest(
+      'POST',
+      instance.apiUri('/store/upload'),
+    )
+      ..headers.addAll(_headers)
+      ..files.add(await http.MultipartFile.fromPath('file', filePath));
+    final streamed = await req.send().timeout(const Duration(minutes: 5));
+    final resp = await http.Response.fromStream(streamed);
+    final json = await _parseJson(resp, '/store/upload');
+    return json['token']?.toString() ?? '';
+  }
+
+  /// 商店离线包第二阶段：按 token 启动安装（后台任务，返回 task_id）
+  Future<String> uploadStoreInstall(
+    String token, {
+    bool force = false,
+    String? indexUrl,
+    String? extraArgs,
+  }) async {
+    final json = await _postJson(
+      '/store/upload/install',
+      body: {
+        'token': token,
+        'force': force,
+        if (indexUrl != null && indexUrl.isNotEmpty) 'index_url': indexUrl,
+        if (extraArgs != null && extraArgs.isNotEmpty) 'extra_args': extraArgs,
+      },
+    );
+    return json['task_id']?.toString() ?? '';
+  }
+
+  /// 上传文件到实例目录（multipart，字段 files；dest 目录走 ?path=）
+  Future<void> uploadFiles(String destDir, List<String> filePaths) async {
+    final req = http.MultipartRequest(
+      'POST',
+      instance.apiUri('/files/upload', query: {'path': destDir}),
+    )..headers.addAll(_headers);
+    for (final f in filePaths) {
+      req.files.add(await http.MultipartFile.fromPath('files', f));
+    }
+    final streamed = await req.send().timeout(const Duration(minutes: 5));
+    final resp = await http.Response.fromStream(streamed);
+    await _parseJson(resp, '/files/upload');
+  }
+
+  /// 服务端日志导出（完整日志文本）
+  Future<String> exportServerLogs() async {
+    final resp = await http
+        .get(instance.apiUri('/logs/export'), headers: _headers)
+        .timeout(const Duration(seconds: 30));
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        'HTTP ${resp.statusCode}',
+        statusCode: resp.statusCode,
+        endpoint: '/logs/export',
+      );
+    }
+    return resp.body;
   }
 }

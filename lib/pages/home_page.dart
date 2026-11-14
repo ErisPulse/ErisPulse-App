@@ -12,18 +12,24 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/enums.dart';
 import '../models/instance.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../services/app_settings.dart';
 import '../services/dashboard_api.dart';
+import '../services/distribution.dart';
 import '../services/instance_manager.dart';
+import '../services/orchestrator.dart';
 import '../services/runtime/proot_manager.dart';
 import '../services/runtime/runtime_controller.dart';
 import '../services/window/window_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/context_menu.dart';
+import '../widgets/motion.dart';
 import '../widgets/states.dart';
 import '../widgets/status_indicators.dart';
 import '../widgets/window_title_bar.dart';
@@ -44,15 +50,115 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Timer? _timer;
+  int _pollCount = 0;
+  int _tick = 0;
+  final Map<String, bool> _lastHealthy = {};
+
+  /// 批量模式选中实例 id；非空即批量模式
+  final Set<String> _selection = {};
+
+  bool get _batchMode => _selection.isNotEmpty;
+
+  void _toggleSelect(String id) {
+    setState(() {
+      _selection.contains(id) ? _selection.remove(id) : _selection.add(id);
+    });
+  }
+
+  void _exitBatchMode() => setState(_selection.clear);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshStatus());
-    // 每 8s 自动刷新一次实例状态/健康，无需手动点击
-    _timer = Timer.periodic(
-      const Duration(seconds: 8),
-      (_) => _refreshStatus(),
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowDistNotice());
+    // 状态自动刷新（间隔可在设置中调整）：1s tick 累计到配置间隔触发
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _tick++;
+      final interval = context.read<AppSettings>().refreshSeconds;
+      if (_tick >= interval) {
+        _tick = 0;
+        _refreshStatus();
+      }
+    });
+    context.read<AppSettings>().addListener(_maybeNotifyOnCrash);
+  }
+
+  /// 首启发行版说明：custom/ 定制构建且未展示过时弹出
+  Future<void> _maybeShowDistNotice() async {
+    final dist = Distribution.instance;
+    if (!dist.hasFirstLaunchContent) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(kDistributionNoticeSeenKey) ?? false) return;
+    if (!mounted) return;
+    await prefs.setBool(kDistributionNoticeSeenKey, true);
+    unawaited(_showDistNotice(dist));
+  }
+
+  Future<void> _showDistNotice(Distribution dist) async {
+    final ctx = context;
+    final l10n = AppLocalizations.of(ctx);
+    await showDialog<void>(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(
+          l10n.distWelcomeTitle(dist.name),
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (dist.firstLaunchNotice != null) ...[
+                  Text(dist.firstLaunchNotice!),
+                  const SizedBox(height: 12),
+                ],
+                if (dist.preinstalled.isNotEmpty) ...[
+                  Text(
+                    l10n.distPreinstalledTitle,
+                    style: Theme.of(dialogCtx).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final item in dist.preinstalled)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.check_circle_outline, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.version == null
+                                  ? item.name
+                                  : '${item.name} ${item.version}',
+                            ),
+                          ),
+                          if (item.description != null)
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                item.description!,
+                                style: Theme.of(dialogCtx).textTheme.bodySmall,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(l10n.commonGotIt),
+          ),
+        ],
+      ),
     );
   }
 
@@ -60,6 +166,40 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  /// 掉线/崩溃检测（healthy → 非 healthy 转变）触发本地通知
+  void _maybeNotifyOnCrash() {
+    final settings = context.read<AppSettings>();
+    if (!settings.notifyOnCrash) return;
+    final mgr = context.read<InstanceManager>();
+    for (final inst in mgr.instances) {
+      final healthy = inst.isRemote
+          ? inst.health == InstanceHealth.healthy
+          : inst.status == InstanceStatus.running;
+      final last = _lastHealthy[inst.id];
+      _lastHealthy[inst.id] = healthy;
+      if (last == true && !healthy) {
+        unawaited(_notifyCrash(inst.name));
+      }
+    }
+  }
+
+  Future<void> _notifyCrash(String name) async {
+    final notifications = FlutterLocalNotificationsPlugin();
+    await notifications.show(
+      name.hashCode & 0x7fffffff,
+      name,
+      'instance offline',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'erispulse_runtime',
+          'ErisPulse',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+    );
   }
 
   Future<void> _refreshStatus() async {
@@ -72,6 +212,11 @@ class _HomePageState extends State<HomePage> {
         mgr.setRuntimeState(inst.id, health: health);
       }
     }
+    // 集群探测节流：每 4 轮一次
+    _pollCount++;
+    if (_pollCount % 4 == 1) {
+      unawaited(mgr.syncClusterInstances());
+    }
   }
 
   @override
@@ -82,34 +227,121 @@ class _HomePageState extends State<HomePage> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ErisPulse'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.commonRefresh,
-            onPressed: _refreshStatus,
-          ),
-          IconButton(
-            icon: const Icon(Icons.bug_report_outlined),
-            tooltip: l10n.homeDebugTooltip,
-            onPressed: () =>
-                Navigator.of(context).pushNamed(DebugPage.routeName),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: l10n.commonSettings,
-            onPressed: () =>
-                Navigator.of(context).pushNamed(SettingsPage.routeName),
-          ),
-        ],
+        title: Text(
+          _batchMode ? l10n.batchSelectedCount(_selection.length) : 'ErisPulse',
+        ),
+        leading: _batchMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitBatchMode,
+              )
+            : null,
+        actions: _batchMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  tooltip: l10n.batchSelectAll,
+                  onPressed: () => setState(() {
+                    _selection
+                      ..clear()
+                      ..addAll(
+                        context
+                            .read<InstanceManager>()
+                            .instances
+                            .map((i) => i.id),
+                      );
+                  }),
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: const Icon(Icons.checklist),
+                  tooltip: l10n.batchMode,
+                  onPressed: () => setState(() {}),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: l10n.commonRefresh,
+                  onPressed: _refreshStatus,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.bug_report_outlined),
+                  tooltip: l10n.homeDebugTooltip,
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(DebugPage.routeName),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: l10n.commonSettings,
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(SettingsPage.routeName),
+                ),
+              ],
       ),
       body: _buildContent(context, l10n),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToCreate,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.commonCreateInstance),
+      bottomNavigationBar: _batchMode ? _BatchBar(onOp: _runBatch) : null,
+      floatingActionButton: _batchMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _navigateToCreate,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.commonCreateInstance),
+            ),
+    );
+  }
+
+  Future<void> _runBatch(BatchOp op) async {
+    final l10n = AppLocalizations.of(context);
+    final mgr = context.read<InstanceManager>();
+    final runtime = context.read<RuntimeController>();
+    final targets =
+        mgr.instances.where((i) => _selection.contains(i.id)).toList();
+    if (targets.isEmpty) return;
+
+    final confirm = op == BatchOp.upgradePackages
+        ? l10n.batchConfirmUpgrade
+        : op == BatchOp.updateFramework
+            ? l10n.batchConfirmFramework
+            : null;
+    if (confirm != null) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.batchMode),
+          content: Text(confirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.commonConfirm),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
+    final task = BatchTask(op, targets);
+    _exitBatchMode();
+    if (!mounted) return;
+    final results = await showDialog<List<BatchItemResult>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => _BatchRunDialog(
+        task: task,
+        runtime: runtime,
+        l10n: l10n,
       ),
     );
+    if (!mounted || results == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => _BatchResultDialog(results: results, l10n: l10n),
+    );
+    unawaited(_refreshStatus());
   }
 
   /// 桌面布局（WinUI3 风格）：顶部一体标题栏横贯 + 左侧导航列 + 右侧内容区
@@ -252,8 +484,17 @@ class _HomePageState extends State<HomePage> {
                         mainAxisExtent: 128,
                       ),
                       itemCount: items.length,
-                      itemBuilder: (context, i) =>
-                          _InstanceTile(instance: items[i]),
+                      itemBuilder: (context, i) => StaggerIn(
+                        index: i,
+                        child: _InstanceTile(
+                          instance: items[i],
+                          selected:
+                              _batchMode && _selection.contains(items[i].id),
+                          onToggleSelect: _batchMode
+                              ? () => _toggleSelect(items[i].id)
+                              : null,
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -296,8 +537,17 @@ class _HomePageState extends State<HomePage> {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: mgr.count,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) =>
-                      _InstanceTile(instance: mgr.instances[i]),
+                  itemBuilder: (context, i) => StaggerIn(
+                    index: i,
+                    child: _InstanceTile(
+                      instance: mgr.instances[i],
+                      selected: _batchMode &&
+                          _selection.contains(mgr.instances[i].id),
+                      onToggleSelect: _batchMode
+                          ? () => _toggleSelect(mgr.instances[i].id)
+                          : null,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -309,7 +559,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _navigateToCreate() async {
     final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      appRoute<bool>(
         builder: (_) => const InstanceCreatePage(),
       ),
     );
@@ -500,12 +750,21 @@ class _HealthChip extends StatelessWidget {
 
 /// 单实例列表项
 class _InstanceTile extends StatelessWidget {
-  const _InstanceTile({required this.instance});
+  const _InstanceTile({
+    required this.instance,
+    this.selected = false,
+    this.onToggleSelect,
+  });
   final Instance instance;
+
+  /// 批量模式：true 时点击切换选中而非进详情
+  final bool selected;
+  final VoidCallback? onToggleSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final isDesktop = !Platform.isAndroid && !Platform.isIOS;
     if (!isDesktop) {
       return ContextMenuRegion(
@@ -513,13 +772,25 @@ class _InstanceTile extends StatelessWidget {
         child: Card(
           margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
+          shape: selected
+              ? RoundedRectangleBorder(
+                  borderRadius: AppRadius.card,
+                  side: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                )
+              : null,
           child: InkWell(
-            onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute<void>(
-                builder: (_) => InstanceDetailPage(instanceId: instance.id),
-              ),
-            ),
-            onLongPress: () => _showActionMenu(context),
+            onTap: onToggleSelect ??
+                () => Navigator.of(context).push<void>(
+                      appRoute<void>(
+                        builder: (_) =>
+                            InstanceDetailPage(instanceId: instance.id),
+                      ),
+                    ),
+            onLongPress:
+                onToggleSelect != null ? null : () => _showActionMenu(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
@@ -537,7 +808,9 @@ class _InstanceTile extends StatelessWidget {
                           children: [
                             if (instance.isRemote) ...[
                               Icon(
-                                Icons.cloud_outlined,
+                                instance.clusterNodeId != null
+                                    ? Icons.hub_outlined
+                                    : Icons.cloud_outlined,
                                 size: 16,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -554,6 +827,27 @@ class _InstanceTile extends StatelessWidget {
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
+                            if (instance.clusterNodeId != null)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  l10n.clusterFromCluster,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -587,107 +881,117 @@ class _InstanceTile extends StatelessWidget {
     }
 
     // 桌面：饱满的网格卡片（信息密度更高）
-    final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final running = instance.status == InstanceStatus.running ||
         instance.status == InstanceStatus.starting;
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: ContextMenuRegion(
-        onContextMenu: (pos) => _showContextMenu(context, pos),
-        child: InkWell(
-          onTap: () => Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => InstanceDetailPage(instanceId: instance.id),
-            ),
-          ),
-          onLongPress: () => _showActionMenu(context),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    StatusDot(
-                      status: instance.status,
-                      health: instance.isRemote ? instance.health : null,
-                    ),
-                    const SizedBox(width: 8),
-                    if (instance.isRemote) ...[
-                      Icon(
-                        Icons.cloud_outlined,
-                        size: 16,
-                        color: scheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Expanded(
-                      child: Text(
-                        instance.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+    return HoverLift(
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: selected
+            ? RoundedRectangleBorder(
+                borderRadius: AppRadius.card,
+                side: BorderSide(color: theme.colorScheme.primary, width: 2),
+              )
+            : null,
+        child: ContextMenuRegion(
+          onContextMenu: (pos) => _showContextMenu(context, pos),
+          child: InkWell(
+            onTap: onToggleSelect ??
+                () => Navigator.of(context).push<void>(
+                      appRoute<void>(
+                        builder: (_) =>
+                            InstanceDetailPage(instanceId: instance.id),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // 端口/版本 + 健康徽章
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    _InfoPill(
-                      text: _portOrUrlText(l10n),
-                      icon: Icons.link,
-                    ),
-                    if (instance.runtimeVersion != null)
-                      _InfoPill(text: 'v${instance.runtimeVersion}'),
-                    _HealthChip(
-                      text: instance.isRemote
-                          ? _remoteLabel(l10n, instance.health)
-                          : _statusLabel(l10n, instance.status),
-                      status: instance.status,
-                      health: instance.isRemote ? instance.health : null,
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                // 操作按钮
-                Row(
-                  children: [
-                    if (!instance.isRemote &&
-                        (instance.status == InstanceStatus.stopped ||
-                            instance.status == InstanceStatus.error))
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: () => _start(context),
-                          icon: const Icon(Icons.play_arrow, size: 16),
-                          label: Text(l10n.commonStart),
+            onLongPress:
+                onToggleSelect != null ? null : () => _showActionMenu(context),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      StatusDot(
+                        status: instance.status,
+                        health: instance.isRemote ? instance.health : null,
+                      ),
+                      const SizedBox(width: 8),
+                      if (instance.isRemote) ...[
+                        Icon(
+                          Icons.cloud_outlined,
+                          size: 16,
+                          color: scheme.primary,
                         ),
-                      )
-                    else if (!instance.isRemote && running) ...[
+                        const SizedBox(width: 4),
+                      ],
                       Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: () => _stop(context),
-                          icon: const Icon(Icons.stop, size: 16),
-                          label: Text(l10n.commonStop),
+                        child: Text(
+                          instance.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
-                    const SizedBox(width: 8),
-                    IconButton.outlined(
-                      onPressed: () => _openDashboard(context),
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      tooltip: l10n.detailOpenDashboard,
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 10),
+                  // 端口/版本 + 健康徽章
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _InfoPill(
+                        text: _portOrUrlText(l10n),
+                        icon: Icons.link,
+                      ),
+                      if (instance.runtimeVersion != null)
+                        _InfoPill(text: 'v${instance.runtimeVersion}'),
+                      _HealthChip(
+                        text: instance.isRemote
+                            ? _remoteLabel(l10n, instance.health)
+                            : _statusLabel(l10n, instance.status),
+                        status: instance.status,
+                        health: instance.isRemote ? instance.health : null,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // 操作按钮
+                  Row(
+                    children: [
+                      if (!instance.isRemote &&
+                          (instance.status == InstanceStatus.stopped ||
+                              instance.status == InstanceStatus.error))
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => _start(context),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: Text(l10n.commonStart),
+                          ),
+                        )
+                      else if (!instance.isRemote && running) ...[
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => _stop(context),
+                            icon: const Icon(Icons.stop, size: 16),
+                            label: Text(l10n.commonStop),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      IconButton.outlined(
+                        onPressed: () => _openDashboard(context),
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        tooltip: l10n.detailOpenDashboard,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -905,7 +1209,7 @@ class _InstanceTile extends StatelessWidget {
 
   void _openDashboard(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      appRoute<void>(
         builder: (_) => DashboardPage(instance: instance),
       ),
     );
@@ -913,7 +1217,7 @@ class _InstanceTile extends StatelessWidget {
 
   void _openLogs(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      appRoute<void>(
         builder: (_) => LogsPage(instanceId: instance.id),
       ),
     );
@@ -1051,7 +1355,7 @@ class _RootfsBanner extends StatelessWidget {
           color: scheme.errorContainer,
           child: InkWell(
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              appRoute<void>(
                 builder: (_) => OnboardingPage(
                   onDone: () => Navigator.of(context).pop(),
                 ),
@@ -1101,6 +1405,194 @@ class _RootfsBanner extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// 批量模式底部操作栏（移动端 bottomNavigationBar）
+class _BatchBar extends StatelessWidget {
+  const _BatchBar({required this.onOp});
+
+  final void Function(BatchOp op) onOp;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          border: Border(
+            top:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final (op, icon, label) in [
+                (BatchOp.start, Icons.play_arrow, l10n.batchStart),
+                (BatchOp.stop, Icons.stop, l10n.batchStop),
+                (BatchOp.restart, Icons.restart_alt, l10n.batchRestart),
+                (
+                  BatchOp.upgradePackages,
+                  Icons.cloud_upload_outlined,
+                  l10n.batchUpgrade
+                ),
+                (
+                  BatchOp.updateFramework,
+                  Icons.system_update_alt,
+                  l10n.batchUpdateFramework
+                ),
+              ])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ActionChip(
+                    avatar: Icon(icon, size: 18),
+                    label: Text(label),
+                    onPressed: () => onOp(op),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 批量执行进度对话框：内部驱动任务，完成后自动关闭返回结果
+class _BatchRunDialog extends StatefulWidget {
+  const _BatchRunDialog({
+    required this.task,
+    required this.runtime,
+    required this.l10n,
+  });
+
+  final BatchTask task;
+  final RuntimeController runtime;
+  final AppLocalizations l10n;
+
+  @override
+  State<_BatchRunDialog> createState() => _BatchRunDialogState();
+}
+
+class _BatchRunDialogState extends State<_BatchRunDialog> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      widget.task.run(runtime: widget.runtime).then((results) {
+        if (mounted) Navigator.of(context).pop(results);
+      }),
+    );
+    widget.task.addListener(_onTick);
+  }
+
+  void _onTick() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.task.removeListener(_onTick);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final task = widget.task;
+    return AlertDialog(
+      title: Text(widget.l10n.batchRunning(task.finished, task.total)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LinearProgressIndicator(
+            value: task.total == 0 ? null : task.finished / task.total,
+          ),
+          const SizedBox(height: 16),
+          if (task.running)
+            TextButton(
+              onPressed: task.cancel,
+              child: Text(widget.l10n.batchCancelTask),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 批量结果对话框
+class _BatchResultDialog extends StatelessWidget {
+  const _BatchResultDialog({required this.results, required this.l10n});
+
+  final List<BatchItemResult> results;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final failed = results.where((r) => !r.ok).length;
+    return AlertDialog(
+      title: Text(l10n.batchResultTitle),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 420),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final r in results)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        r.ok ? Icons.check_circle : Icons.error_outline,
+                        size: 18,
+                        color: r.ok ? Colors.green : theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r.instance.name),
+                            if (r.message != null)
+                              Text(
+                                r.message!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (failed > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '$failed failed',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.commonClose),
+        ),
+      ],
     );
   }
 }

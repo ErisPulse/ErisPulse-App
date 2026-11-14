@@ -29,6 +29,7 @@ class _InstanceTopologyViewState extends State<InstanceTopologyView>
     with AutomaticKeepAliveClientMixin {
   Map<String, dynamic>? _topology;
   bool _supported = true;
+  bool _unsupported = false;
   bool _loading = true;
   String? _error;
 
@@ -52,6 +53,7 @@ class _InstanceTopologyViewState extends State<InstanceTopologyView>
       setState(() {
         _topology = json;
         _supported = json['supported'] == true;
+        _unsupported = false;
         _loading = false;
         _error = null;
       });
@@ -59,7 +61,8 @@ class _InstanceTopologyViewState extends State<InstanceTopologyView>
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '$e';
+        _unsupported = e is ApiException && e.statusCode == 404;
+        _error = _unsupported ? null : '$e';
       });
     }
   }
@@ -70,6 +73,7 @@ class _InstanceTopologyViewState extends State<InstanceTopologyView>
     final l10n = AppLocalizations.of(context);
 
     if (_loading) return const LoadingView();
+    if (_unsupported) return UnsupportedView(onRetry: _load);
     if (_error != null) {
       return ErrorView(message: _error!, onRetry: _load);
     }

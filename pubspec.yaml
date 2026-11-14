@@ -63,6 +63,7 @@ dependencies:
   archive: ^4.0.9
   flutter_inappwebview: ^6.1.5
   flutter_svg: ^2.3.0
+  file_picker: ^8.1.2
   window_manager: ^0.5.2
   tray_manager: ^0.5.3
 
@@ -110,3 +111,5 @@ flutter:
     - assets/rootfs/
     # 内置 Python 目录（CI 注入 python-build-standalone 打包的 zip）
     - assets/python/
+    # 发行版定制清单（仓库内为官方默认；custom/ 定制构建时由 CI 覆盖注入）
+    - assets/custom/

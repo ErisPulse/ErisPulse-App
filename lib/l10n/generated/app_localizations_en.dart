@@ -1390,4 +1390,294 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeActionAsk => 'Ask every time';
+
+  @override
+  String distWelcomeTitle(Object name) {
+    return 'Welcome to $name';
+  }
+
+  @override
+  String get distPreinstalledTitle => 'Preinstalled';
+
+  @override
+  String get distVendorLabel => 'Vendor';
+
+  @override
+  String get distHomepageLabel => 'Homepage';
+
+  @override
+  String get distContactLabel => 'Contact';
+
+  @override
+  String get settingsDistribution => 'Distribution';
+
+  @override
+  String get settingsPypiCustom => 'Custom';
+
+  @override
+  String get commonGotIt => 'Got it';
+
+  @override
+  String get settingsThemeStyle => 'Theme style';
+
+  @override
+  String get themeStyleGlass => 'Liquid Glass';
+
+  @override
+  String get themeStyleMd3 => 'Classic';
+
+  @override
+  String get transcriptTitle => 'Transcript';
+
+  @override
+  String get transcriptEmpty => 'No sessions';
+
+  @override
+  String get transcriptRetention => 'Retention';
+
+  @override
+  String get transcriptMaxPerSession => 'Max per session';
+
+  @override
+  String get transcriptTtlHours => 'TTL (hours)';
+
+  @override
+  String get transcriptMsgEmpty => 'No messages';
+
+  @override
+  String get securityTitle => 'API Keys';
+
+  @override
+  String get securityEmpty => 'No keys';
+
+  @override
+  String get securityCreate => 'Create key';
+
+  @override
+  String get securityName => 'Name';
+
+  @override
+  String get securityRole => 'Role';
+
+  @override
+  String get securityRoleAdmin => 'Admin';
+
+  @override
+  String get securityRoleViewer => 'Viewer';
+
+  @override
+  String get securityPages => 'Page whitelist';
+
+  @override
+  String get securityPagesAll => 'All pages';
+
+  @override
+  String get securityKeyCreated => 'Key created — copy it now, shown only once';
+
+  @override
+  String get securityRegen => 'Regenerate';
+
+  @override
+  String get securityRegenToken => 'Regenerate primary token';
+
+  @override
+  String get securityRegenTokenConfirm =>
+      'This invalidates all existing connections. Continue?';
+
+  @override
+  String get securityLastUsed => 'Last used';
+
+  @override
+  String get securityEnabled => 'Enabled';
+
+  @override
+  String get securityDeleteConfirm => 'Delete this key?';
+
+  @override
+  String get securityPrimaryToken => 'Primary token';
+
+  @override
+  String get masterTitle => 'Bot Masters';
+
+  @override
+  String get masterEmpty => 'No masters';
+
+  @override
+  String get masterCandidates => 'Candidates';
+
+  @override
+  String get masterAdd => 'Add';
+
+  @override
+  String get clusterFromCluster => 'From cluster';
+
+  @override
+  String get clusterProxyError =>
+      'Cluster proxy unavailable; add a direct node token';
+
+  @override
+  String get distPreinstalledLabel => 'Preinstalled';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  String get unsupportedTitle => 'Feature unavailable';
+
+  @override
+  String get unsupportedDesc =>
+      'The Dashboard or framework on this instance is too old for this feature. Update the ErisPulse-Dashboard module on the instance (Store → search ErisPulse-Dashboard → upgrade), then retry.';
+
+  @override
+  String get batchMode => 'Batch';
+
+  @override
+  String get batchSelectAll => 'Select all';
+
+  @override
+  String get batchStart => 'Start';
+
+  @override
+  String get batchStop => 'Stop';
+
+  @override
+  String get batchRestart => 'Restart';
+
+  @override
+  String get batchUpgrade => 'Upgrade packages';
+
+  @override
+  String get batchUpdateFramework => 'Update framework';
+
+  @override
+  String batchRunning(Object done, Object total) {
+    return 'Running $done/$total';
+  }
+
+  @override
+  String get batchResultTitle => 'Batch results';
+
+  @override
+  String get batchCancelTask => 'Cancel task';
+
+  @override
+  String get batchConfirmUpgrade =>
+      'Upgrade packages on the selected instances (auto hot-reload after install on the instance side)?';
+
+  @override
+  String get batchConfirmFramework =>
+      'Trigger framework update on the selected instances? Instances will restart.';
+
+  @override
+  String batchSelectedCount(Object n) {
+    return '$n selected';
+  }
+
+  @override
+  String get configSourceTab => 'TOML Source';
+
+  @override
+  String get configSourceSaved => 'TOML saved';
+
+  @override
+  String get configSourceInvalid => 'Invalid TOML';
+
+  @override
+  String get storageTables => 'Storage tables';
+
+  @override
+  String get storageTableRows => 'Rows';
+
+  @override
+  String get storageClearTable => 'Clear table';
+
+  @override
+  String get backupExport => 'Export backup';
+
+  @override
+  String get backupImport => 'Import backup';
+
+  @override
+  String backupDone(Object path) {
+    return 'Backup saved to $path';
+  }
+
+  @override
+  String get apiRoutesTitle => 'API Routes';
+
+  @override
+  String get clusterTitle => 'Cluster';
+
+  @override
+  String get clusterAddNode => 'Add node';
+
+  @override
+  String get clusterPing => 'Ping';
+
+  @override
+  String get clusterRemove => 'Remove';
+
+  @override
+  String get clusterUrl => 'URL';
+
+  @override
+  String get clusterToken => 'Token';
+
+  @override
+  String get clusterName => 'Name';
+
+  @override
+  String get storeUploadInstall => 'Upload .whl / .zip';
+
+  @override
+  String storeUploadPicked(Object name) {
+    return 'Selected: $name';
+  }
+
+  @override
+  String get storeUploadStart => 'Upload & install';
+
+  @override
+  String get filesUpload => 'Upload files';
+
+  @override
+  String get settingsDisplay => 'Display';
+
+  @override
+  String get settingsBehavior => 'Behavior';
+
+  @override
+  String get settingsNetwork => 'Downloads & Mirrors';
+
+  @override
+  String get settingsMaintenance => 'Data & Maintenance';
+
+  @override
+  String get settingsDynamicColor => 'Follow system color (Material You)';
+
+  @override
+  String get settingsDynamicColorDesc => 'Off = ErisPulse default colors';
+
+  @override
+  String get settingsRefreshInterval => 'Status refresh interval';
+
+  @override
+  String get settingsPrivacyMode => 'Privacy mode';
+
+  @override
+  String get settingsPrivacyModeDesc => 'Mask user/group IDs in event stream';
+
+  @override
+  String get settingsEventLimit => 'Event stream limit';
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String get settingsNotifyOnCrash => 'Notify on instance crash/offline';
+
+  @override
+  String refreshUnitSec(Object n) {
+    return '$n s';
+  }
 }

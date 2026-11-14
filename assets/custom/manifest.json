@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "distribution": {
+    "name": "ErisPulse",
+    "vendor": "ErisPulse Official",
+    "homepage": "https://github.com/ErisPulse/ErisPulse-App",
+    "contact": null
+  },
+  "preinstalled": [],
+  "notices": {
+    "firstLaunch": null,
+    "createInstance": null
+  },
+  "defaults": {
+    "downloadSource": null,
+    "pypiSource": null,
+    "pypiIndexUrl": null,
+    "pypiLabel": null
+  },
+  "download": {
+    "releaseBase": null
+  }
+}

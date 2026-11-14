@@ -2718,6 +2718,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask every time'**
   String get closeActionAsk;
+
+  /// No description provided for @distWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to {name}'**
+  String distWelcomeTitle(Object name);
+
+  /// No description provided for @distPreinstalledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preinstalled'**
+  String get distPreinstalledTitle;
+
+  /// No description provided for @distVendorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vendor'**
+  String get distVendorLabel;
+
+  /// No description provided for @distHomepageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Homepage'**
+  String get distHomepageLabel;
+
+  /// No description provided for @distContactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get distContactLabel;
+
+  /// No description provided for @settingsDistribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution'**
+  String get settingsDistribution;
+
+  /// No description provided for @settingsPypiCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsPypiCustom;
+
+  /// No description provided for @commonGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get commonGotIt;
+
+  /// No description provided for @settingsThemeStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme style'**
+  String get settingsThemeStyle;
+
+  /// No description provided for @themeStyleGlass.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid Glass'**
+  String get themeStyleGlass;
+
+  /// No description provided for @themeStyleMd3.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get themeStyleMd3;
+
+  /// No description provided for @transcriptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript'**
+  String get transcriptTitle;
+
+  /// No description provided for @transcriptEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions'**
+  String get transcriptEmpty;
+
+  /// No description provided for @transcriptRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Retention'**
+  String get transcriptRetention;
+
+  /// No description provided for @transcriptMaxPerSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Max per session'**
+  String get transcriptMaxPerSession;
+
+  /// No description provided for @transcriptTtlHours.
+  ///
+  /// In en, this message translates to:
+  /// **'TTL (hours)'**
+  String get transcriptTtlHours;
+
+  /// No description provided for @transcriptMsgEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages'**
+  String get transcriptMsgEmpty;
+
+  /// No description provided for @securityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API Keys'**
+  String get securityTitle;
+
+  /// No description provided for @securityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No keys'**
+  String get securityEmpty;
+
+  /// No description provided for @securityCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create key'**
+  String get securityCreate;
+
+  /// No description provided for @securityName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get securityName;
+
+  /// No description provided for @securityRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get securityRole;
+
+  /// No description provided for @securityRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get securityRoleAdmin;
+
+  /// No description provided for @securityRoleViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewer'**
+  String get securityRoleViewer;
+
+  /// No description provided for @securityPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Page whitelist'**
+  String get securityPages;
+
+  /// No description provided for @securityPagesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages'**
+  String get securityPagesAll;
+
+  /// No description provided for @securityKeyCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Key created — copy it now, shown only once'**
+  String get securityKeyCreated;
+
+  /// No description provided for @securityRegen.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get securityRegen;
+
+  /// No description provided for @securityRegenToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate primary token'**
+  String get securityRegenToken;
+
+  /// No description provided for @securityRegenTokenConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This invalidates all existing connections. Continue?'**
+  String get securityRegenTokenConfirm;
+
+  /// No description provided for @securityLastUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last used'**
+  String get securityLastUsed;
+
+  /// No description provided for @securityEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get securityEnabled;
+
+  /// No description provided for @securityDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this key?'**
+  String get securityDeleteConfirm;
+
+  /// No description provided for @securityPrimaryToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary token'**
+  String get securityPrimaryToken;
+
+  /// No description provided for @masterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bot Masters'**
+  String get masterTitle;
+
+  /// No description provided for @masterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No masters'**
+  String get masterEmpty;
+
+  /// No description provided for @masterCandidates.
+  ///
+  /// In en, this message translates to:
+  /// **'Candidates'**
+  String get masterCandidates;
+
+  /// No description provided for @masterAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get masterAdd;
+
+  /// No description provided for @clusterFromCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'From cluster'**
+  String get clusterFromCluster;
+
+  /// No description provided for @clusterProxyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster proxy unavailable; add a direct node token'**
+  String get clusterProxyError;
+
+  /// No description provided for @distPreinstalledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preinstalled'**
+  String get distPreinstalledLabel;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
+
+  /// No description provided for @unsupportedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature unavailable'**
+  String get unsupportedTitle;
+
+  /// No description provided for @unsupportedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The Dashboard or framework on this instance is too old for this feature. Update the ErisPulse-Dashboard module on the instance (Store → search ErisPulse-Dashboard → upgrade), then retry.'**
+  String get unsupportedDesc;
+
+  /// No description provided for @batchMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch'**
+  String get batchMode;
+
+  /// No description provided for @batchSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get batchSelectAll;
+
+  /// No description provided for @batchStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get batchStart;
+
+  /// No description provided for @batchStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get batchStop;
+
+  /// No description provided for @batchRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get batchRestart;
+
+  /// No description provided for @batchUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade packages'**
+  String get batchUpgrade;
+
+  /// No description provided for @batchUpdateFramework.
+  ///
+  /// In en, this message translates to:
+  /// **'Update framework'**
+  String get batchUpdateFramework;
+
+  /// No description provided for @batchRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running {done}/{total}'**
+  String batchRunning(Object done, Object total);
+
+  /// No description provided for @batchResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch results'**
+  String get batchResultTitle;
+
+  /// No description provided for @batchCancelTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel task'**
+  String get batchCancelTask;
+
+  /// No description provided for @batchConfirmUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade packages on the selected instances (auto hot-reload after install on the instance side)?'**
+  String get batchConfirmUpgrade;
+
+  /// No description provided for @batchConfirmFramework.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger framework update on the selected instances? Instances will restart.'**
+  String get batchConfirmFramework;
+
+  /// No description provided for @batchSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} selected'**
+  String batchSelectedCount(Object n);
+
+  /// No description provided for @configSourceTab.
+  ///
+  /// In en, this message translates to:
+  /// **'TOML Source'**
+  String get configSourceTab;
+
+  /// No description provided for @configSourceSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'TOML saved'**
+  String get configSourceSaved;
+
+  /// No description provided for @configSourceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid TOML'**
+  String get configSourceInvalid;
+
+  /// No description provided for @storageTables.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage tables'**
+  String get storageTables;
+
+  /// No description provided for @storageTableRows.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get storageTableRows;
+
+  /// No description provided for @storageClearTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear table'**
+  String get storageClearTable;
+
+  /// No description provided for @backupExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get backupExport;
+
+  /// No description provided for @backupImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get backupImport;
+
+  /// No description provided for @backupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved to {path}'**
+  String backupDone(Object path);
+
+  /// No description provided for @apiRoutesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API Routes'**
+  String get apiRoutesTitle;
+
+  /// No description provided for @clusterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster'**
+  String get clusterTitle;
+
+  /// No description provided for @clusterAddNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Add node'**
+  String get clusterAddNode;
+
+  /// No description provided for @clusterPing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ping'**
+  String get clusterPing;
+
+  /// No description provided for @clusterRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get clusterRemove;
+
+  /// No description provided for @clusterUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get clusterUrl;
+
+  /// No description provided for @clusterToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Token'**
+  String get clusterToken;
+
+  /// No description provided for @clusterName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get clusterName;
+
+  /// No description provided for @storeUploadInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload .whl / .zip'**
+  String get storeUploadInstall;
+
+  /// No description provided for @storeUploadPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {name}'**
+  String storeUploadPicked(Object name);
+
+  /// No description provided for @storeUploadStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload & install'**
+  String get storeUploadStart;
+
+  /// No description provided for @filesUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload files'**
+  String get filesUpload;
+
+  /// No description provided for @settingsDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Display'**
+  String get settingsDisplay;
+
+  /// No description provided for @settingsBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Behavior'**
+  String get settingsBehavior;
+
+  /// No description provided for @settingsNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads & Mirrors'**
+  String get settingsNetwork;
+
+  /// No description provided for @settingsMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Data & Maintenance'**
+  String get settingsMaintenance;
+
+  /// No description provided for @settingsDynamicColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system color (Material You)'**
+  String get settingsDynamicColor;
+
+  /// No description provided for @settingsDynamicColorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Off = ErisPulse default colors'**
+  String get settingsDynamicColorDesc;
+
+  /// No description provided for @settingsRefreshInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Status refresh interval'**
+  String get settingsRefreshInterval;
+
+  /// No description provided for @settingsPrivacyMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy mode'**
+  String get settingsPrivacyMode;
+
+  /// No description provided for @settingsPrivacyModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask user/group IDs in event stream'**
+  String get settingsPrivacyModeDesc;
+
+  /// No description provided for @settingsEventLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Event stream limit'**
+  String get settingsEventLimit;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsNotifyOnCrash.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify on instance crash/offline'**
+  String get settingsNotifyOnCrash;
+
+  /// No description provided for @refreshUnitSec.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} s'**
+  String refreshUnitSec(Object n);
 }
 
 class _AppLocalizationsDelegate

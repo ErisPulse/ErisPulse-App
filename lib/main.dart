@@ -23,6 +23,7 @@ import 'pages/home_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/debug_page.dart';
 import 'services/app_settings.dart';
+import 'services/distribution.dart';
 import 'services/instance_manager.dart';
 import 'services/runtime/background_service.dart';
 import 'services/runtime/native_lib.dart';
@@ -38,6 +39,10 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 发行版清单（custom/ CI 定制）：必须先于 AppSettings 加载，
+  // 后者的下载源 / PyPI 源默认值来自清单
+  await Distribution.load();
 
   // 先加载用户语言偏好：通知渠道名等启动期文案需要本地化
   final appSettings = AppSettings();
@@ -117,17 +122,20 @@ class ErisPulseApp extends StatelessWidget {
     return Consumer<AppSettings>(
       builder: (context, settings, _) => DynamicColorBuilder(
         builder: (lightDynamic, darkDynamic) {
+          // 关闭"跟随系统取色"时忽略动态色，使用默认 seed
+          final useDynamic = settings.dynamicColor;
+          final ld = useDynamic ? lightDynamic : null;
+          final dd = useDynamic ? darkDynamic : null;
           return _ExitHandler(
             child: MaterialApp(
               navigatorKey: rootNavigatorKey,
-              title: 'ErisPulse',
+              title: Distribution.instance.name,
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light(
-                lightDynamic ??
-                    ColorScheme.fromSeed(seedColor: AppBrand.seedLight),
+                ld ?? ColorScheme.fromSeed(seedColor: AppBrand.seedLight),
               ),
               darkTheme: AppTheme.dark(
-                darkDynamic ??
+                dd ??
                     ColorScheme.fromSeed(
                       seedColor: AppBrand.seedDark,
                       brightness: Brightness.dark,

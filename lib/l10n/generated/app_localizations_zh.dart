@@ -1353,6 +1353,292 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get closeActionAsk => '每次询问';
+
+  @override
+  String distWelcomeTitle(Object name) {
+    return '欢迎使用 $name';
+  }
+
+  @override
+  String get distPreinstalledTitle => '预装组件';
+
+  @override
+  String get distVendorLabel => '发行者';
+
+  @override
+  String get distHomepageLabel => '主页';
+
+  @override
+  String get distContactLabel => '联系方式';
+
+  @override
+  String get settingsDistribution => '发行版';
+
+  @override
+  String get settingsPypiCustom => '自定义';
+
+  @override
+  String get commonGotIt => '知道了';
+
+  @override
+  String get settingsThemeStyle => '主题风格';
+
+  @override
+  String get themeStyleGlass => '液态玻璃';
+
+  @override
+  String get themeStyleMd3 => '经典';
+
+  @override
+  String get transcriptTitle => '会话收件箱';
+
+  @override
+  String get transcriptEmpty => '暂无会话';
+
+  @override
+  String get transcriptRetention => '保留策略';
+
+  @override
+  String get transcriptMaxPerSession => '每会话上限';
+
+  @override
+  String get transcriptTtlHours => '保留时长（小时）';
+
+  @override
+  String get transcriptMsgEmpty => '暂无消息';
+
+  @override
+  String get securityTitle => 'API 密钥';
+
+  @override
+  String get securityEmpty => '暂无密钥';
+
+  @override
+  String get securityCreate => '新建密钥';
+
+  @override
+  String get securityName => '名称';
+
+  @override
+  String get securityRole => '角色';
+
+  @override
+  String get securityRoleAdmin => '管理员';
+
+  @override
+  String get securityRoleViewer => '只读';
+
+  @override
+  String get securityPages => '页面白名单';
+
+  @override
+  String get securityPagesAll => '全部页面';
+
+  @override
+  String get securityKeyCreated => '密钥已创建，仅展示一次，请立即复制';
+
+  @override
+  String get securityRegen => '重新生成';
+
+  @override
+  String get securityRegenToken => '重置主令牌';
+
+  @override
+  String get securityRegenTokenConfirm => '将使所有现有连接失效，确定继续？';
+
+  @override
+  String get securityLastUsed => '最后使用';
+
+  @override
+  String get securityEnabled => '启用';
+
+  @override
+  String get securityDeleteConfirm => '删除该密钥？';
+
+  @override
+  String get securityPrimaryToken => '主令牌';
+
+  @override
+  String get masterTitle => '管理员';
+
+  @override
+  String get masterEmpty => '暂无管理员';
+
+  @override
+  String get masterCandidates => '候选人';
+
+  @override
+  String get masterAdd => '添加';
+
+  @override
+  String get clusterFromCluster => '来自集群';
+
+  @override
+  String get clusterProxyError => '集群代理不可用，请补录节点直连令牌';
+
+  @override
+  String get distPreinstalledLabel => '预装';
+
+  @override
+  String get commonClose => '关闭';
+
+  @override
+  String get unsupportedTitle => '功能不可用';
+
+  @override
+  String get unsupportedDesc =>
+      '当前实例的 Dashboard 或框架版本较低，暂不支持此功能。请在商店中升级实例的 ErisPulse-Dashboard 模块（模块商店 → 搜索 ErisPulse-Dashboard → 升级），然后重试。';
+
+  @override
+  String get batchMode => '批量操作';
+
+  @override
+  String get batchSelectAll => '全选';
+
+  @override
+  String get batchStart => '批量启动';
+
+  @override
+  String get batchStop => '批量停止';
+
+  @override
+  String get batchRestart => '批量重启';
+
+  @override
+  String get batchUpgrade => '批量升级包';
+
+  @override
+  String get batchUpdateFramework => '批量更新框架';
+
+  @override
+  String batchRunning(Object done, Object total) {
+    return '执行中 $done/$total';
+  }
+
+  @override
+  String get batchResultTitle => '批量结果';
+
+  @override
+  String get batchCancelTask => '取消任务';
+
+  @override
+  String get batchConfirmUpgrade => '将对选中实例执行包升级（实例侧安装完成后自动热重载），继续？';
+
+  @override
+  String get batchConfirmFramework => '将对选中实例触发框架更新（实例会重启），继续？';
+
+  @override
+  String batchSelectedCount(Object n) {
+    return '已选 $n 个';
+  }
+
+  @override
+  String get configSourceTab => 'TOML 源码';
+
+  @override
+  String get configSourceSaved => 'TOML 已保存';
+
+  @override
+  String get configSourceInvalid => 'TOML 不合法';
+
+  @override
+  String get storageTables => '存储表';
+
+  @override
+  String get storageTableRows => '行';
+
+  @override
+  String get storageClearTable => '清空表';
+
+  @override
+  String get backupExport => '导出备份';
+
+  @override
+  String get backupImport => '导入备份';
+
+  @override
+  String backupDone(Object path) {
+    return '备份已保存到 $path';
+  }
+
+  @override
+  String get apiRoutesTitle => 'API 路由';
+
+  @override
+  String get clusterTitle => '集群';
+
+  @override
+  String get clusterAddNode => '添加节点';
+
+  @override
+  String get clusterPing => 'Ping';
+
+  @override
+  String get clusterRemove => '移除';
+
+  @override
+  String get clusterUrl => '地址';
+
+  @override
+  String get clusterToken => '令牌';
+
+  @override
+  String get clusterName => '名称';
+
+  @override
+  String get storeUploadInstall => '上传 .whl / .zip';
+
+  @override
+  String storeUploadPicked(Object name) {
+    return '已选择：$name';
+  }
+
+  @override
+  String get storeUploadStart => '上传并安装';
+
+  @override
+  String get filesUpload => '上传文件';
+
+  @override
+  String get settingsDisplay => '显示';
+
+  @override
+  String get settingsBehavior => '行为';
+
+  @override
+  String get settingsNetwork => '下载与镜像';
+
+  @override
+  String get settingsMaintenance => '数据与维护';
+
+  @override
+  String get settingsDynamicColor => '跟随系统取色（Material You）';
+
+  @override
+  String get settingsDynamicColorDesc => '关闭时使用 ErisPulse 默认配色';
+
+  @override
+  String get settingsRefreshInterval => '状态刷新间隔';
+
+  @override
+  String get settingsPrivacyMode => '隐私模式';
+
+  @override
+  String get settingsPrivacyModeDesc => '事件流中遮蔽用户 / 群 ID';
+
+  @override
+  String get settingsEventLimit => '事件流条数上限';
+
+  @override
+  String get settingsNotifications => '通知';
+
+  @override
+  String get settingsNotifyOnCrash => '实例崩溃 / 掉线时通知';
+
+  @override
+  String refreshUnitSec(Object n) {
+    return '$n 秒';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2704,4 +2990,290 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get closeActionAsk => '每次詢問';
+
+  @override
+  String distWelcomeTitle(Object name) {
+    return '歡迎使用 $name';
+  }
+
+  @override
+  String get distPreinstalledTitle => '預裝元件';
+
+  @override
+  String get distVendorLabel => '發行者';
+
+  @override
+  String get distHomepageLabel => '主頁';
+
+  @override
+  String get distContactLabel => '聯絡方式';
+
+  @override
+  String get settingsDistribution => '發行版';
+
+  @override
+  String get settingsPypiCustom => '自訂';
+
+  @override
+  String get commonGotIt => '知道了';
+
+  @override
+  String get settingsThemeStyle => '主題風格';
+
+  @override
+  String get themeStyleGlass => '液態玻璃';
+
+  @override
+  String get themeStyleMd3 => '經典';
+
+  @override
+  String get transcriptTitle => '會話收件匣';
+
+  @override
+  String get transcriptEmpty => '暫無會話';
+
+  @override
+  String get transcriptRetention => '保留策略';
+
+  @override
+  String get transcriptMaxPerSession => '每會話上限';
+
+  @override
+  String get transcriptTtlHours => '保留時長（小時）';
+
+  @override
+  String get transcriptMsgEmpty => '暫無訊息';
+
+  @override
+  String get securityTitle => 'API 金鑰';
+
+  @override
+  String get securityEmpty => '暫無金鑰';
+
+  @override
+  String get securityCreate => '新建金鑰';
+
+  @override
+  String get securityName => '名稱';
+
+  @override
+  String get securityRole => '角色';
+
+  @override
+  String get securityRoleAdmin => '管理員';
+
+  @override
+  String get securityRoleViewer => '唯讀';
+
+  @override
+  String get securityPages => '頁面白名單';
+
+  @override
+  String get securityPagesAll => '全部頁面';
+
+  @override
+  String get securityKeyCreated => '金鑰已建立，僅展示一次，請立即複製';
+
+  @override
+  String get securityRegen => '重新產生';
+
+  @override
+  String get securityRegenToken => '重設主權杖';
+
+  @override
+  String get securityRegenTokenConfirm => '將使所有現有連線失效，確定繼續？';
+
+  @override
+  String get securityLastUsed => '最後使用';
+
+  @override
+  String get securityEnabled => '啟用';
+
+  @override
+  String get securityDeleteConfirm => '刪除該金鑰？';
+
+  @override
+  String get securityPrimaryToken => '主權杖';
+
+  @override
+  String get masterTitle => '管理員';
+
+  @override
+  String get masterEmpty => '暫無管理員';
+
+  @override
+  String get masterCandidates => '候選人';
+
+  @override
+  String get masterAdd => '新增';
+
+  @override
+  String get clusterFromCluster => '來自叢集';
+
+  @override
+  String get clusterProxyError => '叢集代理不可用，請補錄節點直連權杖';
+
+  @override
+  String get distPreinstalledLabel => '預裝';
+
+  @override
+  String get commonClose => '關閉';
+
+  @override
+  String get unsupportedTitle => '功能不可用';
+
+  @override
+  String get unsupportedDesc =>
+      '目前實例的 Dashboard 或框架版本較低，暫不支援此功能。請在商店中升級實例的 ErisPulse-Dashboard 模組（模組商店 → 搜尋 ErisPulse-Dashboard → 升級），然後重試。';
+
+  @override
+  String get batchMode => '批次操作';
+
+  @override
+  String get batchSelectAll => '全選';
+
+  @override
+  String get batchStart => '批次啟動';
+
+  @override
+  String get batchStop => '批次停止';
+
+  @override
+  String get batchRestart => '批次重啟';
+
+  @override
+  String get batchUpgrade => '批次升級套件';
+
+  @override
+  String get batchUpdateFramework => '批次更新框架';
+
+  @override
+  String batchRunning(Object done, Object total) {
+    return '執行中 $done/$total';
+  }
+
+  @override
+  String get batchResultTitle => '批次結果';
+
+  @override
+  String get batchCancelTask => '取消任務';
+
+  @override
+  String get batchConfirmUpgrade => '將對選中實例執行套件升級（實例側安裝完成後自動熱重載），繼續？';
+
+  @override
+  String get batchConfirmFramework => '將對選中實例觸發框架更新（實例會重啟），繼續？';
+
+  @override
+  String batchSelectedCount(Object n) {
+    return '已選 $n 個';
+  }
+
+  @override
+  String get configSourceTab => 'TOML 原始碼';
+
+  @override
+  String get configSourceSaved => 'TOML 已儲存';
+
+  @override
+  String get configSourceInvalid => 'TOML 不合法';
+
+  @override
+  String get storageTables => '儲存表';
+
+  @override
+  String get storageTableRows => '列';
+
+  @override
+  String get storageClearTable => '清空表';
+
+  @override
+  String get backupExport => '匯出備份';
+
+  @override
+  String get backupImport => '匯入備份';
+
+  @override
+  String backupDone(Object path) {
+    return '備份已儲存到 $path';
+  }
+
+  @override
+  String get apiRoutesTitle => 'API 路由';
+
+  @override
+  String get clusterTitle => '叢集';
+
+  @override
+  String get clusterAddNode => '新增節點';
+
+  @override
+  String get clusterPing => 'Ping';
+
+  @override
+  String get clusterRemove => '移除';
+
+  @override
+  String get clusterUrl => '位址';
+
+  @override
+  String get clusterToken => '權杖';
+
+  @override
+  String get clusterName => '名稱';
+
+  @override
+  String get storeUploadInstall => '上傳 .whl / .zip';
+
+  @override
+  String storeUploadPicked(Object name) {
+    return '已選擇：$name';
+  }
+
+  @override
+  String get storeUploadStart => '上傳並安裝';
+
+  @override
+  String get filesUpload => '上傳檔案';
+
+  @override
+  String get settingsDisplay => '顯示';
+
+  @override
+  String get settingsBehavior => '行為';
+
+  @override
+  String get settingsNetwork => '下載與鏡像';
+
+  @override
+  String get settingsMaintenance => '資料與維護';
+
+  @override
+  String get settingsDynamicColor => '跟隨系統取色（Material You）';
+
+  @override
+  String get settingsDynamicColorDesc => '關閉時使用 ErisPulse 預設配色';
+
+  @override
+  String get settingsRefreshInterval => '狀態重新整理間隔';
+
+  @override
+  String get settingsPrivacyMode => '隱私模式';
+
+  @override
+  String get settingsPrivacyModeDesc => '事件流中遮蔽使用者 / 群 ID';
+
+  @override
+  String get settingsEventLimit => '事件流條數上限';
+
+  @override
+  String get settingsNotifications => '通知';
+
+  @override
+  String get settingsNotifyOnCrash => '實例崩潰 / 離線時通知';
+
+  @override
+  String refreshUnitSec(Object n) {
+    return '$n 秒';
+  }
 }

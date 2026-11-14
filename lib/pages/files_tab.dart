@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/instance.dart';
 import '../services/dashboard_api.dart';
+import 'package:file_picker/file_picker.dart';
 
 class FilesTab extends StatefulWidget {
   final Instance instance;
@@ -28,6 +29,9 @@ class _FilesTabState extends State<FilesTab> {
   List<Map<String, dynamic>> _entries = [];
   bool _loading = true;
   ApiException? _error;
+
+  /// 多选删除集合（entry path）
+  final Set<String> _selection = <String>{};
 
   @override
   void initState() {
@@ -88,6 +92,179 @@ class _FilesTabState extends State<FilesTab> {
           ),
         )
         .then((_) => _load());
+  }
+
+  Future<void> _mkdir(String name, {bool asFile = false}) async {
+    final api = DashboardApi(widget.instance);
+    final base = _path.isEmpty ? '' : '$_path/';
+    final path = '$base$name';
+    try {
+      if (asFile) {
+        await api.writeFile(path, '');
+      } else {
+        await api.mkdir(path);
+      }
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _renameEntry(Map<String, dynamic> e) async {
+    final l10n = AppLocalizations.of(context);
+    final name = (e['name'] ?? '').toString();
+    final path = (e['path'] ?? name).toString();
+    final ctrl = TextEditingController(text: name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.commonRename),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(l10n.commonConfirm),
+          ),
+        ],
+      ),
+    );
+    if (newName == null || newName.isEmpty || newName == name) return;
+    try {
+      await DashboardApi(widget.instance).renameFile(path, newName);
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteSelected() async {
+    final l10n = AppLocalizations.of(context);
+    if (_selection.isEmpty) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.commonDelete),
+        content: Text('${_selection.length} items'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ButtonStyle(
+              foregroundColor:
+                  WidgetStateProperty.all(Theme.of(context).colorScheme.error),
+            ),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await DashboardApi(widget.instance).deleteFiles(_selection.toList());
+      setState(() => _selection.clear());
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadFiles() async {
+    final picked = await FilePicker.platform.pickFiles(allowMultiple: true);
+    final paths = picked == null
+        ? <String>[]
+        : [
+            for (final f in picked.files)
+              if (f.path != null) f.path!,
+          ];
+    if (paths.isEmpty) return;
+    try {
+      await DashboardApi(
+        widget.instance,
+      ).uploadFiles(_path.isEmpty ? '.' : _path, paths);
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showCreateMenu() async {
+    final l10n = AppLocalizations.of(context);
+    final ctrl = TextEditingController();
+    final mode = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.commonCreate),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'name'),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.folder_outlined, size: 18),
+                    label: const Text('Folder'),
+                    onPressed: () => Navigator.pop(ctx, 'folder'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(
+                      Icons.insert_drive_file_outlined,
+                      size: 18,
+                    ),
+                    label: const Text('File'),
+                    onPressed: () => Navigator.pop(ctx, 'file'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.commonCancel),
+          ),
+        ],
+      ),
+    );
+    final name = ctrl.text.trim();
+    if (mode == null || name.isEmpty) return;
+    await _mkdir(name, asFile: mode == 'file');
   }
 
   Future<void> _delete(Map<String, dynamic> e) async {
@@ -161,6 +338,16 @@ class _FilesTabState extends State<FilesTab> {
                 ),
               ),
               IconButton(
+                icon: const Icon(Icons.upload_outlined),
+                tooltip: l10n.filesUpload,
+                onPressed: _uploadFiles,
+              ),
+              IconButton(
+                icon: const Icon(Icons.create_new_folder_outlined),
+                tooltip: l10n.commonCreate,
+                onPressed: _showCreateMenu,
+              ),
+              IconButton(
                 icon: const Icon(Icons.refresh),
                 tooltip: l10n.commonRefresh,
                 onPressed: _load,
@@ -168,6 +355,28 @@ class _FilesTabState extends State<FilesTab> {
             ],
           ),
         ),
+        if (_selection.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  '${_selection.length} selected',
+                  style: theme.textTheme.labelSmall,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: Text(l10n.commonDelete),
+                  onPressed: _deleteSelected,
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _selection.clear()),
+                  child: Text(l10n.commonCancel),
+                ),
+              ],
+            ),
+          ),
         const Divider(height: 1),
         Expanded(
           child: _loading
@@ -215,6 +424,8 @@ class _FilesTabState extends State<FilesTab> {
                           itemBuilder: (context, i) {
                             final e = sorted[i];
                             final isDir = (e['type'] ?? '') == 'directory';
+                            final path =
+                                (e['path'] ?? e['name'] ?? '').toString();
                             return ListTile(
                               leading: Icon(
                                 isDir
@@ -230,12 +441,45 @@ class _FilesTabState extends State<FilesTab> {
                                         (e['size'] as num?)?.toInt() ?? 0,
                                       ),
                                     ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                tooltip: l10n.commonDelete,
-                                onPressed: () => _delete(e),
+                              selected: _selection.contains(path),
+                              trailing: PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, size: 20),
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: 'rename',
+                                    child: Text(l10n.commonRename),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'select',
+                                    child: Text(l10n.batchMode),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(l10n.commonDelete),
+                                  ),
+                                ],
+                                onSelected: (action) {
+                                  switch (action) {
+                                    case 'rename':
+                                      _renameEntry(e);
+                                    case 'select':
+                                      setState(() => _selection.add(path));
+                                    case 'delete':
+                                      _delete(e);
+                                  }
+                                },
                               ),
-                              onTap: () => _open(e),
+                              onTap: () {
+                                if (_selection.isNotEmpty) {
+                                  setState(() {
+                                    _selection.contains(path)
+                                        ? _selection.remove(path)
+                                        : _selection.add(path);
+                                  });
+                                  return;
+                                }
+                                _open(e);
+                              },
                             );
                           },
                         ),

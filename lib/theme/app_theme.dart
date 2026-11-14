@@ -32,7 +32,7 @@ abstract final class AppRadius {
   static BorderRadius get chip => BorderRadius.circular(s);
 }
 
-/// ErisPulse 品牌色（对齐 Dashboard base.css 的 --accent：
+/// ErisPulse 默认色（对齐 Dashboard base.css 的 --accent：
 /// 亮色 #4aa3dd / 暗色 #6a9df0）。
 ///
 /// 仅作为 dynamic_color 取色失败时的回退 seed；

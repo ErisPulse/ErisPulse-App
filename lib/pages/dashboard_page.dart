@@ -21,10 +21,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../services/webview_env.dart';
 import '../models/instance.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -50,9 +50,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _pageJumped = false;
   String? _error;
   Timer? _loadingTimer;
-
-  /// Windows 共享 WebView2 环境（多页面复用，进程级缓存）
-  static WebViewEnvironment? _sharedEnv;
 
   /// 环境初始化已尝试（失败也继续，走默认路径 + 超时兜底）
   bool _envAttempted = false;
@@ -80,30 +77,14 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Windows：显式指定可写的 user data folder 后再创建 WebView，
-    // 避免 setup.exe 安装到 Program Files（只读）导致环境创建失败
-    if (Platform.isWindows) unawaited(_ensureWebViewEnv());
-  }
-
-  /// WebView2 默认把 user data folder 放在 exe 同目录；安装到
-  /// Program Files 后该目录不可写，环境创建失败表现为页面永久转圈。
-  /// 显式指定到应用数据目录（%APPDATA%）规避。
-  Future<void> _ensureWebViewEnv() async {
-    if (_sharedEnv != null) {
-      if (mounted) setState(() => _envAttempted = true);
-      return;
-    }
-    try {
-      final dir = await getApplicationSupportDirectory();
-      _sharedEnv = await WebViewEnvironment.create(
-        settings: WebViewEnvironmentSettings(
-          userDataFolder: '${dir.path}${Platform.pathSeparator}WebView2',
-        ),
+    // Windows：确保全局共享 WebView2 环境就绪（userDataFolder 全局唯一）
+    if (Platform.isWindows) {
+      unawaited(
+        WebViewEnv.ensure().then((_) {
+          if (mounted) setState(() => _envAttempted = true);
+        }),
       );
-    } catch (_) {
-      // 创建失败保持 null：走默认路径，由加载超时兜底提示
     }
-    if (mounted) setState(() => _envAttempted = true);
   }
 
   @override
@@ -213,7 +194,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     InAppWebView(
                       key: ValueKey(_webKey),
-                      webViewEnvironment: _sharedEnv,
+                      webViewEnvironment: WebViewEnv.instance,
                       initialUrlRequest: URLRequest(
                         url: WebUri.uri(widget.instance.dashboardUri),
                       ),
